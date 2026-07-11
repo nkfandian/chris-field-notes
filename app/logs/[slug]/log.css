@@ -1,1 +1,12 @@
-.log-page{min-height:100vh;padding:3vw 6vw;background:var(--paper);color:var(--ink)}.log-page nav{display:flex;justify-content:space-between;border-bottom:1px solid;padding-bottom:1rem;font:11px var(--mono)}.log-page nav a{color:inherit;text-decoration:none}.log-page article{max-width:980px;margin:8vh auto}.log-page header small{font:10px var(--mono);color:var(--moss);letter-spacing:.12em}.log-page h1{font:900 clamp(3rem,8vw,7.5rem)/.92 var(--serif);letter-spacing:-.06em;margin:1.5rem 0}.log-page header>p{font:1.25rem/1.6 var(--serif);max-width:680px}.log-page time{display:block;margin:2rem 0;font:10px var(--mono);color:var(--muted)}.log-body{font:1.2rem/2 var(--serif);max-width:720px;border-top:1px solid;padding-top:3rem}.log-page aside{margin:5rem 0;padding:2rem;border:1px solid;max-width:720px}.log-page aside b{font:10px var(--mono);color:var(--moss)}
+.log-page{min-height:100vh;padding:3vw 6vw;background:var(--paper);color:var(--ink)}
+.log-page nav{display:flex;justify-content:space-between;border-bottom:1px solid;padding-bottom:1rem;font:11px var(--mono)}
+.log-page nav a{color:inherit;text-decoration:none}
+.log-page article{max-width:980px;margin:8vh auto}
+.log-page header small{font:10px var(--mono);color:var(--moss);letter-spacing:.12em}
+.log-page h1{font:900 clamp(3rem,8vw,7.5rem)/.92 var(--serif);letter-spacing:-.06em;margin:1.5rem 0}
+.log-page header>p{font:1.25rem/1.6 var(--serif);max-width:680px}
+.log-page time{display:block;margin:2rem 0;font:10px var(--mono);color:var(--muted)}
+.log-body{font:1.2rem/2 var(--serif);max-width:720px;border-top:1px solid;padding-top:3rem}
+.log-page aside{margin:5rem 0;padding:2rem;border:1px solid;max-width:720px}
+.log-page aside b{font:10px var(--mono);color:var(--moss)}
+@media(max-width:600px){.log-page{padding:0 5vw 10vh}.log-page nav{position:sticky;top:0;z-index:5;margin:0 -5vw;padding:1rem 5vw;background:#efeee8ed;backdrop-filter:blur(10px);font-size:9px}.log-page article{margin:8vh 0 0}.log-page header small{font-size:9px}.log-page h1{font-size:clamp(2.65rem,13vw,4.2rem);line-height:1.02;letter-spacing:-.055em;margin:1.25rem 0 1.5rem}.log-page header>p{font-size:1.05rem;line-height:1.75}.log-page time{margin:1.5rem 0 2.5rem}.log-body{font-size:1.05rem;line-height:1.95;padding-top:2rem}.log-body p{margin:0 0 1.5rem}.log-page aside{margin:3.5rem 0 0;padding:1.4rem}.log-page aside p{line-height:1.75;margin:.5rem 0 1.5rem}}
