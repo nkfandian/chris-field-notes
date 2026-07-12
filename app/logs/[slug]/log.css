@@ -7,6 +7,7 @@
 .log-page header>p{font:1.25rem/1.6 var(--serif);max-width:680px}
 .log-page time{display:block;margin:2rem 0;font:10px var(--mono);color:var(--muted)}
 .log-body{font:1.2rem/2 var(--serif);max-width:720px;border-top:1px solid;padding-top:3rem}
+.log-body p{margin:0 0 1.35rem}.log-body figure{margin:2.8rem 0}.log-body figure img{display:block;width:100%;height:auto;max-height:78vh;object-fit:contain;background:#e5e4de;border:1px solid var(--line)}.log-body figcaption{margin-top:.65rem;font:9px var(--mono);color:var(--muted);letter-spacing:.04em}.log-body figcaption:empty{display:none}
 .log-page aside{margin:5rem 0;padding:2rem;border:1px solid;max-width:720px}
 .log-page aside b{font:10px var(--mono);color:var(--moss)}
 @media(max-width:600px){.log-page{padding:0 5vw 10vh}.log-page nav{position:sticky;top:0;z-index:5;margin:0 -5vw;padding:1rem 5vw;background:#efeee8ed;backdrop-filter:blur(10px);font-size:9px}.log-page article{margin:8vh 0 0}.log-page header small{font-size:9px}.log-page h1{font-size:clamp(2.65rem,13vw,4.2rem);line-height:1.02;letter-spacing:-.055em;margin:1.25rem 0 1.5rem}.log-page header>p{font-size:1.05rem;line-height:1.75}.log-page time{margin:1.5rem 0 2.5rem}.log-body{font-size:1.05rem;line-height:1.95;padding-top:2rem}.log-body p{margin:0 0 1.5rem}.log-page aside{margin:3.5rem 0 0;padding:1.4rem}.log-page aside p{line-height:1.75;margin:.5rem 0 1.5rem}}
