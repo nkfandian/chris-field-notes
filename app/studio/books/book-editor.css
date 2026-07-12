@@ -1,0 +1,1 @@
+.book-studio .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem}@media(max-width:700px){.book-studio .three{grid-template-columns:1fr;gap:0}}
