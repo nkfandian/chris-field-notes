@@ -12,3 +12,14 @@ create policy "authenticated author can insert" on public.posts for insert to au
 create policy "authenticated author can update" on public.posts for update to authenticated using (true) with check (true);
 create policy "authenticated author can delete" on public.posts for delete to authenticated using (true);
 insert into public.posts (slug,title,domain,excerpt,thesis,tools,status,published_at) values ('formidable','从 formidable 的词根，看“恐惧”如何变成“强大”','decode','一个词的含义从来不是定义，而是一段被压缩过的社会经验。','语言像化石，保存着人类曾经害怕什么。','词源词典 × 3 / Gemini 辅助对照 / 42 min','published','2026-07-08'),('cola-cost','一罐可乐的成本，不在铝罐里','execute','把一个熟悉的消费品拆回供应链，重新理解品牌、渠道与规模。','利润不是售价减成本，而是系统里每个选择的残影。','公开财报 / 零售访谈 / 手工计算','published','2026-07-05'),('two-ai','我怎样让两个 AI 为同一个网站争论','deploy','一个负责主导，一个负责反驳；人的价值不在发言最多，而在最终取舍。','真正好用的 AI 工作流，最后看起来不像 AI。','Codex + Gemini / 17 次迭代 / 本地验证','published','2026-06-29') on conflict (slug) do nothing;
+create table if not exists public.comments (id uuid primary key default gen_random_uuid(),kind text not null default 'comment' check (kind in ('comment','message')),post_slug text,name text not null check (char_length(name) between 1 and 60),email text not null check (char_length(email) between 3 and 160),body text not null check (char_length(body) between 2 and 2000),status text not null default 'pending' check (status in ('pending','approved','rejected')),created_at timestamptz not null default now(),reviewed_at timestamptz);
+alter table public.comments enable row level security;
+drop policy if exists "approved comments are public" on public.comments;
+drop policy if exists "visitors can submit comments" on public.comments;
+drop policy if exists "authenticated author can review comments" on public.comments;
+drop policy if exists "authenticated author can delete comments" on public.comments;
+create policy "approved comments are public" on public.comments for select using (status = 'approved' or auth.role() = 'authenticated');
+create policy "visitors can submit comments" on public.comments for insert to anon,authenticated with check (status = 'pending');
+create policy "authenticated author can review comments" on public.comments for update to authenticated using (true) with check (true);
+create policy "authenticated author can delete comments" on public.comments for delete to authenticated using (true);
+create index if not exists comments_post_slug_status_idx on public.comments(post_slug,status,created_at desc);
