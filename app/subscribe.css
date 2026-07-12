@@ -1,0 +1,13 @@
+.filters .all-logs-link{display:inline-flex;align-items:center;background:transparent;border:1px solid var(--line);padding:.55rem .9rem;font:10px var(--mono);color:inherit;text-decoration:none;cursor:pointer}
+.filters .all-logs-link:hover{background:var(--ink);color:var(--paper)}
+.subscribe-section{background:var(--ink);color:var(--paper)}
+.subscribe-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:8vw;align-items:end}
+.subscribe-grid>p{font-size:clamp(1.4rem,2.3vw,2.4rem);line-height:1.55;margin:0}
+.subscribe-form{font-family:var(--mono)}
+.subscribe-form label{display:block;margin-bottom:.7rem;font-size:10px;letter-spacing:.1em;color:#a9afa2}
+.subscribe-form>div{display:grid;grid-template-columns:1fr auto}
+.subscribe-form input{min-width:0;border:1px solid #596056;border-right:0;background:transparent;color:var(--paper);padding:1rem;font:16px var(--serif)}
+.subscribe-form input:focus{outline:2px solid #91a77d;outline-offset:2px}
+.subscribe-form button{border:1px solid var(--paper);background:var(--paper);color:var(--ink);padding:1rem 1.4rem;font:11px var(--mono);cursor:pointer}
+.subscribe-form button:disabled{opacity:.55}.subscribe-form p{min-height:1.5em;margin:.7rem 0 0;font:11px var(--mono);color:#b8cdaa}
+@media(max-width:600px){.filters .all-logs-link{flex:0 0 auto;padding:.65rem 1rem}.subscribe-grid{grid-template-columns:1fr;gap:2.5rem}.subscribe-form>div{grid-template-columns:1fr}.subscribe-form input{border-right:1px solid #596056}}
