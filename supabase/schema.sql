@@ -43,3 +43,4 @@ drop policy if exists "visitors can subscribe" on public.subscribers;
 drop policy if exists "authenticated author reads subscribers" on public.subscribers;
 create policy "visitors can subscribe" on public.subscribers for insert to anon,authenticated with check (true);
 create policy "authenticated author reads subscribers" on public.subscribers for select to authenticated using (true);
+alter table public.posts add column if not exists notification_sent_at timestamptz;
