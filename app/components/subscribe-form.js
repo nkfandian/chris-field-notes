@@ -1,0 +1,4 @@
+'use client'
+import {useState} from 'react'
+import {createClient} from '@/lib/supabase/client'
+export default function SubscribeForm(){const [notice,setNotice]=useState(''),[busy,setBusy]=useState(false);async function submit(e){e.preventDefault();setBusy(true);setNotice('');const email=String(new FormData(e.currentTarget).get('email')||'').trim().toLowerCase();const {error}=await createClient().from('subscribers').insert({email,source:'website'});setBusy(false);if(error?.code==='23505')return setNotice('这个邮箱已经订阅。');if(error)return setNotice('暂时无法订阅，请稍后再试。');e.currentTarget.reset();setNotice('订阅成功。新的日志会发往你的邮箱。')}return <form className="subscribe-form" onSubmit={submit}><label htmlFor="subscribe-email">EMAIL ADDRESS</label><div><input id="subscribe-email" name="email" type="email" autoComplete="email" placeholder="you@example.com" required/><button disabled={busy}>{busy?'提交中…':'订阅更新 →'}</button></div><p aria-live="polite">{notice}</p></form>}
