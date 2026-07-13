@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600">
+  <rect x="0" y="0" width="900" height="600" fill="none"/>
+  <g fill="#151713">
+    <text x="112" y="72" font-family="IBM Plex Mono, Menlo, monospace" font-size="16" font-weight="700" letter-spacing="2.8">CHRIS / FIELD NOTES</text>
+    <text x="60" y="190" font-family="STHeiti, PingFang SC, sans-serif" font-size="58" font-weight="700" letter-spacing="-1">把阅读，变成一条</text>
+    <text x="60" y="265" font-family="STHeiti, PingFang SC, sans-serif" font-size="58" font-weight="700" letter-spacing="-1">持续生长的线。</text>
+  </g>
+  <text x="63" y="320" fill="#526b3f" font-family="STHeiti, PingFang SC, sans-serif" font-size="21" letter-spacing="1">不追逐更新频率，只在新的日志完成时抵达。</text>
+  <line x1="63" y1="383" x2="500" y2="383" stroke="#151713" stroke-width="1.5"/>
+  <text x="63" y="415" fill="#696d65" font-family="IBM Plex Mono, Menlo, monospace" font-size="14" letter-spacing="1.4">READING · IDEAS · TECHNOLOGY · FIELD NOTES</text>
+  <rect x="616" y="351" width="224" height="210" rx="2" fill="#efeee8" fill-opacity=".94" stroke="#151713" stroke-opacity=".15"/>
+  <text x="728" y="525" fill="#151713" font-family="STHeiti, PingFang SC, sans-serif" font-size="17" font-weight="700" text-anchor="middle">扫码进入订阅端口</text>
+  <text x="728" y="549" fill="#696d65" font-family="IBM Plex Mono, Menlo, monospace" font-size="11" letter-spacing="1.2" text-anchor="middle">SCAN / SUBSCRIBE</text>
+</svg>
