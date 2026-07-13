@@ -54,3 +54,8 @@ alter table public.email_campaigns enable row level security;
 drop policy if exists "authenticated author reads campaigns" on public.email_campaigns;
 create policy "authenticated author reads campaigns" on public.email_campaigns for select to authenticated using (true);
 alter table public.posts add column if not exists notification_sent_at timestamptz;
+create table if not exists public.email_deliveries (id uuid primary key default gen_random_uuid(),post_id uuid not null references public.posts(id) on delete cascade,subscriber_id uuid not null references public.subscribers(id) on delete cascade,email text not null,status text not null default 'sending' check (status in ('sending','sent','failed')),provider_id text,error text default '',created_at timestamptz not null default now(),updated_at timestamptz not null default now(),unique(post_id,subscriber_id));
+create index if not exists email_deliveries_post_status_idx on public.email_deliveries(post_id,status);
+alter table public.email_deliveries enable row level security;
+drop policy if exists "authenticated author reads deliveries" on public.email_deliveries;
+create policy "authenticated author reads deliveries" on public.email_deliveries for select to authenticated using (true);
