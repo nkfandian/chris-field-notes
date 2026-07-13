@@ -23,10 +23,10 @@
  .books-page>nav .brand-lockup.compact{gap:10px}
  .books-page>nav .brand-lockup.compact img{width:34px;height:34px}
  .books-page>nav .brand-lockup.compact b{font-size:12px}
- .book-controls{padding:1.45rem 0}
- .book-controls>div{gap:.6rem;margin:.55rem 0}
- .book-controls span{width:64px;font-size:11px;letter-spacing:.04em}
- .book-controls button{padding:.68rem 1rem;font-size:11px;line-height:1.15;letter-spacing:.015em;transition:background .16s ease,color .16s ease,border-color .16s ease}
- .book-controls button:not(.active):hover{border-color:var(--ink);background:#fff7}
- .book-count{padding:2.3rem 0 1.15rem;font-size:10px}
+ .books-page .book-controls{padding:1.45rem 0}
+ .books-page .book-controls>div{gap:.6rem;margin:.55rem 0}
+ .books-page .book-controls span{width:64px;font-size:11px;letter-spacing:.04em}
+ .books-page .book-controls button{padding:.68rem 1rem;font-size:11px;line-height:1.15;letter-spacing:.015em;transition:background .16s ease,color .16s ease,border-color .16s ease}
+ .books-page .book-controls button:not(.active):hover{border-color:var(--ink);background:#fff7}
+ .books-page .book-count{padding:2.3rem 0 1.15rem;font-size:10px}
 }
