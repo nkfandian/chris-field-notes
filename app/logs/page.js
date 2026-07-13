@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import {createClient,isConfigured} from '@/lib/supabase/server'
 import {demoPosts,labels} from '@/lib/demo'
+import Logo from '../components/logo'
 import './index.css'
 
 export const revalidate=60
@@ -17,5 +18,5 @@ export default async function LogsPage({searchParams}){
     const {data}=await query
     posts=data||[]
   }else if(domain!=='all')posts=posts.filter(post=>post.domain===domain)
-  return <main className="logs-index"><nav><Link href="/">← 返回首页</Link><Link href="/">C/ FIELD NOTES</Link></nav><header><small>COMPLETE ARCHIVE / {String(posts.length).padStart(3,'0')}</small><h1>{domain==='all'?'全部日志':labels[domain]}</h1><p>按时间倒序保存理解发生的过程。</p></header><div className="logs-filters">{domains.map(item=><Link className={item===domain?'active':''} href={item==='all'?'/logs':`/logs?domain=${item}`} key={item}>{item==='all'?'全部':labels[item].split('/ ')[1]}</Link>)}</div><section>{posts.map((post,index)=><Link className="log-index-entry" href={`/logs/${encodeURIComponent(post.slug)}`} key={post.id}><span>{String(index+1).padStart(3,'0')}</span><div><small>{labels[post.domain]||post.domain}</small><h2>{post.title}</h2><p>{post.excerpt}</p></div><time>{post.published_at?.slice(0,10)}</time></Link>)}</section></main>
+  return <main className="logs-index"><nav><Link href="/">← 返回首页</Link><Link href="/" aria-label="CHRIS / FIELD NOTES 首页"><Logo compact/></Link></nav><header><small>COMPLETE ARCHIVE / {String(posts.length).padStart(3,'0')}</small><h1>{domain==='all'?'全部日志':labels[domain]}</h1><p>按时间倒序保存理解发生的过程。</p></header><div className="logs-filters">{domains.map(item=><Link className={item===domain?'active':''} href={item==='all'?'/logs':`/logs?domain=${item}`} key={item}>{item==='all'?'全部':labels[item].split('/ ')[1]}</Link>)}</div><section>{posts.map((post,index)=><Link className="log-index-entry" href={`/logs/${encodeURIComponent(post.slug)}`} key={post.id}><span>{String(index+1).padStart(3,'0')}</span><div><small>{labels[post.domain]||post.domain}</small><h2>{post.title}</h2><p>{post.excerpt}</p></div><time>{post.published_at?.slice(0,10)}</time></Link>)}</section></main>
 }

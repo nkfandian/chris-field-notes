@@ -1,0 +1,8 @@
+.brand-lockup{display:inline-flex;align-items:center;gap:10px;line-height:1}
+.brand-lockup img{display:block;width:38px;height:38px;border-radius:7px}
+.brand-lockup>span{display:grid;gap:5px}
+.brand-lockup b{font:500 11px var(--mono);letter-spacing:.13em}
+.brand-lockup small{font:400 7px var(--mono);letter-spacing:.1em;color:var(--muted)}
+.brand-lockup.compact img{width:28px;height:28px;border-radius:5px}
+.brand-lockup.compact>span{display:block}
+@media(max-width:520px){.brand-lockup{gap:8px}.brand-lockup img{width:32px;height:32px;border-radius:6px}.brand-lockup small{display:none}}
