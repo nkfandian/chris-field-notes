@@ -3,6 +3,42 @@ import {notFound} from 'next/navigation'
 import Logo from '../../components/logo'
 import {createClient,isConfigured} from '@/lib/supabase/server'
 import '../trails.css'
+
 export const revalidate=60
+
+const legacyPrefix=/^legacy-[a-z0-9_-]+\s*(?:—|–|-)\s*/i
+const key=v=>String(v||'').trim().toLowerCase()
+const cleanLabel=v=>String(v||'').replace(legacyPrefix,'').trim()
+const candidateKeys=item=>{
+  const reference=key(item.reference_id)
+  const fromLabel=String(item.label||'').match(/^legacy-([a-z0-9_-]+)/i)?.[1]
+  return [...new Set([reference,reference.replace(/^legacy-/,''),key(fromLabel)].filter(Boolean))]
+}
+const indexRows=(rows,fields)=>{
+  const index=new Map()
+  for(const row of rows||[])for(const field of fields){const value=key(row[field]);if(value){index.set(value,row);index.set(`legacy-${value}`,row)}}
+  return index
+}
+const resolveItem=(item,postIndex,bookIndex)=>{
+  const index=item.item_type==='post'?postIndex:item.item_type==='book'?bookIndex:null
+  if(!index)return null
+  for(const candidate of candidateKeys(item)){const match=index.get(candidate);if(match)return match}
+  return null
+}
+
 export async function generateMetadata({params}){const slug=decodeURIComponent((await params).slug);if(!isConfigured())return {title:'阅读轨迹'};const db=await createClient();const {data}=await db.from('trails').select('title,summary').eq('slug',slug).eq('status','published').maybeSingle();return data?{title:data.title,description:data.summary,openGraph:{title:data.title,description:data.summary,images:[`/api/og?title=${encodeURIComponent(data.title)}`]}}:{title:'阅读轨迹'}}
-export default async function TrailPage({params}){if(!isConfigured())notFound();const slug=decodeURIComponent((await params).slug),db=await createClient();const {data:trail}=await db.from('trails').select('*').eq('slug',slug).eq('status','published').maybeSingle();if(!trail)notFound();const {data:items}=await db.from('trail_items').select('*').eq('trail_id',trail.id).order('position');const posts=(items||[]).filter(x=>x.item_type==='post').map(x=>x.reference_id),books=(items||[]).filter(x=>x.item_type==='book').map(x=>x.reference_id);const [{data:postRows},{data:bookRows}]=await Promise.all([posts.length?db.from('posts').select('slug,title,excerpt').in('slug',posts):Promise.resolve({data:[]}),books.length?db.from('books').select('id,title,author,review').in('id',books):Promise.resolve({data:[]})]);const postMap=Object.fromEntries((postRows||[]).map(x=>[x.slug,x])),bookMap=Object.fromEntries((bookRows||[]).map(x=>[x.id,x]));return <main className="trail-detail"><nav><Link href="/trails">← 全部轨迹</Link><Link href="/"><Logo compact/></Link></nav><header><small>CURATED TRAIL / {String(items?.length||0).padStart(2,'0')} STOPS</small><h1>{trail.title}</h1><p>{trail.summary}</p></header><ol>{(items||[]).map((item,i)=>{const target=item.item_type==='post'?postMap[item.reference_id]:item.item_type==='book'?bookMap[item.reference_id]:null;const href=item.item_type==='post'?`/logs/${encodeURIComponent(item.reference_id)}`:item.item_type==='book'?`/books#book-${item.reference_id}`:null;return <li key={item.id}><span>{String(i+1).padStart(2,'0')}</span><div><small>{item.item_type.toUpperCase()}</small><h2>{item.label||target?.title}</h2><p>{item.note||target?.excerpt||target?.review}</p>{href&&<Link href={href}>打开这一站 →</Link>}</div></li>})}</ol></main>}
+
+export default async function TrailPage({params}){
+  if(!isConfigured())notFound()
+  const slug=decodeURIComponent((await params).slug),db=await createClient()
+  const {data:trail}=await db.from('trails').select('*').eq('slug',slug).eq('status','published').maybeSingle()
+  if(!trail)notFound()
+  const {data:items}=await db.from('trail_items').select('*').eq('trail_id',trail.id).order('position')
+  const [{data:postRows},{data:bookRows}]=await Promise.all([
+    db.from('posts').select('id,slug,firebase_id,title,excerpt').eq('status','published'),
+    db.from('books').select('id,firebase_id,title,author,review')
+  ])
+  const postIndex=indexRows(postRows,['id','slug','firebase_id'])
+  const bookIndex=indexRows(bookRows,['id','firebase_id'])
+  return <main className="trail-detail"><nav><Link href="/trails">← 全部轨迹</Link><Link href="/"><Logo compact/></Link></nav><header><small>CURATED TRAIL / {String(items?.length||0).padStart(2,'0')} STOPS</small><h1>{trail.title}</h1><p>{trail.summary}</p></header><ol>{(items||[]).map((item,i)=>{const target=resolveItem(item,postIndex,bookIndex);const href=target?(item.item_type==='post'?`/logs/${encodeURIComponent(target.slug)}`:`/books#book-${target.id}`):null;const title=target?.title||cleanLabel(item.label)||'未命名条目';return <li key={item.id}><span>{String(i+1).padStart(2,'0')}</span><div><small>{item.item_type.toUpperCase()}</small><h2>{title}</h2><p>{item.note||target?.excerpt||target?.review}</p>{href&&<Link href={href}>打开这一站 →</Link>}</div></li>})}</ol></main>
+}
