@@ -12,4 +12,4 @@ Full-stack personal operating system built with Next.js and Supabase.
 
 Public site: `/` · authenticated editor: `/studio`.
 
-For Vercel, set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` in all environments.
+For Vercel, set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and the GA4 web stream value `NEXT_PUBLIC_GA_MEASUREMENT_ID` in all environments. Enable Web Analytics from the Vercel project's Analytics tab; the site already loads its Insights script.
