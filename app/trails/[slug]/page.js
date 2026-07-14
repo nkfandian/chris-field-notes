@@ -6,13 +6,17 @@ import '../trails.css'
 
 export const revalidate=60
 
-const legacyPrefix=/^legacy-[a-z0-9_-]+\s*(?:—|–|-)\s*/i
+const uuid='[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+const identifierPrefix=new RegExp(`^(?:legacy-[a-z0-9_-]+|${uuid})\\s*(?:—|–|-)\\s*`,'i')
+const labelledIdentifier=new RegExp(`^(${uuid})\\s*(?:—|–|-)\\s*(.+)$`,'i')
 const key=v=>String(v||'').trim().toLowerCase()
-const cleanLabel=v=>String(v||'').replace(legacyPrefix,'').trim()
+const cleanLabel=v=>String(v||'').replace(identifierPrefix,'').trim()
 const candidateKeys=item=>{
   const reference=key(item.reference_id)
-  const fromLabel=String(item.label||'').match(/^legacy-([a-z0-9_-]+)/i)?.[1]
-  return [...new Set([reference,reference.replace(/^legacy-/,''),key(fromLabel)].filter(Boolean))]
+  const label=String(item.label||'').trim()
+  const legacyFromLabel=label.match(/^legacy-([a-z0-9_-]+)/i)?.[1]
+  const uuidLabel=label.match(labelledIdentifier)
+  return [...new Set([reference,reference.replace(/^legacy-/,''),key(legacyFromLabel),key(uuidLabel?.[1]),key(uuidLabel?.[2]),key(cleanLabel(label))].filter(Boolean))]
 }
 const indexRows=(rows,fields)=>{
   const index=new Map()
@@ -39,6 +43,6 @@ export default async function TrailPage({params}){
     db.from('books').select('id,firebase_id,title,author,review')
   ])
   const postIndex=indexRows(postRows,['id','slug','firebase_id'])
-  const bookIndex=indexRows(bookRows,['id','firebase_id'])
+  const bookIndex=indexRows(bookRows,['id','firebase_id','title'])
   return <main className="trail-detail"><nav><Link href="/trails">← 全部轨迹</Link><Link href="/"><Logo compact/></Link></nav><header><small>CURATED TRAIL / {String(items?.length||0).padStart(2,'0')} STOPS</small><h1>{trail.title}</h1><p>{trail.summary}</p></header><ol>{(items||[]).map((item,i)=>{const target=resolveItem(item,postIndex,bookIndex);const href=target?(item.item_type==='post'?`/logs/${encodeURIComponent(target.slug)}`:`/books#book-${target.id}`):null;const title=target?.title||cleanLabel(item.label)||'未命名条目';return <li key={item.id}><span>{String(i+1).padStart(2,'0')}</span><div><small>{item.item_type.toUpperCase()}</small><h2>{title}</h2><p>{item.note||target?.excerpt||target?.review}</p>{href&&<Link href={href}>打开这一站 →</Link>}</div></li>})}</ol></main>
 }
