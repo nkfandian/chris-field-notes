@@ -1,0 +1,9 @@
+.book-card {
+  scroll-margin-top: 11rem;
+}
+
+@media (max-width: 650px) {
+  .book-card {
+    scroll-margin-top: 10rem;
+  }
+}
