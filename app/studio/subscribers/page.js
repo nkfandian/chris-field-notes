@@ -1,6 +1,7 @@
 import {redirect} from 'next/navigation'
 import {createClient,isConfigured} from '@/lib/supabase/server'
 import SubscriberManager from './subscriber-manager'
+import {getSiteAdmin} from '@/lib/auth'
 import '../studio.css'
 import './subscribers.css'
 
@@ -25,8 +26,7 @@ const automaticHistory=(deliveries,posts)=>{
 export default async function SubscribersPage(){
   if(!isConfigured())return null
   const db=await createClient()
-  const {data:{user}}=await db.auth.getUser()
-  if(!user)redirect('/studio')
+  if(!await getSiteAdmin(db))redirect('/studio')
   const [{data:subscribers},{data:campaigns},{data:deliveries},{data:posts}]=await Promise.all([
     db.from('subscribers').select('*').order('created_at',{ascending:false}),
     db.from('email_campaigns').select('*').order('created_at',{ascending:false}).limit(30),
