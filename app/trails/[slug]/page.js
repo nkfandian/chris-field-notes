@@ -2,6 +2,8 @@ import Link from 'next/link'
 import {notFound} from 'next/navigation'
 import Logo from '../../components/logo'
 import {createClient,isConfigured} from '@/lib/supabase/server'
+import StructuredData from '../../components/structured-data'
+import {SITE_LANGUAGE,SITE_URL,pageMetadata} from '@/lib/seo'
 import '../trails.css'
 
 export const revalidate=60
@@ -33,7 +35,7 @@ const resolveItem=(item,postIndex,bookIndex)=>{
   return null
 }
 
-export async function generateMetadata({params}){const slug=decodeURIComponent((await params).slug);if(!isConfigured())return {title:'阅读轨迹'};const db=await createClient();const {data}=await db.from('trails').select('title,summary').eq('slug',slug).eq('status','published').maybeSingle();return data?{title:data.title,description:data.summary,openGraph:{title:data.title,description:data.summary,images:[`/api/og?title=${encodeURIComponent(data.title)}`]}}:{title:'阅读轨迹'}}
+export async function generateMetadata({params}){const slug=decodeURIComponent((await params).slug);if(!isConfigured())return {title:'阅读轨迹',robots:{index:false,follow:false}};const db=await createClient();const {data}=await db.from('trails').select('title,summary').eq('slug',slug).eq('status','published').maybeSingle();return data?pageMetadata({title:data.title,description:data.summary,path:`/trails/${encodeURIComponent(slug)}`,keywords:['阅读轨迹','主题阅读']}):{title:'阅读轨迹未找到',robots:{index:false,follow:false}}}
 
 export default async function TrailPage({params}){
   if(!isConfigured())notFound()
@@ -47,5 +49,19 @@ export default async function TrailPage({params}){
   ])
   const postIndex=indexRows(postRows,['id','slug','firebase_id','title'])
   const bookIndex=indexRows(bookRows,['id','firebase_id','title'])
-  return <main className="trail-detail"><nav><Link href="/trails">← 全部轨迹</Link><Link href="/"><Logo compact/></Link></nav><header><small>CURATED TRAIL / {String(items?.length||0).padStart(2,'0')} STOPS</small><h1>{trail.title}</h1><p>{trail.summary}</p></header><ol>{(items||[]).map((item,i)=>{const target=resolveItem(item,postIndex,bookIndex);const href=target?(item.item_type==='post'?`/logs/${encodeURIComponent(target.slug)}`:`/books#book-${target.id}`):null;const title=target?.title||cleanLabel(item.label)||'未命名条目';return <li key={item.id}><span>{String(i+1).padStart(2,'0')}</span><div><small>{item.item_type.toUpperCase()}</small><h2>{title}</h2><p>{item.note||target?.excerpt||target?.review}</p>{href&&<Link href={href}>打开这一站 →</Link>}</div></li>})}</ol></main>
+  const resolved=(items||[]).map((item,index)=>{const target=resolveItem(item,postIndex,bookIndex);const href=target?(item.item_type==='post'?`/logs/${encodeURIComponent(target.slug)}`:`/books#book-${target.id}`):null;return {item,target,href,title:target?.title||cleanLabel(item.label)||'未命名条目',position:index+1}})
+  const url=`${SITE_URL}/trails/${encodeURIComponent(slug)}`
+  const schema={'@context':'https://schema.org','@graph':[
+    {'@type':'CollectionPage','@id':url,url,name:trail.title,description:trail.summary,inLanguage:SITE_LANGUAGE,mainEntity:{
+      '@type':'ItemList',
+      numberOfItems:resolved.length,
+      itemListElement:resolved.map(entry=>({'@type':'ListItem',position:entry.position,name:entry.title,item:entry.href?{'@type':entry.item.item_type==='book'?'Book':'BlogPosting',name:entry.title,url:`${SITE_URL}${entry.href}`}:{'@type':'CreativeWork',name:entry.title,description:entry.item.note||undefined}}))
+    }},
+    {'@type':'BreadcrumbList','@id':`${url}#breadcrumb`,itemListElement:[
+      {'@type':'ListItem',position:1,name:'首页',item:SITE_URL},
+      {'@type':'ListItem',position:2,name:'阅读轨迹',item:`${SITE_URL}/trails`},
+      {'@type':'ListItem',position:3,name:trail.title,item:url}
+    ]}
+  ]}
+  return <main className="trail-detail"><StructuredData data={schema}/><nav><Link href="/trails">← 全部轨迹</Link><Link href="/"><Logo compact/></Link></nav><header><small>CURATED TRAIL / {String(items?.length||0).padStart(2,'0')} STOPS</small><h1>{trail.title}</h1><p>{trail.summary}</p></header><ol>{resolved.map(({item,target,href,title,position})=><li key={item.id}><span>{String(position).padStart(2,'0')}</span><div><small>{item.item_type.toUpperCase()}</small><h2>{title}</h2><p>{item.note||target?.excerpt||target?.review}</p>{href&&<Link href={href}>打开这一站 →</Link>}</div></li>)}</ol></main>
 }

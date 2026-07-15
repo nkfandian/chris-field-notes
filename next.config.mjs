@@ -30,6 +30,7 @@ const securityHeaders=[
 ]
 
 const privateHeaders=[{key:'X-Robots-Tag',value:'noindex, nofollow, noarchive, nosnippet'}]
+const privateApiRoutes=['/api/campaigns','/api/indexnow','/api/interactions','/api/notifications','/api/posts','/api/subscribe/:path*','/api/unsubscribe']
 
 export default {
  poweredByHeader:false,
@@ -39,6 +40,6 @@ export default {
   {source:'/reset-password',headers:privateHeaders},
   {source:'/subscribe/confirm',headers:privateHeaders},
   {source:'/unsubscribe',headers:privateHeaders},
-  {source:'/api/:path*',headers:privateHeaders}
+  ...privateApiRoutes.map(source=>({source,headers:privateHeaders}))
  ]}
 }

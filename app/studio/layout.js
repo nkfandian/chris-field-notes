@@ -4,6 +4,7 @@ import StudioNav from './studio-nav'
 import './studio.css'
 
 export const dynamic='force-dynamic'
+export const metadata={title:'Studio',robots:{index:false,follow:false,nocache:true}}
 
 export default async function StudioLayout({children}){
  let user=null

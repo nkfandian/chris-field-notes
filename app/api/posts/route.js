@@ -2,6 +2,8 @@ import {createClient} from '@/lib/supabase/server'
 import {deliverPending} from '@/lib/notifications'
 import {getSiteAdmin} from '@/lib/auth'
 import {cleanText,jsonMutationGuard,parseJsonBody,validUuid} from '@/lib/security'
+import {notifyIndexNow} from '@/lib/indexnow'
+import {revalidatePath} from 'next/cache'
 
 export async function POST(request){
  const blocked=jsonMutationGuard(request,262144)
@@ -20,8 +22,15 @@ export async function POST(request){
  const {data:post,error}=await query.select('*').single()
  if(error)return Response.json({error:error.message},{status:400})
  let notification=null
+ let indexing=null
  if(post.status==='published'&&!post.notification_sent_at){
   try{notification=await deliverPending({postIds:[post.id]})}catch(error){notification={error:error.message}}
  }
- return Response.json({post,notification})
+ revalidatePath(`/logs/${post.slug}`)
+ revalidatePath('/logs')
+ revalidatePath('/')
+ if(post.status==='published'||input.id){
+  try{indexing=await notifyIndexNow([`/logs/${encodeURIComponent(post.slug)}`,'/logs','/'])}catch(error){indexing={accepted:false,error:error.message}}
+ }
+ return Response.json({post,notification,indexing})
 }

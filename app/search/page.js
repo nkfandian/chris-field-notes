@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import Logo from '../components/logo'
 import {createClient,isConfigured} from '@/lib/supabase/server'
+import {pageMetadata} from '@/lib/seo'
 import './search.css'
 
 export const dynamic='force-dynamic'
-export const metadata={title:'搜索',description:'检索日志、书单与阅读轨迹。'}
+export const metadata={...pageMetadata({title:'全站搜索',description:'检索日志正文、书单与阅读轨迹。',path:'/search'}),robots:{index:false,follow:true}}
 const text=v=>String(v||'').toLocaleLowerCase('zh-CN')
 const plain=v=>String(v||'').replace(/!\[[^\]]*\]\([^)]+\)/g,' ').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/<[^>]+>/g,' ').replace(/[`#>*_~]/g,' ').replace(/\s+/g,' ').trim()
 const contextualSnippet=(post,needle)=>{
