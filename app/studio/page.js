@@ -1,7 +1,6 @@
 import Studio from './studio'
-import Link from 'next/link'
 import './studio.css'
 import {createClient,isConfigured} from '@/lib/supabase/server'
 import {demoPosts} from '@/lib/demo'
 import {getSiteAdmin} from '@/lib/auth'
-export default async function StudioPage(){let user=null,posts=demoPosts;if(isConfigured()){const db=await createClient();user=await getSiteAdmin(db);if(user){const res=await db.from('posts').select('*').order('updated_at',{ascending:false});posts=res.data||[]}}return <>{user&&<div className="studio-audience-link"><Link href="/studio/trails">轨迹 / TRAILS</Link>　·　<Link href="/studio/subscribers">订阅用户 / AUDIENCE →</Link></div>}<Studio configured={isConfigured()} initialUser={user?{email:user.email}:null} initialPosts={posts}/></>}
+export default async function StudioPage(){let user=null,posts=demoPosts;if(isConfigured()){const db=await createClient();user=await getSiteAdmin(db);if(user){const res=await db.from('posts').select('*').order('updated_at',{ascending:false});posts=res.data||[]}}return <Studio configured={isConfigured()} initialUser={user?{email:user.email}:null} initialPosts={posts}/>}
