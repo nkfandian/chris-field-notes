@@ -34,6 +34,6 @@ export default async function SubscribersPage(){
     db.from('posts').select('id,title,slug,notification_sent_at').order('updated_at',{ascending:false}).limit(200)
   ])
   const manual=(campaigns||[]).map(x=>({id:`campaign-${x.id}`,type:'manual',title:x.subject,total:x.recipient_count,status:x.status,created_at:x.sent_at||x.created_at}))
-  const history=[...automaticHistory(deliveries,posts),...manual].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,30)
+  const history=[...automaticHistory(deliveries,posts),...manual].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5)
   return <SubscriberManager initial={subscribers||[]} history={history}/>
 }
