@@ -1,4 +1,5 @@
 create extension if not exists "pgcrypto";
+begin;
 create table if not exists public.posts (id uuid primary key default gen_random_uuid(),slug text unique not null,title text not null,domain text not null check (domain in ('decode','execute','deploy','trek','roots')),excerpt text default '',body text default '',thesis text default '',tools text default '',status text not null default 'draft' check (status in ('draft','published')),published_at date default current_date,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
 alter table public.posts enable row level security;
 create table if not exists public.site_content (key text primary key,value jsonb not null default '{}'::jsonb,updated_at timestamptz not null default now());
@@ -123,3 +124,62 @@ create policy "published trails are public" on public.trails for select using (s
 create policy "authenticated author manages trails" on public.trails for all to authenticated using (true) with check (true);
 create policy "published trail items are public" on public.trail_items for select using (exists(select 1 from public.trails where trails.id=trail_items.trail_id and (trails.status='published' or auth.role()='authenticated')));
 create policy "authenticated author manages trail items" on public.trail_items for all to authenticated using (true) with check (true);
+
+-- Finish every bootstrap in the same locked-down state as production. Keeping
+-- this inside the transaction prevents the permissive compatibility policies
+-- above from ever becoming externally visible during initial setup.
+create table if not exists public.site_admins (user_id uuid primary key references auth.users(id) on delete cascade,created_at timestamptz not null default now());
+alter table public.site_admins enable row level security;
+insert into public.site_admins(user_id) select id from auth.users order by created_at asc limit 1 on conflict(user_id) do nothing;
+create or replace function public.is_site_admin() returns boolean language sql stable security definer set search_path=public,auth as $$select exists(select 1 from public.site_admins where user_id=auth.uid())$$;
+revoke all on function public.is_site_admin() from public,anon;
+grant execute on function public.is_site_admin() to authenticated,service_role;
+create or replace function public.get_public_comments(p_post_slug text) returns table(id uuid,name text,body text,created_at timestamptz) language sql stable security definer set search_path=public as $$select c.id,c.name,c.body,c.created_at from public.comments c where c.status='approved' and c.post_slug=p_post_slug and char_length(p_post_slug) between 1 and 180 order by c.created_at desc$$;
+revoke all on function public.get_public_comments(text) from public;
+grant execute on function public.get_public_comments(text) to anon,authenticated,service_role;
+
+drop policy if exists "site content is public" on public.site_content;
+drop policy if exists "authenticated author inserts site content" on public.site_content;
+drop policy if exists "authenticated author updates site content" on public.site_content;
+create policy "site content is public" on public.site_content for select using(true);
+create policy "admin manages site content" on public.site_content for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
+drop policy if exists "published posts are public" on public.posts;
+drop policy if exists "authenticated author can insert" on public.posts;
+drop policy if exists "authenticated author can update" on public.posts;
+drop policy if exists "authenticated author can delete" on public.posts;
+create policy "published posts are public" on public.posts for select using(status='published');
+create policy "admin manages posts" on public.posts for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
+drop policy if exists "approved comments are public" on public.comments;
+drop policy if exists "visitors can submit comments" on public.comments;
+drop policy if exists "authenticated author can review comments" on public.comments;
+drop policy if exists "authenticated author can delete comments" on public.comments;
+create policy "admin manages comments" on public.comments for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
+drop policy if exists "books are public" on public.books;
+drop policy if exists "authenticated author inserts books" on public.books;
+drop policy if exists "authenticated author updates books" on public.books;
+drop policy if exists "authenticated author deletes books" on public.books;
+create policy "books are public" on public.books for select using(true);
+create policy "admin manages books" on public.books for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
+drop policy if exists "authenticated author reads subscribers" on public.subscribers;
+drop policy if exists "authenticated author updates subscribers" on public.subscribers;
+drop policy if exists "authenticated author deletes subscribers" on public.subscribers;
+create policy "admin manages subscribers" on public.subscribers for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
+drop policy if exists "authenticated author reads campaigns" on public.email_campaigns;
+create policy "admin manages campaigns" on public.email_campaigns for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
+drop policy if exists "authenticated author reads deliveries" on public.email_deliveries;
+create policy "admin manages deliveries" on public.email_deliveries for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
+drop policy if exists "published trails are public" on public.trails;
+drop policy if exists "authenticated author manages trails" on public.trails;
+create policy "published trails are public" on public.trails for select using(status='published');
+create policy "admin manages trails" on public.trails for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
+drop policy if exists "published trail items are public" on public.trail_items;
+drop policy if exists "authenticated author manages trail items" on public.trail_items;
+create policy "published trail items are public" on public.trail_items for select using(exists(select 1 from public.trails t where t.id=trail_items.trail_id and t.status='published'));
+create policy "admin manages trail items" on public.trail_items for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
+alter table public.subscribers add column if not exists confirmation_sent_at timestamptz;
+
+revoke all on table public.comments,public.subscribers,public.email_campaigns,public.email_deliveries,public.rate_limits,public.site_admins from anon;
+revoke all on table public.rate_limits,public.site_admins from authenticated;
+grant select on table public.posts,public.site_content,public.books,public.trails,public.trail_items to anon,authenticated;
+alter default privileges for role postgres in schema public revoke all on tables from anon;
+commit;
