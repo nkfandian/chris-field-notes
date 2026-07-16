@@ -44,10 +44,12 @@ export const metadata={
 
 export const viewport={themeColor:'#efeee8',colorScheme:'light'}
 
+const ADSENSE_CLIENT='ca-pub-5286360916046186'
+
 const siteSchema={'@context':'https://schema.org','@graph':[
   {'@type':'Organization','@id':PUBLISHER_ID,name:SITE_NAME,url:SITE_URL,logo:{'@type':'ImageObject',url:`${SITE_URL}/field-notes-mark.png`,width:512,height:512},description:SITE_DESCRIPTION},
   {'@type':'Person','@id':`${SITE_URL}/#author`,name:'Chris',url:SITE_URL},
   {'@type':'WebSite','@id':WEBSITE_ID,url:SITE_URL,name:SITE_NAME,alternateName:'FIELD NOTES',description:SITE_DESCRIPTION,inLanguage:SITE_LANGUAGE,publisher:{'@id':PUBLISHER_ID},potentialAction:{'@type':'SearchAction',target:{'@type':'EntryPoint',urlTemplate:`${SITE_URL}/search?q={search_term_string}`} ,'query-input':'required name=search_term_string'}}
 ]}
 
-export default function RootLayout({children}){const gaId=process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID||'G-GKQVSFLWM4';return <html lang={SITE_LANGUAGE}><head><link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title={SITE_NAME}/></head><body><StructuredData data={siteSchema}/><div className="grain"/>{children}<SiteAnalytics gaId={gaId}/></body></html>}
+export default function RootLayout({children}){const gaId=process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID||'G-GKQVSFLWM4';return <html lang={SITE_LANGUAGE}><head><link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title={SITE_NAME}/><script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`} crossOrigin="anonymous"/></head><body><StructuredData data={siteSchema}/><div className="grain"/>{children}<SiteAnalytics gaId={gaId}/></body></html>}
