@@ -33,7 +33,7 @@ export const metadata={
   icons:{icon:[{url:'/icon.svg',type:'image/svg+xml'},{url:'/field-notes-mark.png',sizes:'512x512',type:'image/png'}],shortcut:'/icon.svg',apple:{url:'/field-notes-mark.png',sizes:'512x512',type:'image/png'}},
   robots:{index:true,follow:true,'max-image-preview':'large','max-snippet':-1,'max-video-preview':-1,googleBot:{index:true,follow:true,'max-image-preview':'large','max-snippet':-1,'max-video-preview':-1}},
   verification:{
-    google:process.env.GOOGLE_SITE_VERIFICATION,
+    google:process.env.GOOGLE_SITE_VERIFICATION||'AVtCziwz4JVaT7996Dzv-JYokFK2vaalBDozfWh5hw4',
     yahoo:process.env.YAHOO_SITE_VERIFICATION,
     yandex:process.env.YANDEX_SITE_VERIFICATION,
     other:verificationOther
