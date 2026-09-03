@@ -1,0 +1,96 @@
+.post-image-export {
+  margin: 3.25rem 0 2.5rem;
+  padding: 1.4rem;
+  border: 1px solid var(--ink);
+  background: rgba(82, 107, 63, 0.045);
+}
+
+.post-image-export-head {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.post-image-export .editor-top {
+  display: block;
+  margin: 0 0 0.55rem;
+  color: var(--moss);
+  font-size: 10px;
+}
+
+.post-image-export h2 {
+  margin: 0;
+  font: 700 clamp(1.35rem, 2.5vw, 2rem)/1.1 var(--serif);
+}
+
+.post-image-export-head > div:first-child > p:last-child,
+.post-image-export-note {
+  max-width: 44rem;
+  margin: 0.6rem 0 0;
+  color: var(--muted);
+  font: 11px/1.75 var(--mono);
+}
+
+.post-image-export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.post-image-export-actions button {
+  min-height: 2.7rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font: 500 10px var(--mono);
+  cursor: pointer;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+
+.post-image-export-actions button:hover,
+.post-image-export-actions button.active {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.post-image-export-actions .download-image {
+  border-color: var(--moss);
+  background: var(--moss);
+  color: white;
+}
+
+.post-image-export-actions .download-image:hover {
+  background: #3f5630;
+}
+
+.post-image-export-preview {
+  overflow: auto;
+  border: 1px solid var(--line);
+  background: #d9d8d1;
+  padding: 0.7rem;
+}
+
+.post-image-export-preview canvas {
+  display: block;
+  width: 100%;
+  min-width: 36rem;
+  height: auto;
+  background: var(--paper);
+  box-shadow: 0 12px 28px rgba(21, 23, 19, 0.12);
+}
+
+@media (max-width: 700px) {
+  .post-image-export { padding: 1rem; }
+  .post-image-export-head { display: block; }
+  .post-image-export-actions {
+    justify-content: flex-start;
+    margin-top: 1rem;
+  }
+  .post-image-export-preview { padding: 0.45rem; }
+  .post-image-export-preview canvas { min-width: 31rem; }
+}
