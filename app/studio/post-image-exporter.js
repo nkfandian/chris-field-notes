@@ -11,8 +11,11 @@ const MOSS = '#526b3f'
 const MONO = "'IBM Plex Mono', monospace"
 const SERIF = "Georgia, 'Noto Serif SC', serif"
 const SITE = 'www.chrisreading.ink'
-const IMAGE_WIDTH = 1440
+const IMAGE_WIDTH = 1080
+const SIDE = 72
+const CONTENT_WIDTH = IMAGE_WIDTH - SIDE * 2
 const MAX_BODY_LENGTH = 18000
+const MAX_IMAGE_HEIGHT = 24000
 
 function cleanParagraphs(value = '') {
   return value
@@ -64,43 +67,52 @@ function roundedRect(ctx, x, y, width, height, radius) {
 }
 
 function drawMark(ctx, logo, x, y) {
+  const size = 96
   if (logo) {
     ctx.save()
-    roundedRect(ctx, x, y, 56, 56, 10)
+    roundedRect(ctx, x, y, size, size, 15)
     ctx.clip()
-    ctx.drawImage(logo, x, y, 56, 56)
+    ctx.drawImage(logo, x, y, size, size)
     ctx.restore()
     return
   }
   ctx.fillStyle = INK
-  roundedRect(ctx, x, y, 56, 56, 10)
+  roundedRect(ctx, x, y, size, size, 15)
   ctx.fill()
   ctx.strokeStyle = PAPER
-  ctx.lineWidth = 4
+  ctx.lineWidth = 7
   ctx.beginPath()
-  ctx.arc(x + 28, y + 28, 16, 0, Math.PI * 2)
+  ctx.arc(x + 48, y + 48, 28, 0, Math.PI * 2)
   ctx.stroke()
   ctx.strokeStyle = MOSS
-  ctx.lineWidth = 5
+  ctx.lineWidth = 8
   ctx.beginPath()
-  ctx.moveTo(x + 18, y + 40)
-  ctx.lineTo(x + 39, y + 16)
+  ctx.moveTo(x + 31, y + 69)
+  ctx.lineTo(x + 68, y + 27)
   ctx.stroke()
 }
 
-function drawFooter(ctx, y, slug) {
+function drawFooter(ctx, y) {
   ctx.strokeStyle = INK
-  ctx.lineWidth = 1
+  ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.moveTo(80, y)
-  ctx.lineTo(IMAGE_WIDTH - 80, y)
+  ctx.moveTo(SIDE, y)
+  ctx.lineTo(IMAGE_WIDTH - SIDE, y)
   ctx.stroke()
-  ctx.font = `500 15px ${MONO}`
+  ctx.font = `500 22px ${MONO}`
   ctx.fillStyle = MUTED
-  ctx.fillText('CHRIS / FIELD NOTES  ·  OPEN INDEX', 80, y + 38)
+  ctx.fillText('CHRIS / FIELD NOTES  ·  OPEN INDEX', SIDE, y + 48)
   ctx.textAlign = 'right'
-  ctx.fillText(`${SITE}/logs/${slug || 'draft'}`, IMAGE_WIDTH - 80, y + 38)
+  ctx.fillText(SITE, IMAGE_WIDTH - SIDE, y + 48)
   ctx.textAlign = 'left'
+}
+
+function drawCta(ctx, y) {
+  ctx.fillStyle = INK
+  ctx.fillRect(SIDE, y, 430, 94)
+  ctx.font = `500 25px ${MONO}`
+  ctx.fillStyle = PAPER
+  ctx.fillText('在网站阅读与评论  →', SIDE + 34, y + 59)
 }
 
 function articleInfo(post) {
@@ -115,101 +127,118 @@ function articleInfo(post) {
 
 function drawCanvas(ctx, post, mode, logo) {
   const info = articleInfo(post)
-  const titleMax = IMAGE_WIDTH - 160
   const paragraphs = cleanParagraphs(post.body || post.excerpt || '')
-  const titleFont = mode === 'full' ? 64 : 78
-  const titleLine = mode === 'full' ? 88 : 104
-  const summaryLine = 42
+  const titleFont = 94
+  const titleLine = 116
+  const summaryFont = 52
+  const summaryLine = 86
+  const bodyFont = 50
+  const bodyLine = 90
+  const paragraphGap = 34
   ctx.font = `700 ${titleFont}px ${SERIF}`
-  const titleLines = wrapText(ctx, info.title, titleMax)
-  ctx.font = `400 29px ${SERIF}`
-  const excerptLines = wrapText(ctx, info.excerpt, titleMax)
+  const titleLines = wrapText(ctx, info.title, CONTENT_WIDTH)
+  ctx.font = `400 ${summaryFont}px ${SERIF}`
+  const excerptLines = wrapText(ctx, info.excerpt, CONTENT_WIDTH)
   let fullLines = []
+  let truncated = false
   if (mode === 'full') {
-    const clipped = paragraphs.join('\n\n').slice(0, MAX_BODY_LENGTH)
-    ctx.font = `400 28px ${SERIF}`
-    fullLines = cleanParagraphs(clipped).flatMap((paragraph) => [...wrapText(ctx, paragraph, titleMax), ''])
+    const completeBody = paragraphs.join('\n\n')
+    const clipped = completeBody.slice(0, MAX_BODY_LENGTH)
+    truncated = completeBody.length > clipped.length
+    ctx.font = `400 ${bodyFont}px ${SERIF}`
+    fullLines = cleanParagraphs(clipped).flatMap((paragraph) => [...wrapText(ctx, paragraph, CONTENT_WIDTH), ''])
+    if (fullLines.at(-1) === '') fullLines.pop()
   }
-  const estimatedHeight = mode === 'full'
-    ? 350 + titleLines.length * titleLine + excerptLines.length * summaryLine + fullLines.length * 47 + 230
-    : 650 + titleLines.length * titleLine + excerptLines.length * summaryLine
-  const height = Math.max(mode === 'full' ? 1300 : 1120, Math.min(26000, Math.ceil(estimatedHeight)))
+
+  const titleY = 414
+  const excerptY = titleY + titleLines.length * titleLine + 38
+  const dividerY = excerptY + excerptLines.length * summaryLine + 66
+  let visibleLines = fullLines
+  let bodyHeight = 0
+  if (mode === 'full') {
+    const bodyY = dividerY + 76
+    const availableHeight = MAX_IMAGE_HEIGHT - bodyY - 460
+    visibleLines = []
+    for (const line of fullLines) {
+      const step = line ? bodyLine : paragraphGap
+      if (bodyHeight + step > availableHeight) {
+        truncated = true
+        break
+      }
+      visibleLines.push(line)
+      bodyHeight += step
+    }
+    while (visibleLines.at(-1) === '') {
+      visibleLines.pop()
+      bodyHeight -= paragraphGap
+    }
+  }
+
+  const bodyY = dividerY + 76
+  const truncationHeight = truncated ? 76 : 0
+  const ctaY = mode === 'full' ? bodyY + bodyHeight + truncationHeight + 62 : dividerY + 68
+  const footerY = ctaY + 94 + 128
+  const height = footerY + 94
   ctx.canvas.width = IMAGE_WIDTH
   ctx.canvas.height = height
   ctx.fillStyle = PAPER
   ctx.fillRect(0, 0, IMAGE_WIDTH, height)
-  drawMark(ctx, logo, 80, 62)
-  ctx.font = `700 20px ${MONO}`
+  drawMark(ctx, logo, SIDE, 66)
+  ctx.font = `700 33px ${MONO}`
   ctx.fillStyle = INK
-  ctx.fillText('FIELD NOTES', 156, 86)
-  ctx.font = `400 13px ${MONO}`
+  ctx.fillText('FIELD NOTES', 194, 108)
+  ctx.font = `400 21px ${MONO}`
   ctx.fillStyle = MUTED
-  ctx.fillText('CHRIS / OPEN INDEX', 156, 110)
+  ctx.fillText('CHRIS / OPEN INDEX', 194, 146)
   ctx.textAlign = 'right'
-  ctx.font = `500 14px ${MONO}`
+  ctx.font = `500 24px ${MONO}`
   ctx.fillStyle = MOSS
-  ctx.fillText('NEW ENTRY', IMAGE_WIDTH - 80, 93)
+  ctx.fillText('NEW ENTRY', IMAGE_WIDTH - SIDE, 121)
   ctx.textAlign = 'left'
   ctx.strokeStyle = INK
-  ctx.lineWidth = 1.5
+  ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.moveTo(80, 146)
-  ctx.lineTo(IMAGE_WIDTH - 80, 146)
+  ctx.moveTo(SIDE, 204)
+  ctx.lineTo(IMAGE_WIDTH - SIDE, 204)
   ctx.stroke()
-  let y = 226
-  ctx.font = `500 16px ${MONO}`
+  ctx.font = `500 24px ${MONO}`
   ctx.fillStyle = MOSS
-  ctx.fillText(`${String(info.domain).toUpperCase()} / 最新日志`, 80, y)
+  ctx.fillText(`${String(info.domain).toUpperCase()} / 最新日志`, SIDE, 300)
   ctx.textAlign = 'right'
   ctx.fillStyle = MUTED
-  ctx.fillText(info.date, IMAGE_WIDTH - 80, y)
+  ctx.fillText(info.date, IMAGE_WIDTH - SIDE, 300)
   ctx.textAlign = 'left'
-  y += 76
   ctx.font = `700 ${titleFont}px ${SERIF}`
-  y = drawLines(ctx, titleLines, 80, y, titleLine)
-  y += 38
-  ctx.font = `400 29px ${SERIF}`
-  y = drawLines(ctx, excerptLines, 80, y, summaryLine, MUTED)
-  if (mode === 'summary') {
-    y += 88
-    ctx.strokeStyle = '#b9b9b2'
-    ctx.beginPath()
-    ctx.moveTo(80, y)
-    ctx.lineTo(IMAGE_WIDTH - 80, y)
-    ctx.stroke()
-    y += 60
-    ctx.fillStyle = INK
-    ctx.fillRect(80, y, 264, 64)
-    ctx.font = `500 15px ${MONO}`
-    ctx.fillStyle = PAPER
-    ctx.fillText('在网站阅读与评论  →', 104, y + 40)
-    drawFooter(ctx, height - 104, info.slug)
-    return
-  }
-  y += 84
+  drawLines(ctx, titleLines, SIDE, titleY, titleLine)
+  ctx.font = `400 ${summaryFont}px ${SERIF}`
+  drawLines(ctx, excerptLines, SIDE, excerptY, summaryLine, MUTED)
   ctx.strokeStyle = '#b9b9b2'
+  ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.moveTo(80, y)
-  ctx.lineTo(IMAGE_WIDTH - 80, y)
+  ctx.moveTo(SIDE, dividerY)
+  ctx.lineTo(IMAGE_WIDTH - SIDE, dividerY)
   ctx.stroke()
-  y += 70
-  ctx.font = `400 28px ${SERIF}`
-  fullLines.forEach((line) => {
-    if (!line) {
-      y += 26
-      return
+
+  if (mode === 'full') {
+    let y = bodyY
+    ctx.font = `400 ${bodyFont}px ${SERIF}`
+    visibleLines.forEach((line) => {
+      if (!line) {
+        y += paragraphGap
+        return
+      }
+      ctx.fillStyle = INK
+      ctx.fillText(line, SIDE, y)
+      y += bodyLine
+    })
+    if (truncated) {
+      ctx.font = `400 24px ${MONO}`
+      ctx.fillStyle = MUTED
+      ctx.fillText('文章较长，本图保留可读范围内的正文；完整内容请前往网站阅读。', SIDE, y + 48)
     }
-    ctx.fillStyle = INK
-    ctx.fillText(line, 80, y)
-    y += 47
-  })
-  if ((post.body || '').length > MAX_BODY_LENGTH) {
-    y += 20
-    ctx.font = `400 15px ${MONO}`
-    ctx.fillStyle = MUTED
-    ctx.fillText('文章较长，图片仅导出前 18,000 个字符。', 80, y)
   }
-  drawFooter(ctx, Math.min(Math.max(y + 92, 0), height - 104), info.slug)
+  drawCta(ctx, ctaY)
+  drawFooter(ctx, footerY)
 }
 
 function filePart(value) {
@@ -264,11 +293,11 @@ export default function PostImageExporter({post}) {
       </div>
       <div className="post-image-export-actions" role="group" aria-label="导出图片类型">
         <button type="button" className={mode === 'summary' ? 'active' : ''} onClick={() => setMode('summary')}>摘要图</button>
-        <button type="button" className={mode === 'full' ? 'active' : ''} onClick={() => setMode('full')}>全文长图</button>
+        <button type="button" className={mode === 'full' ? 'active' : ''} onClick={() => setMode('full')}>手机长图</button>
         <button type="button" className="download-image" onClick={download}>下载 PNG ↓</button>
       </div>
     </div>
     <div className="post-image-export-preview"><canvas ref={canvasRef} aria-label="文章图片预览" /></div>
-    <p className="post-image-export-note">{notice || (mode === 'summary' ? '适合社交平台与文章转发。' : '适合保存、长图分享；过长文章会保留开头正文。')}</p>
+    <p className="post-image-export-note">{notice || (mode === 'summary' ? '适合社交平台与文章转发。' : '按手机阅读比例排版；超长文章会在安全画布高度内完整保留尽可能多的正文。')}</p>
   </section>
 }
