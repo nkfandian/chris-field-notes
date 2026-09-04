@@ -64,8 +64,19 @@
   color: white;
 }
 
+.post-image-export-actions .download-image.secondary {
+  background: transparent;
+  color: var(--moss);
+}
+
 .post-image-export-actions .download-image:hover {
   background: #3f5630;
+  color: white;
+}
+
+.post-image-export-actions button:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .post-image-export-preview {

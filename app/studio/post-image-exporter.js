@@ -14,8 +14,7 @@ const SITE = 'www.chrisreading.ink'
 const IMAGE_WIDTH = 1080
 const SIDE = 72
 const CONTENT_WIDTH = IMAGE_WIDTH - SIDE * 2
-const MAX_BODY_LENGTH = 18000
-const MAX_IMAGE_HEIGHT = 24000
+const MAX_PAGE_BODY_CHARS = 2800
 
 function cleanParagraphs(value = '') {
   return value
@@ -125,7 +124,111 @@ function articleInfo(post) {
   }
 }
 
-function drawCanvas(ctx, post, mode, logo) {
+function splitBodyPages(value = '') {
+  const paragraphs = cleanParagraphs(value)
+  const pieces = []
+  for (const paragraph of paragraphs) {
+    const chars = Array.from(paragraph)
+    if (chars.length <= MAX_PAGE_BODY_CHARS) {
+      pieces.push(paragraph)
+      continue
+    }
+    for (let index = 0; index < chars.length; index += MAX_PAGE_BODY_CHARS) {
+      pieces.push(chars.slice(index, index + MAX_PAGE_BODY_CHARS).join(''))
+    }
+  }
+  const pages = []
+  let current = []
+  let length = 0
+  for (const paragraph of pieces) {
+    const addition = paragraph.length + (current.length ? 2 : 0)
+    if (current.length && length + addition > MAX_PAGE_BODY_CHARS) {
+      pages.push(current.join('\n\n'))
+      current = []
+      length = 0
+    }
+    current.push(paragraph)
+    length += paragraph.length + (current.length > 1 ? 2 : 0)
+  }
+  if (current.length) pages.push(current.join('\n\n'))
+  return pages.length ? pages : ['']
+}
+
+function canvasBlob(canvas) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('PNG 生成失败')), 'image/png')
+  })
+}
+
+function downloadBlob(blob, filename) {
+  const link = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  link.href = url
+  link.download = filename
+  link.click()
+  window.setTimeout(() => URL.revokeObjectURL(url), 1500)
+}
+
+function crc32(bytes) {
+  let crc = 0xffffffff
+  for (const byte of bytes) {
+    crc ^= byte
+    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1))
+  }
+  return (crc ^ 0xffffffff) >>> 0
+}
+
+function zipImages(files) {
+  const encoder = new TextEncoder()
+  const locals = []
+  const centrals = []
+  let offset = 0
+  let centralSize = 0
+  for (const file of files) {
+    const name = encoder.encode(file.name)
+    const checksum = crc32(file.bytes)
+    const local = new Uint8Array(30 + name.length + file.bytes.length)
+    const localView = new DataView(local.buffer)
+    localView.setUint32(0, 0x04034b50, true)
+    localView.setUint16(4, 20, true)
+    localView.setUint16(6, 0x0800, true)
+    localView.setUint16(8, 0, true)
+    localView.setUint32(14, checksum, true)
+    localView.setUint32(18, file.bytes.length, true)
+    localView.setUint32(22, file.bytes.length, true)
+    localView.setUint16(26, name.length, true)
+    local.set(name, 30)
+    local.set(file.bytes, 30 + name.length)
+    locals.push(local)
+
+    const central = new Uint8Array(46 + name.length)
+    const centralView = new DataView(central.buffer)
+    centralView.setUint32(0, 0x02014b50, true)
+    centralView.setUint16(4, 20, true)
+    centralView.setUint16(6, 20, true)
+    centralView.setUint16(8, 0x0800, true)
+    centralView.setUint16(10, 0, true)
+    centralView.setUint32(16, checksum, true)
+    centralView.setUint32(20, file.bytes.length, true)
+    centralView.setUint32(24, file.bytes.length, true)
+    centralView.setUint16(28, name.length, true)
+    centralView.setUint32(42, offset, true)
+    central.set(name, 46)
+    centrals.push(central)
+    offset += local.length
+    centralSize += central.length
+  }
+  const end = new Uint8Array(22)
+  const endView = new DataView(end.buffer)
+  endView.setUint32(0, 0x06054b50, true)
+  endView.setUint16(8, files.length, true)
+  endView.setUint16(10, files.length, true)
+  endView.setUint32(12, centralSize, true)
+  endView.setUint32(16, offset, true)
+  return new Blob([...locals, ...centrals, end], {type: 'application/zip'})
+}
+
+function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1} = {}) {
   const info = articleInfo(post)
   const paragraphs = cleanParagraphs(post.body || post.excerpt || '')
   const titleFont = 94
@@ -140,43 +243,21 @@ function drawCanvas(ctx, post, mode, logo) {
   ctx.font = `400 ${summaryFont}px ${SERIF}`
   const excerptLines = wrapText(ctx, info.excerpt, CONTENT_WIDTH)
   let fullLines = []
-  let truncated = false
   if (mode === 'full') {
-    const completeBody = paragraphs.join('\n\n')
-    const clipped = completeBody.slice(0, MAX_BODY_LENGTH)
-    truncated = completeBody.length > clipped.length
     ctx.font = `400 ${bodyFont}px ${SERIF}`
-    fullLines = cleanParagraphs(clipped).flatMap((paragraph) => [...wrapText(ctx, paragraph, CONTENT_WIDTH), ''])
+    fullLines = paragraphs.flatMap((paragraph) => [...wrapText(ctx, paragraph, CONTENT_WIDTH), ''])
     if (fullLines.at(-1) === '') fullLines.pop()
   }
 
   const titleY = 414
   const excerptY = titleY + titleLines.length * titleLine + 38
   const dividerY = excerptY + excerptLines.length * summaryLine + 66
-  let visibleLines = fullLines
-  let bodyHeight = 0
-  if (mode === 'full') {
-    const bodyY = dividerY + 76
-    const availableHeight = MAX_IMAGE_HEIGHT - bodyY - 460
-    visibleLines = []
-    for (const line of fullLines) {
-      const step = line ? bodyLine : paragraphGap
-      if (bodyHeight + step > availableHeight) {
-        truncated = true
-        break
-      }
-      visibleLines.push(line)
-      bodyHeight += step
-    }
-    while (visibleLines.at(-1) === '') {
-      visibleLines.pop()
-      bodyHeight -= paragraphGap
-    }
-  }
+  const bodyHeight = mode === 'full'
+    ? fullLines.reduce((height, line) => height + (line ? bodyLine : paragraphGap), 0)
+    : 0
 
   const bodyY = dividerY + 76
-  const truncationHeight = truncated ? 76 : 0
-  const ctaY = mode === 'full' ? bodyY + bodyHeight + truncationHeight + 62 : dividerY + 68
+  const ctaY = mode === 'full' ? bodyY + bodyHeight + 62 : dividerY + 68
   const footerY = ctaY + 94 + 128
   const height = footerY + 94
   ctx.canvas.width = IMAGE_WIDTH
@@ -193,7 +274,7 @@ function drawCanvas(ctx, post, mode, logo) {
   ctx.textAlign = 'right'
   ctx.font = `500 24px ${MONO}`
   ctx.fillStyle = MOSS
-  ctx.fillText('NEW ENTRY', IMAGE_WIDTH - SIDE, 121)
+  ctx.fillText(pageCount > 1 ? `PAGE ${String(pageNumber).padStart(2, '0')} / ${String(pageCount).padStart(2, '0')}` : 'NEW ENTRY', IMAGE_WIDTH - SIDE, 121)
   ctx.textAlign = 'left'
   ctx.strokeStyle = INK
   ctx.lineWidth = 2
@@ -222,7 +303,7 @@ function drawCanvas(ctx, post, mode, logo) {
   if (mode === 'full') {
     let y = bodyY
     ctx.font = `400 ${bodyFont}px ${SERIF}`
-    visibleLines.forEach((line) => {
+    fullLines.forEach((line) => {
       if (!line) {
         y += paragraphGap
         return
@@ -231,11 +312,6 @@ function drawCanvas(ctx, post, mode, logo) {
       ctx.fillText(line, SIDE, y)
       y += bodyLine
     })
-    if (truncated) {
-      ctx.font = `400 24px ${MONO}`
-      ctx.fillStyle = MUTED
-      ctx.fillText('文章较长，本图保留可读范围内的正文；完整内容请前往网站阅读。', SIDE, y + 48)
-    }
   }
   drawCta(ctx, ctaY)
   drawFooter(ctx, footerY)
@@ -251,6 +327,7 @@ export default function PostImageExporter({post}) {
   const [mode, setMode] = useState('summary')
   const [ready, setReady] = useState(false)
   const [notice, setNotice] = useState('')
+  const [busy, setBusy] = useState('')
   useEffect(() => {
     let cancelled = false
     const logo = new Image()
@@ -264,25 +341,50 @@ export default function PostImageExporter({post}) {
     async function render() {
       if (document.fonts?.ready) await document.fonts.ready
       if (cancelled || !canvasRef.current) return
-      drawCanvas(canvasRef.current.getContext('2d'), post, mode, logoRef.current)
+      const pages = splitBodyPages(post.body || post.excerpt || '')
+      const previewPost = mode === 'full' ? {...post, body: pages[0]} : post
+      drawCanvas(canvasRef.current.getContext('2d'), previewPost, mode, logoRef.current, {pageNumber: 1, pageCount: pages.length})
     }
     render()
     return () => { cancelled = true }
   }, [post, mode, ready])
-  function download() {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    setNotice('正在生成 PNG…')
-    canvas.toBlob((blob) => {
-      if (!blob) { setNotice('生成失败，请重试。'); return }
-      const link = document.createElement('a')
-      const url = URL.createObjectURL(blob)
-      link.href = url
-      link.download = `${filePart(post.slug || post.title)}-${mode === 'summary' ? 'summary' : 'full'}.png`
-      link.click()
-      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-      setNotice('PNG 已下载到本机。')
-    }, 'image/png')
+  async function download(targetMode) {
+    if (busy) return
+    setBusy(targetMode)
+    const base = filePart(post.slug || post.title)
+    try {
+      if (document.fonts?.ready) await document.fonts.ready
+      const pageBodies = targetMode === 'full' ? splitBodyPages(post.body || post.excerpt || '') : ['']
+      setNotice(targetMode === 'full' ? `正在生成全文图片（共 ${pageBodies.length} 张）…` : '正在生成摘要图…')
+      const images = []
+      for (let index = 0; index < pageBodies.length; index += 1) {
+        const canvas = document.createElement('canvas')
+        const pagePost = targetMode === 'full' ? {...post, body: pageBodies[index]} : post
+        drawCanvas(canvas.getContext('2d'), pagePost, targetMode, logoRef.current, {pageNumber: index + 1, pageCount: pageBodies.length})
+        const blob = await canvasBlob(canvas)
+        images.push({
+          name: `${base}-full-${String(index + 1).padStart(2, '0')}.png`,
+          blob,
+        })
+        canvas.width = 1
+        canvas.height = 1
+      }
+      if (targetMode === 'summary') {
+        downloadBlob(images[0].blob, `${base}-summary.png`)
+        setNotice('摘要图已下载到本机。')
+      } else if (images.length === 1) {
+        downloadBlob(images[0].blob, `${base}-full.png`)
+        setNotice('整篇文章图片已下载到本机。')
+      } else {
+        const files = await Promise.all(images.map(async (image) => ({name: image.name, bytes: new Uint8Array(await image.blob.arrayBuffer())})))
+        downloadBlob(zipImages(files), `${base}-full-${images.length}-pages.zip`)
+        setNotice(`全文已生成 ${images.length} 张连续图片，并打包为 ZIP 下载。`)
+      }
+    } catch (error) {
+      setNotice(error?.message || '生成失败，请重试。')
+    } finally {
+      setBusy('')
+    }
   }
   return <section className="post-image-export" aria-labelledby="post-image-export-title">
     <div className="post-image-export-head">
@@ -294,10 +396,11 @@ export default function PostImageExporter({post}) {
       <div className="post-image-export-actions" role="group" aria-label="导出图片类型">
         <button type="button" className={mode === 'summary' ? 'active' : ''} onClick={() => setMode('summary')}>摘要图</button>
         <button type="button" className={mode === 'full' ? 'active' : ''} onClick={() => setMode('full')}>手机长图</button>
-        <button type="button" className="download-image" onClick={download}>下载 PNG ↓</button>
+        <button type="button" className="download-image secondary" disabled={Boolean(busy)} onClick={() => download('summary')}>{busy === 'summary' ? '生成中…' : '下载摘要图 ↓'}</button>
+        <button type="button" className="download-image" disabled={Boolean(busy)} onClick={() => download('full')}>{busy === 'full' ? '生成全文中…' : '下载整篇文章 ↓'}</button>
       </div>
     </div>
     <div className="post-image-export-preview"><canvas ref={canvasRef} aria-label="文章图片预览" /></div>
-    <p className="post-image-export-note">{notice || (mode === 'summary' ? '适合社交平台与文章转发。' : '按手机阅读比例排版；超长文章会在安全画布高度内完整保留尽可能多的正文。')}</p>
+    <p className="post-image-export-note" aria-live="polite">{notice || (mode === 'summary' ? '适合社交平台与文章转发。' : `当前显示手机长图第 1 页预览；下载时会完整导出，过长文章自动分页并打包。`)}</p>
   </section>
 }
