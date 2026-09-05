@@ -3,6 +3,7 @@ import './mobile.css'
 import './interaction.css'
 import './subscribe.css'
 import './brand.css'
+import './hero-quote.css'
 import './utilities.css'
 import './footer.css'
 import SiteAnalytics from './components/site-analytics'
@@ -38,8 +39,8 @@ export const metadata={
     yandex:process.env.YANDEX_SITE_VERIFICATION,
     other:verificationOther
   },
-  openGraph:{siteName:SITE_NAME,title:SITE_NAME,description:SITE_DESCRIPTION,type:'website',locale:SITE_LOCALE,url:'/',images:[{url:ogImage('记录理解发生的过程'),width:1200,height:630,alt:SITE_NAME}]},
-  twitter:{card:'summary_large_image',title:SITE_NAME,description:SITE_DESCRIPTION,images:[ogImage('记录理解发生的过程')]},
+  openGraph:{siteName:SITE_NAME,title:SITE_NAME,description:SITE_DESCRIPTION,type:'website',locale:SITE_LOCALE,url:'/',images:[{url:ogImage('面对复杂，保持欢喜'),width:1200,height:630,alt:SITE_NAME}]},
+  twitter:{card:'summary_large_image',title:SITE_NAME,description:SITE_DESCRIPTION,images:[ogImage('面对复杂，保持欢喜')]},
   appleWebApp:{capable:true,title:'FIELD NOTES',statusBarStyle:'black-translucent'}
 }
 

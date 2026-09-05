@@ -7,7 +7,7 @@ alter table public.site_content enable row level security;
 create policy "site content is public" on public.site_content for select using (true);
 create policy "authenticated author inserts site content" on public.site_content for insert to authenticated with check (true);
 create policy "authenticated author updates site content" on public.site_content for update to authenticated using (true) with check (true);
-insert into public.site_content(key,value) values ('home','{"hero_title":"我不展示答案。","hero_emphasis":"我记录理解发生的过程。","hero_deck":"一个实用主义者的公开工作台：在语言、商业、技术、身体与来处之间，寻找那些尚未被命名的连接。","manifesto":"保持好奇，但不把好奇误认为深刻；相信工具，但不把工具误认为能力；持续行动，同时给缓慢留下位置。"}'::jsonb) on conflict(key) do nothing;
+insert into public.site_content(key,value) values ('home','{"hero_title":"面对复杂。","hero_emphasis":"保持欢喜。","hero_deck":"The theme of my life is complexity-through-joy.","manifesto":"保持好奇，但不把好奇误认为深刻；相信工具，但不把工具误认为能力；持续行动，同时给缓慢留下位置。"}'::jsonb) on conflict(key) do nothing;
 create policy "published posts are public" on public.posts for select using (status = 'published' or auth.role() = 'authenticated');
 create policy "authenticated author can insert" on public.posts for insert to authenticated with check (true);
 create policy "authenticated author can update" on public.posts for update to authenticated using (true) with check (true);
