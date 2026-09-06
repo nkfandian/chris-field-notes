@@ -69,45 +69,31 @@ function roundedRect(ctx, x, y, width, height, radius) {
   ctx.closePath()
 }
 
-function drawMark(ctx, logo, x, y) {
-  const size = 96
+function drawMark(ctx, logo, x, y, size = 82) {
+  const center = size / 2
+  const radius = size * 0.29
   if (logo) {
     ctx.save()
-    roundedRect(ctx, x, y, size, size, 15)
+    roundedRect(ctx, x, y, size, size, 13)
     ctx.clip()
     ctx.drawImage(logo, x, y, size, size)
     ctx.restore()
     return
   }
   ctx.fillStyle = INK
-  roundedRect(ctx, x, y, size, size, 15)
+  roundedRect(ctx, x, y, size, size, 13)
   ctx.fill()
   ctx.strokeStyle = PAPER
-  ctx.lineWidth = 7
+  ctx.lineWidth = 6
   ctx.beginPath()
-  ctx.arc(x + 48, y + 48, 28, 0, Math.PI * 2)
+  ctx.arc(x + center, y + center, radius, 0, Math.PI * 2)
   ctx.stroke()
   ctx.strokeStyle = MOSS
-  ctx.lineWidth = 8
+  ctx.lineWidth = 7
   ctx.beginPath()
-  ctx.moveTo(x + 31, y + 69)
-  ctx.lineTo(x + 68, y + 27)
+  ctx.moveTo(x + size * 0.32, y + size * 0.72)
+  ctx.lineTo(x + size * 0.71, y + size * 0.28)
   ctx.stroke()
-}
-
-function drawFooter(ctx, y) {
-  ctx.strokeStyle = INK
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.moveTo(SIDE, y)
-  ctx.lineTo(IMAGE_WIDTH - SIDE, y)
-  ctx.stroke()
-  ctx.font = `500 22px ${MONO}`
-  ctx.fillStyle = MUTED
-  ctx.fillText('CHRIS / FIELD NOTES  ·  OPEN INDEX', SIDE, y + 48)
-  ctx.textAlign = 'right'
-  ctx.fillText(SITE, IMAGE_WIDTH - SIDE, y + 48)
-  ctx.textAlign = 'left'
 }
 
 function makeQr(value) {
@@ -140,49 +126,46 @@ function drawQr(ctx, code, x, y, size) {
 }
 
 function drawSlogan(ctx) {
-  ctx.font = `700 40px ${SERIF}`
+  ctx.font = `700 34px ${SERIF}`
   ctx.fillStyle = INK
-  ctx.fillText(SLOGAN_LEAD, SIDE, 278)
+  ctx.fillText(SLOGAN_LEAD, SIDE, 211)
   const leadWidth = ctx.measureText(SLOGAN_LEAD).width
   ctx.fillStyle = MOSS
-  ctx.fillText(SLOGAN_EMPHASIS, SIDE + leadWidth + 16, 278)
-  ctx.font = `italic 400 23px ${SERIF}`
+  ctx.fillText(SLOGAN_EMPHASIS, SIDE + leadWidth + 14, 211)
+  ctx.font = `italic 400 20px ${SERIF}`
   ctx.fillStyle = MUTED
-  ctx.fillText(SLOGAN_ENGLISH, SIDE, 320)
+  ctx.fillText(SLOGAN_ENGLISH, SIDE, 251)
   ctx.textAlign = 'right'
-  ctx.font = `500 18px ${MONO}`
+  ctx.font = `500 16px ${MONO}`
   ctx.fillStyle = MOSS
-  ctx.fillText('— E. B. WHITE', IMAGE_WIDTH - SIDE, 317)
+  ctx.fillText('— E. B. WHITE', IMAGE_WIDTH - SIDE, 249)
   ctx.textAlign = 'left'
-  ctx.strokeStyle = '#b9b9b2'
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.moveTo(SIDE, 354)
-  ctx.lineTo(IMAGE_WIDTH - SIDE, 354)
-  ctx.stroke()
 }
 
-function drawPermalink(ctx, info, y) {
+function drawEndcap(ctx, info, y) {
   const url = `https://${SITE}/logs/${encodeURIComponent(info.slug)}`
-  const qrSize = 184
+  const qrSize = 156
   const qrX = IMAGE_WIDTH - SIDE - qrSize
-  ctx.strokeStyle = '#b9b9b2'
+  ctx.strokeStyle = INK
   ctx.lineWidth = 2
   ctx.beginPath()
   ctx.moveTo(SIDE, y)
   ctx.lineTo(IMAGE_WIDTH - SIDE, y)
   ctx.stroke()
-  ctx.font = `500 20px ${MONO}`
+  ctx.font = `500 18px ${MONO}`
   ctx.fillStyle = MOSS
-  ctx.fillText('PERMALINK / 日志原址', SIDE, y + 54)
-  ctx.font = `700 34px ${SERIF}`
+  ctx.fillText('FIELD NOTES / 日志原址', SIDE, y + 46)
+  ctx.font = `700 30px ${SERIF}`
   ctx.fillStyle = INK
-  ctx.fillText('扫描二维码打开原文', SIDE, y + 108)
-  ctx.font = `400 18px ${MONO}`
+  ctx.fillText('扫码打开原文', SIDE, y + 92)
+  ctx.font = `400 17px ${MONO}`
   ctx.fillStyle = MUTED
-  const pathLines = wrapText(ctx, url.replace('https://www.', ''), 610)
-  drawLines(ctx, pathLines, SIDE, y + 154, 28, MUTED)
-  drawQr(ctx, makeQr(url), qrX, y + 32, qrSize)
+  const pathLines = wrapText(ctx, url.replace('https://www.', ''), 630)
+  drawLines(ctx, pathLines, SIDE, y + 132, 24, MUTED)
+  ctx.font = `500 17px ${MONO}`
+  ctx.fillStyle = MUTED
+  ctx.fillText('CHRIS / OPEN INDEX', SIDE, y + 202)
+  drawQr(ctx, makeQr(url), qrX, y + 28, qrSize)
 }
 
 function articleInfo(post) {
@@ -320,7 +303,7 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1} = {})
     if (fullLines.at(-1) === '') fullLines.pop()
   }
 
-  const titleY = 536
+  const titleY = 480
   const excerptY = titleY + titleLines.length * titleLine + 38
   const dividerY = excerptY + excerptLines.length * summaryLine + 66
   const bodyHeight = mode === 'full'
@@ -328,49 +311,52 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1} = {})
     : 0
 
   const bodyY = dividerY + 76
-  const permalinkY = mode === 'full' ? bodyY + bodyHeight + 68 : dividerY + 74
-  const footerY = permalinkY + 248
-  const height = footerY + 94
+  const endcapY = mode === 'full' ? bodyY + bodyHeight + 68 : dividerY + 40
+  const height = endcapY + 230
   ctx.canvas.width = IMAGE_WIDTH
   ctx.canvas.height = height
   ctx.fillStyle = PAPER
   ctx.fillRect(0, 0, IMAGE_WIDTH, height)
-  drawMark(ctx, logo, SIDE, 66)
-  ctx.font = `700 33px ${MONO}`
+  drawMark(ctx, logo, SIDE, 56)
+  ctx.font = `700 30px ${MONO}`
   ctx.fillStyle = INK
-  ctx.fillText('FIELD NOTES', 194, 108)
-  ctx.font = `400 21px ${MONO}`
+  ctx.fillText('FIELD NOTES', 176, 91)
+  ctx.font = `400 19px ${MONO}`
   ctx.fillStyle = MUTED
-  ctx.fillText('CHRIS / OPEN INDEX', 194, 146)
-  ctx.textAlign = 'right'
+  ctx.fillText('CHRIS / OPEN INDEX', 176, 124)
+  if (pageCount > 1) {
+    ctx.textAlign = 'right'
+    ctx.font = `500 20px ${MONO}`
+    ctx.fillStyle = MOSS
+    ctx.fillText(`PAGE ${String(pageNumber).padStart(2, '0')} / ${String(pageCount).padStart(2, '0')}`, IMAGE_WIDTH - SIDE, 91)
+    ctx.textAlign = 'left'
+  }
+  drawSlogan(ctx)
   ctx.font = `500 24px ${MONO}`
   ctx.fillStyle = MOSS
-  ctx.fillText(pageCount > 1 ? `PAGE ${String(pageNumber).padStart(2, '0')} / ${String(pageCount).padStart(2, '0')}` : 'NEW ENTRY', IMAGE_WIDTH - SIDE, 121)
+  ctx.fillText(String(info.domain).toUpperCase(), SIDE, 327)
+  ctx.textAlign = 'right'
+  ctx.fillStyle = MUTED
+  ctx.fillText(info.date, IMAGE_WIDTH - SIDE, 327)
   ctx.textAlign = 'left'
   ctx.strokeStyle = INK
   ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.moveTo(SIDE, 204)
-  ctx.lineTo(IMAGE_WIDTH - SIDE, 204)
+  ctx.moveTo(SIDE, 368)
+  ctx.lineTo(IMAGE_WIDTH - SIDE, 368)
   ctx.stroke()
-  drawSlogan(ctx)
-  ctx.font = `500 24px ${MONO}`
-  ctx.fillStyle = MOSS
-  ctx.fillText(`${String(info.domain).toUpperCase()} / 最新日志`, SIDE, 430)
-  ctx.textAlign = 'right'
-  ctx.fillStyle = MUTED
-  ctx.fillText(info.date, IMAGE_WIDTH - SIDE, 430)
-  ctx.textAlign = 'left'
   ctx.font = `700 ${titleFont}px ${SERIF}`
   drawLines(ctx, titleLines, SIDE, titleY, titleLine)
   ctx.font = `400 ${summaryFont}px ${SERIF}`
   drawLines(ctx, excerptLines, SIDE, excerptY, summaryLine, MUTED)
-  ctx.strokeStyle = '#b9b9b2'
-  ctx.lineWidth = 2
-  ctx.beginPath()
-  ctx.moveTo(SIDE, dividerY)
-  ctx.lineTo(IMAGE_WIDTH - SIDE, dividerY)
-  ctx.stroke()
+  if (mode === 'full') {
+    ctx.strokeStyle = '#b9b9b2'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.moveTo(SIDE, dividerY)
+    ctx.lineTo(IMAGE_WIDTH - SIDE, dividerY)
+    ctx.stroke()
+  }
 
   if (mode === 'full') {
     let y = bodyY
@@ -385,8 +371,7 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1} = {})
       y += bodyLine
     })
   }
-  drawPermalink(ctx, info, permalinkY)
-  drawFooter(ctx, footerY)
+  drawEndcap(ctx, info, endcapY)
 }
 
 function filePart(value) {
