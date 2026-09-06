@@ -16,9 +16,10 @@ const IMAGE_WIDTH = 1080
 const SIDE = 72
 const CONTENT_WIDTH = IMAGE_WIDTH - SIDE * 2
 const MAX_PAGE_BODY_CHARS = 2800
-const SLOGAN_LEAD = '面对复杂。'
-const SLOGAN_EMPHASIS = '保持欢喜。'
-const SLOGAN_ENGLISH = 'The theme of my life is complexity-through-joy.'
+const SLOGAN_LEAD = '面对复杂，'
+const SLOGAN_EMPHASIS = '保持欢喜'
+const NO_LINE_START = '，。！？；：、）》】」』”’…'
+const NO_LINE_END = '（《【「『“‘'
 
 function cleanParagraphs(value = '') {
   return value
@@ -46,7 +47,35 @@ function wrapText(ctx, text, maxWidth) {
     }
   }
   if (current.trim()) lines.push(current.trimEnd())
-  return lines.length ? lines : ['']
+  for (let index = 1; index < lines.length; index += 1) {
+    while (lines[index] && NO_LINE_START.includes(lines[index][0])) {
+      lines[index - 1] += lines[index][0]
+      lines[index] = lines[index].slice(1).trimStart()
+    }
+    while (lines[index - 1] && NO_LINE_END.includes(lines[index - 1].at(-1))) {
+      const mark = lines[index - 1].at(-1)
+      lines[index - 1] = lines[index - 1].slice(0, -1).trimEnd()
+      lines[index] = `${mark}${lines[index]}`
+    }
+  }
+  return lines.filter(Boolean).length ? lines.filter(Boolean) : ['']
+}
+
+function balanceLastLine(ctx, input, maxWidth) {
+  const lines = [...input]
+  if (lines.length < 2) return lines
+  const lastIndex = lines.length - 1
+  while (ctx.measureText(lines[lastIndex]).width < ctx.measureText(lines[lastIndex - 1]).width * 0.58) {
+    const tokens = lines[lastIndex - 1].match(/[\u4e00-\u9fff]|[^\s\u4e00-\u9fff]+/g) || []
+    const token = tokens.at(-1)
+    if (!token || tokens.length < 2) break
+    const spacer = /[A-Za-z0-9]$/.test(token) && /^[A-Za-z0-9]/.test(lines[lastIndex]) ? ' ' : ''
+    const nextLast = `${token}${spacer}${lines[lastIndex]}`
+    if (ctx.measureText(nextLast).width > maxWidth) break
+    lines[lastIndex - 1] = lines[lastIndex - 1].slice(0, -token.length).trimEnd()
+    lines[lastIndex] = nextLast
+  }
+  return lines
 }
 
 function drawLines(ctx, lines, x, y, lineHeight, color = INK) {
@@ -126,20 +155,14 @@ function drawQr(ctx, code, x, y, size) {
 }
 
 function drawSlogan(ctx) {
-  ctx.font = `700 34px ${SERIF}`
-  ctx.fillStyle = INK
-  ctx.fillText(SLOGAN_LEAD, SIDE, 211)
+  ctx.font = `700 31px ${SERIF}`
   const leadWidth = ctx.measureText(SLOGAN_LEAD).width
+  const emphasisWidth = ctx.measureText(SLOGAN_EMPHASIS).width
+  const x = IMAGE_WIDTH - SIDE - leadWidth - emphasisWidth
+  ctx.fillStyle = INK
+  ctx.fillText(SLOGAN_LEAD, x, 91)
   ctx.fillStyle = MOSS
-  ctx.fillText(SLOGAN_EMPHASIS, SIDE + leadWidth + 14, 211)
-  ctx.font = `italic 400 20px ${SERIF}`
-  ctx.fillStyle = MUTED
-  ctx.fillText(SLOGAN_ENGLISH, SIDE, 251)
-  ctx.textAlign = 'right'
-  ctx.font = `500 16px ${MONO}`
-  ctx.fillStyle = MOSS
-  ctx.fillText('— E. B. WHITE', IMAGE_WIDTH - SIDE, 249)
-  ctx.textAlign = 'left'
+  ctx.fillText(SLOGAN_EMPHASIS, x + leadWidth, 91)
 }
 
 function drawEndcap(ctx, info, y) {
@@ -152,19 +175,16 @@ function drawEndcap(ctx, info, y) {
   ctx.moveTo(SIDE, y)
   ctx.lineTo(IMAGE_WIDTH - SIDE, y)
   ctx.stroke()
-  ctx.font = `500 18px ${MONO}`
-  ctx.fillStyle = MOSS
-  ctx.fillText('FIELD NOTES / 日志原址', SIDE, y + 46)
   ctx.font = `700 30px ${SERIF}`
   ctx.fillStyle = INK
-  ctx.fillText('扫码打开原文', SIDE, y + 92)
+  ctx.fillText('日志原址', SIDE, y + 54)
   ctx.font = `400 17px ${MONO}`
   ctx.fillStyle = MUTED
   const pathLines = wrapText(ctx, url.replace('https://www.', ''), 630)
-  drawLines(ctx, pathLines, SIDE, y + 132, 24, MUTED)
+  drawLines(ctx, pathLines, SIDE, y + 96, 24, MUTED)
   ctx.font = `500 17px ${MONO}`
-  ctx.fillStyle = MUTED
-  ctx.fillText('CHRIS / OPEN INDEX', SIDE, y + 202)
+  ctx.fillStyle = MOSS
+  ctx.fillText('CHRIS / FIELD NOTES  ·  SCAN TO OPEN', SIDE, y + 170)
   drawQr(ctx, makeQr(url), qrX, y + 28, qrSize)
 }
 
@@ -285,66 +305,63 @@ function zipImages(files) {
 function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1} = {}) {
   const info = articleInfo(post)
   const paragraphs = cleanParagraphs(post.body || post.excerpt || '')
-  const titleFont = 94
-  const titleLine = 116
-  const summaryFont = 52
-  const summaryLine = 86
-  const bodyFont = 50
-  const bodyLine = 90
-  const paragraphGap = 34
+  const titleFont = 82
+  const titleLine = 102
+  const summaryFont = 44
+  const summaryLine = 74
+  const bodyFont = 46
+  const bodyLine = 84
+  const paragraphGap = 38
   ctx.font = `700 ${titleFont}px ${SERIF}`
-  const titleLines = wrapText(ctx, info.title, CONTENT_WIDTH)
+  const titleLines = balanceLastLine(ctx, wrapText(ctx, info.title, CONTENT_WIDTH), CONTENT_WIDTH)
   ctx.font = `400 ${summaryFont}px ${SERIF}`
-  const excerptLines = wrapText(ctx, info.excerpt, CONTENT_WIDTH)
+  const excerptLines = balanceLastLine(ctx, wrapText(ctx, info.excerpt, CONTENT_WIDTH), CONTENT_WIDTH)
   let fullLines = []
   if (mode === 'full') {
     ctx.font = `400 ${bodyFont}px ${SERIF}`
-    fullLines = paragraphs.flatMap((paragraph) => [...wrapText(ctx, paragraph, CONTENT_WIDTH), ''])
+    fullLines = paragraphs.flatMap((paragraph) => [
+      ...balanceLastLine(ctx, wrapText(ctx, paragraph, CONTENT_WIDTH), CONTENT_WIDTH),
+      '',
+    ])
     if (fullLines.at(-1) === '') fullLines.pop()
   }
 
-  const titleY = 480
-  const excerptY = titleY + titleLines.length * titleLine + 38
-  const dividerY = excerptY + excerptLines.length * summaryLine + 66
+  const titleY = 330
+  const excerptY = titleY + titleLines.length * titleLine + 34
+  const dividerY = excerptY + excerptLines.length * summaryLine + 54
   const bodyHeight = mode === 'full'
     ? fullLines.reduce((height, line) => height + (line ? bodyLine : paragraphGap), 0)
     : 0
 
-  const bodyY = dividerY + 76
-  const endcapY = mode === 'full' ? bodyY + bodyHeight + 68 : dividerY + 40
-  const height = endcapY + 230
+  const bodyY = dividerY + 58
+  const endcapY = mode === 'full' ? bodyY + bodyHeight + 58 : dividerY + 32
+  const height = endcapY + 212
   ctx.canvas.width = IMAGE_WIDTH
   ctx.canvas.height = height
   ctx.fillStyle = PAPER
   ctx.fillRect(0, 0, IMAGE_WIDTH, height)
-  drawMark(ctx, logo, SIDE, 56)
-  ctx.font = `700 30px ${MONO}`
+  drawMark(ctx, logo, SIDE, 48, 76)
+  ctx.font = `700 28px ${MONO}`
   ctx.fillStyle = INK
-  ctx.fillText('FIELD NOTES', 176, 91)
-  ctx.font = `400 19px ${MONO}`
+  ctx.fillText('FIELD NOTES', 170, 81)
+  ctx.font = `400 17px ${MONO}`
   ctx.fillStyle = MUTED
-  ctx.fillText('CHRIS / OPEN INDEX', 176, 124)
-  if (pageCount > 1) {
-    ctx.textAlign = 'right'
-    ctx.font = `500 20px ${MONO}`
-    ctx.fillStyle = MOSS
-    ctx.fillText(`PAGE ${String(pageNumber).padStart(2, '0')} / ${String(pageCount).padStart(2, '0')}`, IMAGE_WIDTH - SIDE, 91)
-    ctx.textAlign = 'left'
-  }
+  ctx.fillText('CHRIS / OPEN INDEX', 170, 112)
   drawSlogan(ctx)
-  ctx.font = `500 24px ${MONO}`
-  ctx.fillStyle = MOSS
-  ctx.fillText(String(info.domain).toUpperCase(), SIDE, 327)
-  ctx.textAlign = 'right'
-  ctx.fillStyle = MUTED
-  ctx.fillText(info.date, IMAGE_WIDTH - SIDE, 327)
-  ctx.textAlign = 'left'
   ctx.strokeStyle = INK
   ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.moveTo(SIDE, 368)
-  ctx.lineTo(IMAGE_WIDTH - SIDE, 368)
+  ctx.moveTo(SIDE, 158)
+  ctx.lineTo(IMAGE_WIDTH - SIDE, 158)
   ctx.stroke()
+  ctx.font = `500 24px ${MONO}`
+  ctx.fillStyle = MOSS
+  ctx.fillText(String(info.domain).toUpperCase(), SIDE, 222)
+  ctx.textAlign = 'right'
+  ctx.fillStyle = MUTED
+  const pageLabel = pageCount > 1 ? `${info.date}  ·  ${String(pageNumber).padStart(2, '0')} / ${String(pageCount).padStart(2, '0')}` : info.date
+  ctx.fillText(pageLabel, IMAGE_WIDTH - SIDE, 222)
+  ctx.textAlign = 'left'
   ctx.font = `700 ${titleFont}px ${SERIF}`
   drawLines(ctx, titleLines, SIDE, titleY, titleLine)
   ctx.font = `400 ${summaryFont}px ${SERIF}`
@@ -448,7 +465,7 @@ export default function PostImageExporter({post}) {
       <div>
         <p className="editor-top">PUBLISHING ASSET / 日志图片</p>
         <h2 id="post-image-export-title">导出文章信笺</h2>
-        <p>沿用订阅邮件的抬头与摘要，加入网站引语和当前日志二维码；在本机浏览器生成，不上传草稿。</p>
+        <p>沿用订阅邮件的抬头与摘要，右上保留中文引语，并附当前日志二维码；在本机浏览器生成，不上传草稿。</p>
       </div>
       <div className="post-image-export-actions" role="group" aria-label="导出图片类型">
         <button type="button" className={mode === 'summary' ? 'active' : ''} onClick={() => setMode('summary')}>摘要图</button>
