@@ -1,38 +1,64 @@
 .quote-hero {
-  justify-content: center;
-  padding-top: 9vh;
-  padding-bottom: 11vh;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  align-items: center;
+  padding: clamp(3rem, 7vh, 6rem) 6vw clamp(2rem, 5vh, 4rem);
 }
 
 .quote-hero::after {
-  content: '欢喜';
-  right: -0.02em;
-  bottom: -0.22em;
-  font-size: 24vw;
-  opacity: 0.72;
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent calc(50% - .5px), rgba(21, 23, 19, .07) 50%, transparent calc(50% + .5px)),
+    linear-gradient(180deg, transparent 57%, rgba(21, 23, 19, .05) 57%, transparent calc(57% + 1px));
+  pointer-events: none;
+}
+
+.quote-hero > .kicker {
+  position: relative;
+  z-index: 2;
+  width: min(1320px, 88vw);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1.3rem;
+}
+
+.quote-hero > .kicker i {
+  height: 1px;
+  background: var(--line);
+}
+
+.quote-hero > .kicker b {
+  color: var(--muted);
+  font: inherit;
+  font-weight: 500;
 }
 
 .hero-slogan {
   position: relative;
-  z-index: 1;
-  width: min(1180px, 90vw);
-  margin: 0;
+  z-index: 2;
+  width: min(1320px, 88vw);
+  margin: clamp(3rem, 7vh, 6.5rem) auto clamp(2.5rem, 6vh, 5rem);
 }
 
 .hero-slogan .quote-mark {
   position: absolute;
-  top: 0.18em;
-  left: -0.48em;
-  color: rgba(82, 107, 63, 0.2);
-  font: 700 clamp(8rem, 16vw, 18rem)/0.7 Georgia, serif;
+  top: -0.08em;
+  left: -0.32em;
+  color: rgba(82, 107, 63, 0.16);
+  font: 700 clamp(7rem, 13vw, 15rem)/0.7 Georgia, serif;
   pointer-events: none;
 }
 
 .hero-slogan h1 {
-  max-width: 1120px;
-  margin: 2.1rem 0 0;
-  font-size: clamp(4.4rem, 8.4vw, 9rem);
-  line-height: 0.98;
+  display: grid;
+  width: 100%;
+  margin: 0;
+  font-size: clamp(4.2rem, 8.1vw, 8.8rem);
+  line-height: 0.94;
   letter-spacing: -0.065em;
 }
 
@@ -40,17 +66,36 @@
 .hero-slogan h1 em {
   position: relative;
   display: inline-block;
+  width: max-content;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.hero-slogan h1 span {
+  justify-self: start;
 }
 
 .hero-slogan h1 em {
-  margin-top: 0.12em;
+  justify-self: end;
+  margin-top: -0.02em;
+  text-align: right;
+}
+
+.hero-quote-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: clamp(2rem, 8vw, 9rem);
+  margin-top: clamp(2.6rem, 5vh, 4.5rem);
+  padding-top: 1.4rem;
+  border-top: 1px solid var(--line);
 }
 
 .hero-slogan .hero-deck {
-  max-width: 790px;
-  margin: 3rem 0 0 clamp(5rem, 20vw, 19rem);
+  max-width: 760px;
+  margin: 0;
   color: var(--ink);
-  font: italic 400 clamp(1.15rem, 1.8vw, 1.65rem)/1.5 Georgia, 'Noto Serif SC', serif;
+  font: italic 400 clamp(1.05rem, 1.5vw, 1.45rem)/1.5 Georgia, 'Noto Serif SC', serif;
   letter-spacing: -0.018em;
 }
 
@@ -58,7 +103,7 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  margin: 1.25rem 0 0 clamp(5rem, 20vw, 19rem);
+  margin: 0;
   color: var(--moss);
   font: 500 11px/1 var(--mono);
   letter-spacing: 0.16em;
@@ -75,55 +120,85 @@
   font-style: normal;
 }
 
+.quote-hero .scroll-cue {
+  left: 6vw;
+  z-index: 2;
+}
+
 @media (max-width: 800px) {
+  .quote-hero > .kicker,
   .hero-slogan {
     width: 100%;
   }
 
-  .hero-slogan .hero-deck,
-  .hero-attribution {
-    margin-left: clamp(2rem, 12vw, 6rem);
+  .hero-slogan h1 {
+    font-size: clamp(3.8rem, 11vw, 6.6rem);
+  }
+
+  .hero-quote-meta {
+    gap: 2rem;
   }
 }
 
 @media (max-width: 520px) {
   .quote-hero {
     min-height: calc(100svh - 60px);
-    padding: 11vh 5vw 12vh;
+    padding: 8vh 5vw 4vh;
   }
 
   .quote-hero::after {
-    right: -0.18em;
-    bottom: -0.04em;
-    font-size: 56vw;
+    background: linear-gradient(90deg, transparent calc(50% - .5px), rgba(21, 23, 19, .06) 50%, transparent calc(50% + .5px));
+  }
+
+  .quote-hero > .kicker {
+    grid-template-columns: auto 1fr;
+    gap: .8rem;
+  }
+
+  .quote-hero > .kicker b {
+    display: none;
   }
 
   .hero-slogan .quote-mark {
-    top: 0.08em;
-    left: -0.22em;
-    font-size: 8rem;
+    top: -0.02em;
+    left: -0.17em;
+    font-size: 7.5rem;
   }
 
   .hero-slogan h1 {
-    margin-top: 1.8rem;
-    font-size: clamp(3.15rem, 15vw, 4.6rem);
-    line-height: 1.02;
+    font-size: clamp(3.05rem, 14vw, 4.25rem);
+    line-height: 1;
     letter-spacing: -0.06em;
   }
 
+  .hero-slogan h1 em {
+    margin-top: .14em;
+  }
+
+  .hero-quote-meta {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 1.2rem;
+    margin-top: 2.4rem;
+    padding-top: 1.1rem;
+  }
+
   .hero-slogan .hero-deck {
-    max-width: 90%;
-    margin: 2.35rem 0 0 12vw;
-    font-size: 1.08rem;
+    max-width: 96%;
+    font-size: 1rem;
     line-height: 1.55;
   }
 
   .hero-attribution {
-    margin: 1.15rem 0 0 12vw;
+    justify-self: end;
     font-size: 9px;
   }
 
   .hero-attribution > span {
     width: 38px;
+  }
+
+  .quote-hero .scroll-cue {
+    left: 5vw;
   }
 }
