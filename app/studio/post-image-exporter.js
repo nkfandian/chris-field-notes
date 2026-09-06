@@ -2,6 +2,7 @@
 
 import {useEffect, useRef, useState} from 'react'
 import {labels} from '@/lib/demo'
+import qrcode from 'qrcode-generator'
 import './post-image-exporter.css'
 
 const PAPER = '#efeee8'
@@ -15,6 +16,9 @@ const IMAGE_WIDTH = 1080
 const SIDE = 72
 const CONTENT_WIDTH = IMAGE_WIDTH - SIDE * 2
 const MAX_PAGE_BODY_CHARS = 2800
+const SLOGAN_LEAD = '面对复杂。'
+const SLOGAN_EMPHASIS = '保持欢喜。'
+const SLOGAN_ENGLISH = 'The theme of my life is complexity-through-joy.'
 
 function cleanParagraphs(value = '') {
   return value
@@ -106,12 +110,79 @@ function drawFooter(ctx, y) {
   ctx.textAlign = 'left'
 }
 
-function drawCta(ctx, y) {
+function makeQr(value) {
+  const code = qrcode(0, 'M')
+  code.addData(value)
+  code.make()
+  return code
+}
+
+function drawQr(ctx, code, x, y, size) {
+  const modules = code.getModuleCount()
+  const quiet = 4
+  const cells = modules + quiet * 2
+  const cell = Math.floor(size / cells)
+  const actual = cell * cells
+  const inset = Math.floor((size - actual) / 2)
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(x, y, size, size)
   ctx.fillStyle = INK
-  ctx.fillRect(SIDE, y, 430, 94)
-  ctx.font = `500 25px ${MONO}`
-  ctx.fillStyle = PAPER
-  ctx.fillText('在网站阅读与评论  →', SIDE + 34, y + 59)
+  for (let row = 0; row < modules; row += 1) {
+    for (let column = 0; column < modules; column += 1) {
+      if (code.isDark(row, column)) {
+        ctx.fillRect(x + inset + (column + quiet) * cell, y + inset + (row + quiet) * cell, cell, cell)
+      }
+    }
+  }
+  ctx.strokeStyle = '#b9b9b2'
+  ctx.lineWidth = 2
+  ctx.strokeRect(x, y, size, size)
+}
+
+function drawSlogan(ctx) {
+  ctx.font = `700 40px ${SERIF}`
+  ctx.fillStyle = INK
+  ctx.fillText(SLOGAN_LEAD, SIDE, 278)
+  const leadWidth = ctx.measureText(SLOGAN_LEAD).width
+  ctx.fillStyle = MOSS
+  ctx.fillText(SLOGAN_EMPHASIS, SIDE + leadWidth + 16, 278)
+  ctx.font = `italic 400 23px ${SERIF}`
+  ctx.fillStyle = MUTED
+  ctx.fillText(SLOGAN_ENGLISH, SIDE, 320)
+  ctx.textAlign = 'right'
+  ctx.font = `500 18px ${MONO}`
+  ctx.fillStyle = MOSS
+  ctx.fillText('— E. B. WHITE', IMAGE_WIDTH - SIDE, 317)
+  ctx.textAlign = 'left'
+  ctx.strokeStyle = '#b9b9b2'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(SIDE, 354)
+  ctx.lineTo(IMAGE_WIDTH - SIDE, 354)
+  ctx.stroke()
+}
+
+function drawPermalink(ctx, info, y) {
+  const url = `https://${SITE}/logs/${encodeURIComponent(info.slug)}`
+  const qrSize = 184
+  const qrX = IMAGE_WIDTH - SIDE - qrSize
+  ctx.strokeStyle = '#b9b9b2'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(SIDE, y)
+  ctx.lineTo(IMAGE_WIDTH - SIDE, y)
+  ctx.stroke()
+  ctx.font = `500 20px ${MONO}`
+  ctx.fillStyle = MOSS
+  ctx.fillText('PERMALINK / 日志原址', SIDE, y + 54)
+  ctx.font = `700 34px ${SERIF}`
+  ctx.fillStyle = INK
+  ctx.fillText('扫描二维码打开原文', SIDE, y + 108)
+  ctx.font = `400 18px ${MONO}`
+  ctx.fillStyle = MUTED
+  const pathLines = wrapText(ctx, url.replace('https://www.', ''), 610)
+  drawLines(ctx, pathLines, SIDE, y + 154, 28, MUTED)
+  drawQr(ctx, makeQr(url), qrX, y + 32, qrSize)
 }
 
 function articleInfo(post) {
@@ -249,7 +320,7 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1} = {})
     if (fullLines.at(-1) === '') fullLines.pop()
   }
 
-  const titleY = 414
+  const titleY = 536
   const excerptY = titleY + titleLines.length * titleLine + 38
   const dividerY = excerptY + excerptLines.length * summaryLine + 66
   const bodyHeight = mode === 'full'
@@ -257,8 +328,8 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1} = {})
     : 0
 
   const bodyY = dividerY + 76
-  const ctaY = mode === 'full' ? bodyY + bodyHeight + 62 : dividerY + 68
-  const footerY = ctaY + 94 + 128
+  const permalinkY = mode === 'full' ? bodyY + bodyHeight + 68 : dividerY + 74
+  const footerY = permalinkY + 248
   const height = footerY + 94
   ctx.canvas.width = IMAGE_WIDTH
   ctx.canvas.height = height
@@ -282,12 +353,13 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1} = {})
   ctx.moveTo(SIDE, 204)
   ctx.lineTo(IMAGE_WIDTH - SIDE, 204)
   ctx.stroke()
+  drawSlogan(ctx)
   ctx.font = `500 24px ${MONO}`
   ctx.fillStyle = MOSS
-  ctx.fillText(`${String(info.domain).toUpperCase()} / 最新日志`, SIDE, 300)
+  ctx.fillText(`${String(info.domain).toUpperCase()} / 最新日志`, SIDE, 430)
   ctx.textAlign = 'right'
   ctx.fillStyle = MUTED
-  ctx.fillText(info.date, IMAGE_WIDTH - SIDE, 300)
+  ctx.fillText(info.date, IMAGE_WIDTH - SIDE, 430)
   ctx.textAlign = 'left'
   ctx.font = `700 ${titleFont}px ${SERIF}`
   drawLines(ctx, titleLines, SIDE, titleY, titleLine)
@@ -313,7 +385,7 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1} = {})
       y += bodyLine
     })
   }
-  drawCta(ctx, ctaY)
+  drawPermalink(ctx, info, permalinkY)
   drawFooter(ctx, footerY)
 }
 
@@ -391,7 +463,7 @@ export default function PostImageExporter({post}) {
       <div>
         <p className="editor-top">PUBLISHING ASSET / 日志图片</p>
         <h2 id="post-image-export-title">导出文章信笺</h2>
-        <p>沿用订阅邮件的抬头、摘要与站点信息；在本机浏览器生成，不上传草稿。</p>
+        <p>沿用订阅邮件的抬头与摘要，加入网站引语和当前日志二维码；在本机浏览器生成，不上传草稿。</p>
       </div>
       <div className="post-image-export-actions" role="group" aria-label="导出图片类型">
         <button type="button" className={mode === 'summary' ? 'active' : ''} onClick={() => setMode('summary')}>摘要图</button>
