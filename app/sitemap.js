@@ -12,16 +12,18 @@ export default async function sitemap(){
       {url:`${SITE_URL}/logs`,lastModified:logDate,changeFrequency:'daily',priority:.9},
       {url:`${SITE_URL}/books`,changeFrequency:'weekly',priority:.8},
       {url:`${SITE_URL}/trails`,changeFrequency:'weekly',priority:.8},
+      {url:`${SITE_URL}/about`,changeFrequency:'monthly',priority:.6},
       {url:`${SITE_URL}/privacy`,lastModified:'2026-07-16',changeFrequency:'yearly',priority:.3},
       ...demoPosts.map(post=>({url:`${SITE_URL}/logs/${encodeURIComponent(post.slug)}`,lastModified:post.published_at,changeFrequency:'monthly',priority:.7}))
     ]
   }
   const db=await createClient()
-  const [{data:posts},{data:trails},{data:books},{data:home}]=await Promise.all([
+  const [{data:posts},{data:trails},{data:books},{data:home},{data:about}]=await Promise.all([
     db.from('posts').select('slug,published_at,updated_at').eq('status','published').order('updated_at',{ascending:false}),
     db.from('trails').select('slug,updated_at').eq('status','published').order('updated_at',{ascending:false}),
     db.from('books').select('updated_at').order('updated_at',{ascending:false}).limit(1),
-    db.from('site_content').select('updated_at').eq('key','home').maybeSingle()
+    db.from('site_content').select('updated_at').eq('key','home').maybeSingle(),
+    db.from('site_content').select('updated_at').eq('key','about').maybeSingle()
   ])
   const postDate=latest((posts||[]).map(post=>post.updated_at||post.published_at))
   const trailDate=latest((trails||[]).map(trail=>trail.updated_at))
@@ -32,6 +34,7 @@ export default async function sitemap(){
     {url:`${SITE_URL}/logs`,lastModified:postDate,changeFrequency:'daily',priority:.9},
     {url:`${SITE_URL}/books`,lastModified:bookDate,changeFrequency:'weekly',priority:.8},
     {url:`${SITE_URL}/trails`,lastModified:trailDate,changeFrequency:'weekly',priority:.8},
+    {url:`${SITE_URL}/about`,lastModified:about?.updated_at||home?.updated_at,changeFrequency:'monthly',priority:.6},
     {url:`${SITE_URL}/privacy`,lastModified:'2026-07-16',changeFrequency:'yearly',priority:.3},
     ...(posts||[]).map(post=>({url:`${SITE_URL}/logs/${encodeURIComponent(post.slug)}`,lastModified:post.updated_at||post.published_at,changeFrequency:'monthly',priority:.7})),
     ...(trails||[]).map(trail=>({url:`${SITE_URL}/trails/${encodeURIComponent(trail.slug)}`,lastModified:trail.updated_at,changeFrequency:'monthly',priority:.7}))

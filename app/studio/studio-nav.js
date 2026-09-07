@@ -7,7 +7,8 @@ const items=[
  ['/studio','日志'],
  ['/studio/books','书单'],
  ['/studio/trails','轨迹'],
- ['/studio/site','网站内容'],
+ ['/studio/site','首页内容'],
+ ['/studio/about','ABOUT'],
  ['/studio/comments','互动审核'],
  ['/studio/subscribers','订阅用户']
 ]

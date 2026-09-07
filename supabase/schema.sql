@@ -8,6 +8,7 @@ create policy "site content is public" on public.site_content for select using (
 create policy "authenticated author inserts site content" on public.site_content for insert to authenticated with check (true);
 create policy "authenticated author updates site content" on public.site_content for update to authenticated using (true) with check (true);
 insert into public.site_content(key,value) values ('home','{"hero_title":"面对复杂。","hero_emphasis":"保持欢喜。","hero_deck":"The theme of my life is complexity-through-joy.","manifesto":"保持好奇，但不把好奇误认为深刻；相信工具，但不把工具误认为能力；持续行动，同时给缓慢留下位置。"}'::jsonb) on conflict(key) do nothing;
+insert into public.site_content(key,value) values ('about','{"title":"关于这个开放索引","lead":"一个实用主义者的公开工作台：在语言、商业、技术、身体与来处之间，寻找那些尚未被命名的连接。","statement":"保持好奇，但不把好奇误认为深刻；相信工具，但不把工具误认为能力；持续行动，同时给缓慢留下位置。","body":"FIELD NOTES 是一个持续生长的个人开放索引。日志记录判断如何形成，书单保存阅读如何进入写作，轨迹则把分散的文章与书重新连成一条可以继续追问的路径。\n\n这里不试图给复杂问题一个过早的结论。重要的是留下观察、修正和行动发生的过程，让今天的理解能够被明天重新检查。\n\n内容沿着解码、执行、部署、跋涉与溯源五种动作展开。它们不是彼此隔离的栏目，而是面对同一个现实世界时，五种不同的进入方式。"}'::jsonb) on conflict(key) do nothing;
 create policy "published posts are public" on public.posts for select using (status = 'published' or auth.role() = 'authenticated');
 create policy "authenticated author can insert" on public.posts for insert to authenticated with check (true);
 create policy "authenticated author can update" on public.posts for update to authenticated using (true) with check (true);
