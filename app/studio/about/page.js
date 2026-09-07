@@ -1,7 +1,7 @@
 import {redirect} from 'next/navigation'
 import {createClient,isConfigured} from '@/lib/supabase/server'
 import {getSiteAdmin} from '@/lib/auth'
-import {normalizeAbout} from '@/lib/about'
+import {resolveAboutText} from '@/lib/about'
 import AboutEditor from './about-editor'
 import '../studio.css'
 
@@ -13,5 +13,5 @@ export default async function AboutEditorPage(){
   db.from('site_content').select('value').eq('key','about').maybeSingle(),
   db.from('site_content').select('value').eq('key','home').maybeSingle()
  ])
- return <AboutEditor initial={normalizeAbout(aboutRow?.value||{},homeRow?.value||{})}/>
+ return <AboutEditor initialText={resolveAboutText(aboutRow?.value||{},homeRow?.value||{})}/>
 }
