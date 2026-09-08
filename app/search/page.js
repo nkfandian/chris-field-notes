@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Logo from '../components/logo'
 import {createClient,isConfigured} from '@/lib/supabase/server'
+import {labels} from '@/lib/demo'
 import {pageMetadata} from '@/lib/seo'
 import './search.css'
 
@@ -30,6 +31,6 @@ export default async function SearchPage({searchParams}){
     trails=(t||[]).filter(x=>text([x.title,x.summary].join(' ')).includes(needle))
   }
   const count=posts.length+books.length+trails.length
-  return <main className="search-page"><nav><Link href="/"><Logo compact/></Link><span>GLOBAL INDEX / 全站检索</span><Link href="/logs">日志 ↗</Link></nav><header><form><label htmlFor="q">关键词</label><input id="q" name="q" defaultValue={q} autoFocus placeholder="书名、主题、作者、概念或正文"/><button>检索 →</button></form>{q&&<p>{String(count).padStart(3,'0')} RESULTS / “{q}”</p>}</header>{q&&<section className="search-results"><Result title="日志" items={posts} render={x=><Link href={`/logs/${encodeURIComponent(x.slug)}`}><small>{x.domain} · {x.published_at}</small><h2>{x.title}</h2><p>{x.searchSnippet}</p></Link>}/><Result title="书单" items={books} render={x=><Link href={`/books#book-${x.id}`}><small>{x.author||'UNKNOWN AUTHOR'}</small><h2>{x.title}</h2><p>{x.review}</p></Link>}/><Result title="轨迹" items={trails} render={x=><Link href={`/trails/${encodeURIComponent(x.slug)}`}><small>TRAIL / CONNECTION</small><h2>{x.title}</h2><p>{x.summary}</p></Link>}/>{!count&&<div className="search-empty">没有找到匹配内容。</div>}</section>}</main>
+  return <main className="search-page"><nav><Link href="/"><Logo compact/></Link><span>搜索</span><Link href="/logs">日志</Link></nav><header><form><label htmlFor="q">关键词</label><input id="q" name="q" defaultValue={q} autoFocus placeholder="书名、主题、作者或正文"/><button>搜索</button></form>{q&&<p>共 {count} 条结果</p>}</header>{q&&<section className="search-results"><Result title="日志" items={posts} render={x=><Link href={`/logs/${encodeURIComponent(x.slug)}`}><small>{labels?.[x.domain]||x.domain} · {x.published_at}</small><h2>{x.title}</h2><p>{x.searchSnippet}</p></Link>}/><Result title="书单" items={books} render={x=><Link href={`/books#book-${x.id}`}><small>{x.author||'作者未录入'}</small><h2>{x.title}</h2><p>{x.review}</p></Link>}/><Result title="轨迹" items={trails} render={x=><Link href={`/trails/${encodeURIComponent(x.slug)}`}><h2>{x.title}</h2><p>{x.summary}</p></Link>}/>{!count&&<div className="search-empty">没有找到匹配内容。</div>}</section>}</main>
 }
 function Result({title,items,render}){if(!items.length)return null;return <section className="result-group"><header><h2>{title}</h2><span>{String(items.length).padStart(2,'0')}</span></header><div>{items.map(x=><article key={x.id}>{render(x)}</article>)}</div></section>}

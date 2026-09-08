@@ -63,5 +63,6 @@ export default async function TrailPage({params}){
       {'@type':'ListItem',position:3,name:trail.title,item:url}
     ]}
   ]}
-  return <main className="trail-detail"><StructuredData data={schema}/><nav><Link href="/trails">← 全部轨迹</Link><Link href="/"><Logo compact/></Link></nav><header><small>CURATED TRAIL / {String(items?.length||0).padStart(2,'0')} STOPS</small><h1>{trail.title}</h1><p>{trail.summary}</p></header><ol>{resolved.map(({item,target,href,title,position})=><li key={item.id}><span>{String(position).padStart(2,'0')}</span><div><small>{item.item_type.toUpperCase()}</small><h2>{title}</h2><p>{item.note||target?.excerpt||target?.review}</p>{href&&<Link href={href}>打开这一站 →</Link>}</div></li>)}</ol></main>
+  const typeLabel={post:'日志',book:'书籍',note:'短注'}
+  return <main className="trail-detail"><StructuredData data={schema}/><nav><Link href="/trails">← 轨迹</Link><Link href="/"><Logo compact/></Link></nav><header><h1>{trail.title}</h1>{trail.summary&&<p>{trail.summary}</p>}</header><ol>{resolved.map(({item,target,href,title,position})=><li key={item.id}><span>{String(position).padStart(2,'0')}</span><div><small>{typeLabel[item.item_type]||item.item_type}</small><h2>{title}</h2>{(item.note||target?.excerpt||target?.review)&&<p>{item.note||target?.excerpt||target?.review}</p>}{href&&<Link href={href}>打开 →</Link>}</div></li>)}</ol></main>
 }

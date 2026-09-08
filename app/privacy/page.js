@@ -28,16 +28,15 @@ export default function PrivacyPage(){
   const schema={'@context':'https://schema.org','@type':'WebPage',name:'隐私政策',url:`${SITE_URL}/privacy`,description:'CHRIS / FIELD NOTES 的隐私政策与数据处理说明。',inLanguage:SITE_LANGUAGE,isPartOf:{'@id':`${SITE_URL}/#website`},dateModified:updated}
   return <main id="top" className="privacy-page">
     <StructuredData data={schema}/>
-    <nav className="privacy-nav"><Link href="/" aria-label={`${SITE_NAME} 首页`}><Logo compact/></Link><span>DATA NOTE / 隐私政策</span><Link href="/">返回首页 ↗</Link></nav>
+    <nav className="privacy-nav"><Link href="/" aria-label={`${SITE_NAME} 首页`}><Logo compact/></Link><span>隐私政策</span><Link href="/">返回首页</Link></nav>
 
     <header className="privacy-hero">
-      <small>PUBLIC DATA PRACTICE / 公开数据说明</small>
-      <h1>记录可以公开，<br/><em>个人信息不必。</em></h1>
-      <div className="privacy-intro"><p>本政策说明本网站在访问统计、内容订阅、评论、留言及广告服务中如何处理信息。原则很简单：只收集提供功能所必需的数据，不出售个人信息，也不公开订阅者和留言者的邮箱。</p><dl><div><dt>适用网站</dt><dd>chrisreading.ink</dd></div><div><dt>最后更新</dt><dd>{updated}</dd></div><div><dt>版本</dt><dd>PRIVACY / 01</dd></div></dl></div>
+      <h1>隐私政策</h1>
+      <div className="privacy-intro"><p>本政策说明本网站在访问统计、内容订阅、评论、留言及广告服务中如何处理信息。本站只收集提供功能所必需的数据，不出售个人信息，也不公开订阅者和留言者的邮箱。</p><dl><div><dt>适用网站</dt><dd>chrisreading.ink</dd></div><div><dt>最后更新</dt><dd>{updated}</dd></div></dl></div>
     </header>
 
     <div className="privacy-layout">
-      <aside aria-label="隐私政策目录"><span>INDEX / 目录</span><ol>{sections.map(([id,label],index)=><li key={id}><a href={`#${id}`}><b>{String(index+1).padStart(2,'0')}</b>{label}</a></li>)}</ol></aside>
+      <aside aria-label="隐私政策目录"><span>目录</span><ol>{sections.map(([id,label],index)=><li key={id}><a href={`#${id}`}><b>{String(index+1).padStart(2,'0')}</b>{label}</a></li>)}</ol></aside>
       <article className="privacy-copy">
         <PolicySection id="scope" no="01" title="适用范围">
           <p>本政策适用于 CHRIS / FIELD NOTES 网站及其提供的日志、书单、阅读轨迹、搜索、订阅、评论和留言功能。通过第三方链接离开本站后，相关服务将适用其各自的隐私政策。</p>
@@ -88,7 +87,7 @@ export default function PrivacyPage(){
         </PolicySection>
       </article>
     </div>
-    <footer className="privacy-footer"><Link href="/"><Logo compact/></Link><p>最少收集 · 明确用途 · 保留选择</p><a href="#top">TOP ↑</a></footer>
+    <footer className="privacy-footer"><Link href="/"><Logo compact/></Link><a href="#top">返回顶部 ↑</a></footer>
   </main>
 }
 

@@ -12,5 +12,5 @@ export default function AboutEditor({initialText}){
   setSaving(false);setNotice(error?.message||'ABOUT 介绍已保存')
   if(!error)await requestIndexing(['/'])
  }
- return <main className="studio"><header><div><p>C/ STUDIO · ABOUT</p><h1>ABOUT 编辑</h1></div><div><Link href="/studio">文章编辑</Link>　<Link href="/">查看网站 ↗</Link></div></header><form className="editor" onSubmit={save}><label>弹窗介绍文字<textarea className="body" rows={10} value={text} onChange={event=>setText(event.target.value)}/></label><button className="save" disabled={saving||!text.trim()}>{saving?'保存中…':'保存 ABOUT 介绍'}</button><p aria-live="polite">{notice}</p></form></main>
+ return <main className="studio"><header><div><h1>ABOUT 编辑</h1></div><div><Link href="/studio">文章编辑</Link>　<Link href="/">查看网站 ↗</Link></div></header><form className="editor" onSubmit={save}><label>弹窗介绍文字<textarea className="body" rows={10} value={text} onChange={event=>setText(event.target.value)}/></label><button className="save" disabled={saving||!text.trim()}>{saving?'保存中…':'保存 ABOUT 介绍'}</button><p aria-live="polite">{notice}</p></form></main>
 }
