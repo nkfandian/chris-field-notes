@@ -2,6 +2,7 @@
 
 import {useEffect, useRef, useState} from 'react'
 import {labels} from '@/lib/demo'
+import {parsePostBlocks} from '@/lib/post-format'
 import qrcode from 'qrcode-generator'
 import './post-image-exporter.css'
 
@@ -15,22 +16,11 @@ const SITE = 'www.chrisreading.ink'
 const IMAGE_WIDTH = 1080
 const SIDE = 72
 const CONTENT_WIDTH = IMAGE_WIDTH - SIDE * 2
-const MAX_PAGE_BODY_CHARS = 2800
+const MAX_PAGE_BODY_HEIGHT = 1480
 const SLOGAN_LEAD = '面对复杂，'
 const SLOGAN_EMPHASIS = '保持欢喜'
 const NO_LINE_START = '，。！？；：、）》】」』”’…'
 const NO_LINE_END = '（《【「『“‘'
-
-function cleanParagraphs(value = '') {
-  return value
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/[`*_>#]/g, '')
-    .split(/\n{2,}|\r?\n/)
-    .map((part) => part.replace(/\s+/g, ' ').trim())
-    .filter(Boolean)
-}
 
 function wrapText(ctx, text, maxWidth) {
   const tokens = String(text || '').trim().match(/[\u4e00-\u9fff]|[^\s\u4e00-\u9fff]+|\s+/g) || []
@@ -76,6 +66,257 @@ function balanceLastLine(ctx, input, maxWidth) {
     lines[lastIndex] = nextLast
   }
   return lines
+}
+
+const BODY_STYLES = {
+  paragraph: {fontSize: 46, lineHeight: 82, weight: 400, gapBefore: 0, gapAfter: 34, indent: 0, color: INK},
+  h1: {fontSize: 62, lineHeight: 88, weight: 700, gapBefore: 24, gapAfter: 26, indent: 0, color: INK},
+  h2: {fontSize: 56, lineHeight: 82, weight: 700, gapBefore: 22, gapAfter: 24, indent: 0, color: INK},
+  h3: {fontSize: 49, lineHeight: 76, weight: 700, gapBefore: 18, gapAfter: 22, indent: 0, color: INK},
+  quote: {fontSize: 43, lineHeight: 76, weight: 400, italic: true, gapBefore: 18, gapAfter: 34, indent: 42, color: MUTED, quote: true},
+  list: {fontSize: 46, lineHeight: 82, weight: 400, gapBefore: 0, gapAfter: 30, indent: 58, color: INK},
+}
+
+function richFont(run, style) {
+  const italic = run.italic || style.italic ? 'italic ' : ''
+  const weight = run.bold || style.weight >= 600 ? 700 : 400
+  const size = run.code ? Math.max(18, style.fontSize - 6) : style.fontSize
+  return `${italic}${weight} ${size}px ${run.code ? MONO : SERIF}`
+}
+
+function runWidth(ctx, run, style) {
+  ctx.font = richFont(run, style)
+  return ctx.measureText(run.text).width
+}
+
+function appendLineRun(line, run, text, width) {
+  if (!text) return
+  const previous = line.runs.at(-1)
+  if (previous && previous.bold === run.bold && previous.italic === run.italic && previous.strike === run.strike && previous.code === run.code && previous.href === run.href) {
+    previous.text += text
+    previous.width += width
+  } else line.runs.push({...run, text, width})
+  line.width += width
+}
+
+function trimLineEnd(ctx, line, style) {
+  const last = line.runs.at(-1)
+  if (!last) return
+  const trimmed = last.text.trimEnd()
+  if (trimmed !== last.text) {
+    line.width -= last.width
+    last.text = trimmed
+    last.width = runWidth(ctx, last, style)
+    line.width += last.width
+  }
+  if (!last.text) line.runs.pop()
+}
+
+function takeOpeningMark(ctx, line, style) {
+  const last = line.runs.at(-1)
+  const mark = last?.text?.at(-1)
+  if (!mark || !NO_LINE_END.includes(mark) || line.runs.length === 1 && last.text.length === 1) return null
+  line.width -= last.width
+  last.text = last.text.slice(0, -1)
+  last.width = runWidth(ctx, last, style)
+  line.width += last.width
+  if (!last.text) line.runs.pop()
+  return {...last, text: mark, width: runWidth(ctx, {...last, text: mark}, style)}
+}
+
+function wrapRichRuns(ctx, runs, maxWidth, style) {
+  const lines = []
+  let line = {runs: [], width: 0}
+  const commit = () => {
+    trimLineEnd(ctx, line, style)
+    if (line.runs.length) lines.push(line)
+    line = {runs: [], width: 0}
+  }
+  for (const run of runs) {
+    const tokens = run.text.match(/[\u3400-\u9fff]|[，。！？；：、）》】」』”’…（《【「『“‘]|[^\s\u3400-\u9fff，。！？；：、）》】」』”’…（《【「『“‘]+|\s+/g) || []
+    for (let token of tokens) {
+      if (!line.runs.length) token = token.trimStart()
+      if (!token) continue
+      let tokenRun = {...run, text: token}
+      let width = runWidth(ctx, tokenRun, style)
+      const pieces = width > maxWidth ? Array.from(token) : [token]
+      for (let piece of pieces) {
+        if (!line.runs.length) piece = piece.trimStart()
+        if (!piece) continue
+        tokenRun = {...run, text: piece}
+        width = runWidth(ctx, tokenRun, style)
+        if (line.runs.length && line.width + width > maxWidth) {
+          if (NO_LINE_START.includes(piece[0])) {
+            appendLineRun(line, run, piece, width)
+            continue
+          }
+          const opening = takeOpeningMark(ctx, line, style)
+          commit()
+          if (opening) appendLineRun(line, opening, opening.text, opening.width)
+        }
+        appendLineRun(line, run, piece, width)
+      }
+    }
+  }
+  commit()
+  return lines.length ? lines : [{runs: [{text: '', width: 0}], width: 0}]
+}
+
+function layoutBlock(ctx, block) {
+  if (block.type === 'image') return null
+  if (block.type === 'hr') return {type: 'hr', gapBefore: 18, gapAfter: 24, lineHeight: 42, lines: []}
+  const list = block.type === 'ul' || block.type === 'ol'
+  const style = {...(BODY_STYLES[list ? 'list' : block.type] || BODY_STYLES.paragraph)}
+  if (block.align === 'center') style.align = 'center'
+  if (block.blockBold) style.weight = 700
+  const maxWidth = CONTENT_WIDTH - style.indent
+  let lines = []
+  if (list) {
+    block.items.forEach((item, itemIndex) => {
+      const itemLines = wrapRichRuns(ctx, item, maxWidth, style)
+      itemLines.forEach((line, lineIndex) => lines.push({...line, prefix: lineIndex === 0 ? (block.type === 'ol' ? `${itemIndex + 1}.` : '•') : '', extraAfter: lineIndex === itemLines.length - 1 ? 8 : 0}))
+    })
+  } else lines = wrapRichRuns(ctx, block.runs || [], maxWidth, style)
+  return {
+    type: block.type,
+    style,
+    lines,
+    gapBefore: style.gapBefore,
+    gapAfter: style.gapAfter,
+    lineHeight: style.lineHeight,
+    keepWithNext: /^h[1-3]$/.test(block.type),
+  }
+}
+
+function fragmentHeight(block) {
+  return block.gapBefore + block.gapAfter + (block.type === 'hr' ? block.lineHeight : block.lines.reduce((height, line) => height + block.lineHeight + (line.extraAfter || 0), 0))
+}
+
+function firstLineHeight(block) {
+  if (!block) return 0
+  return block.gapBefore + block.lineHeight + (block.lines?.[0]?.extraAfter || 0)
+}
+
+function layoutBodyPages(value = '') {
+  const measureCanvas = document.createElement('canvas')
+  const ctx = measureCanvas.getContext('2d')
+  const blocks = parsePostBlocks(value).map(block => layoutBlock(ctx, block)).filter(Boolean)
+  if (!blocks.length) return [[]]
+  const pages = []
+  let current = {blocks: [], height: 0}
+  const flush = () => {
+    if (current.blocks.length) pages.push(current.blocks)
+    current = {blocks: [], height: 0}
+  }
+  const add = block => {
+    current.blocks.push(block)
+    current.height += fragmentHeight(block)
+  }
+
+  blocks.forEach((block, blockIndex) => {
+    const total = fragmentHeight(block)
+    const nextMinimum = block.keepWithNext ? firstLineHeight(blocks[blockIndex + 1]) : 0
+    if (current.blocks.length && current.height + total + nextMinimum > MAX_PAGE_BODY_HEIGHT && total + nextMinimum <= MAX_PAGE_BODY_HEIGHT) flush()
+    if (current.blocks.length && total <= MAX_PAGE_BODY_HEIGHT && total > MAX_PAGE_BODY_HEIGHT - current.height) flush()
+    if (total <= MAX_PAGE_BODY_HEIGHT - current.height) {
+      add(block)
+      return
+    }
+    if (block.type === 'hr') {
+      flush()
+      add(block)
+      return
+    }
+    let remaining = [...block.lines]
+    let firstFragment = true
+    while (remaining.length) {
+      const gapBefore = firstFragment ? block.gapBefore : 12
+      const available = MAX_PAGE_BODY_HEIGHT - current.height - gapBefore - Math.max(block.gapAfter, 14)
+      let used = 0
+      let count = 0
+      for (const line of remaining) {
+        const cost = block.lineHeight + (line.extraAfter || 0)
+        if (count && used + cost > available) break
+        if (!count && cost > available) break
+        used += cost
+        count += 1
+      }
+      if (!count) {
+        flush()
+        continue
+      }
+      if (remaining.length - count === 1 && count > 1) count -= 1
+      const isLast = count === remaining.length
+      const fragment = {...block, lines: remaining.slice(0, count), gapBefore, gapAfter: isLast ? block.gapAfter : 14, keepWithNext: false}
+      add(fragment)
+      remaining = remaining.slice(count)
+      firstFragment = false
+      if (remaining.length) flush()
+    }
+  })
+  flush()
+  return pages.length ? pages : [[]]
+}
+
+function drawRichLine(ctx, line, style, baseline) {
+  const contentX = SIDE + style.indent
+  let x = style.align === 'center' ? SIDE + (CONTENT_WIDTH - line.width) / 2 : contentX
+  if (style.quote) {
+    ctx.strokeStyle = MOSS
+    ctx.lineWidth = 4
+    ctx.beginPath()
+    ctx.moveTo(SIDE + 3, baseline - style.fontSize)
+    ctx.lineTo(SIDE + 3, baseline + 18)
+    ctx.stroke()
+  }
+  if (line.prefix) {
+    ctx.font = `700 ${style.fontSize}px ${SERIF}`
+    ctx.fillStyle = MOSS
+    ctx.fillText(line.prefix, SIDE + 4, baseline)
+  }
+  for (const run of line.runs) {
+    ctx.font = richFont(run, style)
+    const width = run.width ?? runWidth(ctx, run, style)
+    if (run.code && run.text) {
+      ctx.fillStyle = '#dfded6'
+      ctx.fillRect(x - 4, baseline - style.fontSize * 0.82, width + 8, style.fontSize * 1.08)
+    }
+    ctx.fillStyle = run.href ? MOSS : style.color
+    ctx.fillText(run.text, x, baseline)
+    if ((run.strike || run.href) && run.text) {
+      const lineY = run.strike ? baseline - style.fontSize * 0.31 : baseline + 6
+      ctx.strokeStyle = run.href ? MOSS : style.color
+      ctx.lineWidth = run.strike ? 2.5 : 1.5
+      ctx.beginPath()
+      ctx.moveTo(x, lineY)
+      ctx.lineTo(x + width, lineY)
+      ctx.stroke()
+    }
+    x += width
+  }
+}
+
+function drawBodyPage(ctx, blocks, startY) {
+  let y = startY
+  for (const block of blocks) {
+    y += block.gapBefore
+    if (block.type === 'hr') {
+      ctx.strokeStyle = '#b9b9b2'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(SIDE, y + 14)
+      ctx.lineTo(IMAGE_WIDTH - SIDE, y + 14)
+      ctx.stroke()
+      y += block.lineHeight + block.gapAfter
+      continue
+    }
+    block.lines.forEach(line => {
+      drawRichLine(ctx, line, block.style, y)
+      y += block.lineHeight + (line.extraAfter || 0)
+    })
+    y += block.gapAfter
+  }
+  return y
 }
 
 function drawLines(ctx, lines, x, y, lineHeight, color = INK) {
@@ -198,36 +439,6 @@ function articleInfo(post) {
   }
 }
 
-function splitBodyPages(value = '') {
-  const paragraphs = cleanParagraphs(value)
-  const pieces = []
-  for (const paragraph of paragraphs) {
-    const chars = Array.from(paragraph)
-    if (chars.length <= MAX_PAGE_BODY_CHARS) {
-      pieces.push(paragraph)
-      continue
-    }
-    for (let index = 0; index < chars.length; index += MAX_PAGE_BODY_CHARS) {
-      pieces.push(chars.slice(index, index + MAX_PAGE_BODY_CHARS).join(''))
-    }
-  }
-  const pages = []
-  let current = []
-  let length = 0
-  for (const paragraph of pieces) {
-    const addition = paragraph.length + (current.length ? 2 : 0)
-    if (current.length && length + addition > MAX_PAGE_BODY_CHARS) {
-      pages.push(current.join('\n\n'))
-      current = []
-      length = 0
-    }
-    current.push(paragraph)
-    length += paragraph.length + (current.length > 1 ? 2 : 0)
-  }
-  if (current.length) pages.push(current.join('\n\n'))
-  return pages.length ? pages : ['']
-}
-
 function canvasBlob(canvas) {
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error('PNG 生成失败')), 'image/png')
@@ -302,39 +513,24 @@ function zipImages(files) {
   return new Blob([...locals, ...centrals, end], {type: 'application/zip'})
 }
 
-function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1} = {}) {
+function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyPage = []} = {}) {
   const info = articleInfo(post)
-  const paragraphs = cleanParagraphs(post.body || post.excerpt || '')
   const titleFont = 82
   const titleLine = 102
   const summaryFont = 44
   const summaryLine = 74
-  const bodyFont = 46
-  const bodyLine = 84
-  const paragraphGap = 38
   ctx.font = `700 ${titleFont}px ${SERIF}`
   const titleLines = balanceLastLine(ctx, wrapText(ctx, info.title, CONTENT_WIDTH), CONTENT_WIDTH)
   ctx.font = `400 ${summaryFont}px ${SERIF}`
   const excerptLines = balanceLastLine(ctx, wrapText(ctx, info.excerpt, CONTENT_WIDTH), CONTENT_WIDTH)
-  let fullLines = []
-  if (mode === 'full') {
-    ctx.font = `400 ${bodyFont}px ${SERIF}`
-    fullLines = paragraphs.flatMap((paragraph) => [
-      ...balanceLastLine(ctx, wrapText(ctx, paragraph, CONTENT_WIDTH), CONTENT_WIDTH),
-      '',
-    ])
-    if (fullLines.at(-1) === '') fullLines.pop()
-  }
 
   const titleY = 330
   const excerptY = titleY + titleLines.length * titleLine + 34
   const dividerY = excerptY + excerptLines.length * summaryLine + 54
-  const bodyHeight = mode === 'full'
-    ? fullLines.reduce((height, line) => height + (line ? bodyLine : paragraphGap), 0)
-    : 0
+  const bodyHeight = mode === 'full' ? bodyPage.reduce((height, block) => height + fragmentHeight(block), 0) : 0
 
   const bodyY = dividerY + 58
-  const endcapY = mode === 'full' ? bodyY + bodyHeight + 58 : dividerY + 32
+  const endcapY = mode === 'full' ? bodyY + bodyHeight + 34 : dividerY + 32
   const height = endcapY + 212
   ctx.canvas.width = IMAGE_WIDTH
   ctx.canvas.height = height
@@ -376,17 +572,7 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1} = {})
   }
 
   if (mode === 'full') {
-    let y = bodyY
-    ctx.font = `400 ${bodyFont}px ${SERIF}`
-    fullLines.forEach((line) => {
-      if (!line) {
-        y += paragraphGap
-        return
-      }
-      ctx.fillStyle = INK
-      ctx.fillText(line, SIDE, y)
-      y += bodyLine
-    })
+    drawBodyPage(ctx, bodyPage, bodyY)
   }
   drawEndcap(ctx, info, endcapY)
 }
@@ -415,9 +601,8 @@ export default function PostImageExporter({post}) {
     async function render() {
       if (document.fonts?.ready) await document.fonts.ready
       if (cancelled || !canvasRef.current) return
-      const pages = splitBodyPages(post.body || post.excerpt || '')
-      const previewPost = mode === 'full' ? {...post, body: pages[0]} : post
-      drawCanvas(canvasRef.current.getContext('2d'), previewPost, mode, logoRef.current, {pageNumber: 1, pageCount: pages.length})
+      const pages = layoutBodyPages(post.body || post.excerpt || '')
+      drawCanvas(canvasRef.current.getContext('2d'), post, mode, logoRef.current, {pageNumber: 1, pageCount: pages.length, bodyPage: pages[0]})
     }
     render()
     return () => { cancelled = true }
@@ -428,13 +613,12 @@ export default function PostImageExporter({post}) {
     const base = filePart(post.slug || post.title)
     try {
       if (document.fonts?.ready) await document.fonts.ready
-      const pageBodies = targetMode === 'full' ? splitBodyPages(post.body || post.excerpt || '') : ['']
-      setNotice(targetMode === 'full' ? `正在生成全文图片（共 ${pageBodies.length} 张）…` : '正在生成摘要图…')
+      const pages = targetMode === 'full' ? layoutBodyPages(post.body || post.excerpt || '') : [[]]
+      setNotice(targetMode === 'full' ? `正在生成全文图片（共 ${pages.length} 张）…` : '正在生成摘要图…')
       const images = []
-      for (let index = 0; index < pageBodies.length; index += 1) {
+      for (let index = 0; index < pages.length; index += 1) {
         const canvas = document.createElement('canvas')
-        const pagePost = targetMode === 'full' ? {...post, body: pageBodies[index]} : post
-        drawCanvas(canvas.getContext('2d'), pagePost, targetMode, logoRef.current, {pageNumber: index + 1, pageCount: pageBodies.length})
+        drawCanvas(canvas.getContext('2d'), post, targetMode, logoRef.current, {pageNumber: index + 1, pageCount: pages.length, bodyPage: pages[index]})
         const blob = await canvasBlob(canvas)
         images.push({
           name: `${base}-full-${String(index + 1).padStart(2, '0')}.png`,
@@ -475,6 +659,6 @@ export default function PostImageExporter({post}) {
       </div>
     </div>
     <div className="post-image-export-preview"><canvas ref={canvasRef} aria-label="文章图片预览" /></div>
-    <p className="post-image-export-note" aria-live="polite">{notice || (mode === 'summary' ? '适合社交平台与文章转发。' : `当前显示手机长图第 1 页预览；下载时会完整导出，过长文章自动分页并打包。`)}</p>
+    <p className="post-image-export-note" aria-live="polite">{notice || (mode === 'summary' ? '适合社交平台与文章转发。' : '当前显示手机长图第 1 页预览；下载时按完整行智能分页，保持标题与正文连续，并自动打包。')}</p>
   </section>
 }
