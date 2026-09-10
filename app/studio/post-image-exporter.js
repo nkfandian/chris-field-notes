@@ -16,7 +16,7 @@ const SITE = 'www.chrisreading.ink'
 const IMAGE_WIDTH = 1080
 const SIDE = 72
 const CONTENT_WIDTH = IMAGE_WIDTH - SIDE * 2
-const MAX_PAGE_BODY_HEIGHT = 1480
+const MAX_PAGE_BODY_CHARS = 2500
 const SLOGAN_LEAD = '面对复杂，'
 const SLOGAN_EMPHASIS = '保持欢喜'
 const NO_LINE_START = '，。！？；：、）》】」』”’…'
@@ -192,70 +192,110 @@ function fragmentHeight(block) {
   return block.gapBefore + block.gapAfter + (block.type === 'hr' ? block.lineHeight : block.lines.reduce((height, line) => height + block.lineHeight + (line.extraAfter || 0), 0))
 }
 
-function firstLineHeight(block) {
-  if (!block) return 0
-  return block.gapBefore + block.lineHeight + (block.lines?.[0]?.extraAfter || 0)
+function runsCharCount(runs = []) {
+  return runs.reduce((count, run) => count + Array.from(run.text || '').length, 0)
+}
+
+function splitRunsAtChars(runs = [], limit = MAX_PAGE_BODY_CHARS) {
+  const head = []
+  const tail = []
+  let remaining = limit
+  let splitting = false
+  for (const run of runs) {
+    const chars = Array.from(run.text || '')
+    if (splitting) {
+      if (chars.length) tail.push({...run, text: chars.join('')})
+      continue
+    }
+    const take = Math.min(remaining, chars.length)
+    const headText = chars.slice(0, take).join('')
+    const tailText = chars.slice(take).join('')
+    if (headText) head.push({...run, text: headText})
+    if (tailText) {
+      tail.push({...run, text: tailText})
+      splitting = true
+    }
+    remaining -= take
+  }
+  return [head, tail]
+}
+
+function blockCharCount(block) {
+  if (block.type === 'ul' || block.type === 'ol') return block.items.reduce((count, item) => count + runsCharCount(item), 0)
+  return runsCharCount(block.runs)
+}
+
+function splitBlockAtChars(block, limit = MAX_PAGE_BODY_CHARS) {
+  if (block.type === 'image' || block.type === 'hr') return [block]
+  if (blockCharCount(block) <= limit) return [block]
+  if (block.type === 'ul' || block.type === 'ol') {
+    const headItems = []
+    const tailItems = []
+    let count = 0
+    let splitting = false
+    for (const item of block.items) {
+      if (splitting) {
+        tailItems.push(item)
+        continue
+      }
+      const itemCount = runsCharCount(item)
+      if (count + itemCount <= limit) {
+        headItems.push(item)
+        count += itemCount
+        continue
+      }
+      const [headItem, tailItem] = splitRunsAtChars(item, limit - count)
+      if (headItem.length) headItems.push(headItem)
+      if (tailItem.length) tailItems.push(tailItem)
+      splitting = true
+    }
+    const head = {...block, items: headItems}
+    const tail = tailItems.length ? {...block, items: tailItems} : null
+    return tail ? [head, tail] : [head]
+  }
+  const [headRuns, tailRuns] = splitRunsAtChars(block.runs, limit)
+  const head = {...block, runs: headRuns}
+  const tail = tailRuns.length ? {...block, type: 'paragraph', runs: tailRuns, gapBefore: 0} : null
+  return tail ? [head, tail] : [head]
+}
+
+function splitPostBlocksByChars(value = '') {
+  const pages = []
+  let current = []
+  let count = 0
+  const flush = () => {
+    if (current.length) pages.push(current)
+    current = []
+    count = 0
+  }
+  for (const block of parsePostBlocks(value)) {
+    let pending = block
+    while (pending) {
+      const limit = count === MAX_PAGE_BODY_CHARS ? MAX_PAGE_BODY_CHARS : MAX_PAGE_BODY_CHARS - count
+      const [part, tail] = splitBlockAtChars(pending, limit)
+      const partCount = blockCharCount(part)
+      if (!partCount) {
+        if (current.length) current.push(part)
+        else if (pages.length) pages.at(-1).push(part)
+        else current.push(part)
+        pending = tail
+        continue
+      }
+      if (current.length && partCount && count + partCount > MAX_PAGE_BODY_CHARS) flush()
+      current.push(part)
+      count += partCount
+      if (count === MAX_PAGE_BODY_CHARS) flush()
+      pending = tail
+    }
+  }
+  flush()
+  return pages.length ? pages : [[]]
 }
 
 function layoutBodyPages(value = '') {
   const measureCanvas = document.createElement('canvas')
   const ctx = measureCanvas.getContext('2d')
-  const blocks = parsePostBlocks(value).map(block => layoutBlock(ctx, block)).filter(Boolean)
-  if (!blocks.length) return [[]]
-  const pages = []
-  let current = {blocks: [], height: 0}
-  const flush = () => {
-    if (current.blocks.length) pages.push(current.blocks)
-    current = {blocks: [], height: 0}
-  }
-  const add = block => {
-    current.blocks.push(block)
-    current.height += fragmentHeight(block)
-  }
-
-  blocks.forEach((block, blockIndex) => {
-    const total = fragmentHeight(block)
-    const nextMinimum = block.keepWithNext ? firstLineHeight(blocks[blockIndex + 1]) : 0
-    if (current.blocks.length && current.height + total + nextMinimum > MAX_PAGE_BODY_HEIGHT && total + nextMinimum <= MAX_PAGE_BODY_HEIGHT) flush()
-    if (current.blocks.length && total <= MAX_PAGE_BODY_HEIGHT && total > MAX_PAGE_BODY_HEIGHT - current.height) flush()
-    if (total <= MAX_PAGE_BODY_HEIGHT - current.height) {
-      add(block)
-      return
-    }
-    if (block.type === 'hr') {
-      flush()
-      add(block)
-      return
-    }
-    let remaining = [...block.lines]
-    let firstFragment = true
-    while (remaining.length) {
-      const gapBefore = firstFragment ? block.gapBefore : 12
-      const available = MAX_PAGE_BODY_HEIGHT - current.height - gapBefore - Math.max(block.gapAfter, 14)
-      let used = 0
-      let count = 0
-      for (const line of remaining) {
-        const cost = block.lineHeight + (line.extraAfter || 0)
-        if (count && used + cost > available) break
-        if (!count && cost > available) break
-        used += cost
-        count += 1
-      }
-      if (!count) {
-        flush()
-        continue
-      }
-      if (remaining.length - count === 1 && count > 1) count -= 1
-      const isLast = count === remaining.length
-      const fragment = {...block, lines: remaining.slice(0, count), gapBefore, gapAfter: isLast ? block.gapAfter : 14, keepWithNext: false}
-      add(fragment)
-      remaining = remaining.slice(count)
-      firstFragment = false
-      if (remaining.length) flush()
-    }
-  })
-  flush()
-  return pages.length ? pages : [[]]
+  return splitPostBlocksByChars(value).map(page => page.map(block => layoutBlock(ctx, block)).filter(Boolean))
 }
 
 function drawRichLine(ctx, line, style, baseline) {
@@ -515,6 +555,7 @@ function zipImages(files) {
 
 function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyPage = []} = {}) {
   const info = articleInfo(post)
+  const showIntro = mode !== 'full' || pageNumber === 1
   const titleFont = 82
   const titleLine = 102
   const summaryFont = 44
@@ -526,7 +567,7 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyP
 
   const titleY = 330
   const excerptY = titleY + titleLines.length * titleLine + 34
-  const dividerY = excerptY + excerptLines.length * summaryLine + 54
+  const dividerY = showIntro ? excerptY + excerptLines.length * summaryLine + 54 : 268
   const bodyHeight = mode === 'full' ? bodyPage.reduce((height, block) => height + fragmentHeight(block), 0) : 0
 
   const bodyY = dividerY + 58
@@ -555,13 +596,15 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyP
   ctx.fillText(String(info.domain).toUpperCase(), SIDE, 222)
   ctx.textAlign = 'right'
   ctx.fillStyle = MUTED
-  const pageLabel = pageCount > 1 ? `${info.date}  ·  ${String(pageNumber).padStart(2, '0')} / ${String(pageCount).padStart(2, '0')}` : info.date
+  const pageLabel = mode === 'full' ? `${info.date}  ·  ${String(pageNumber).padStart(2, '0')} / ${String(pageCount).padStart(2, '0')}` : info.date
   ctx.fillText(pageLabel, IMAGE_WIDTH - SIDE, 222)
   ctx.textAlign = 'left'
-  ctx.font = `700 ${titleFont}px ${SERIF}`
-  drawLines(ctx, titleLines, SIDE, titleY, titleLine)
-  ctx.font = `400 ${summaryFont}px ${SERIF}`
-  drawLines(ctx, excerptLines, SIDE, excerptY, summaryLine, MUTED)
+  if (showIntro) {
+    ctx.font = `700 ${titleFont}px ${SERIF}`
+    drawLines(ctx, titleLines, SIDE, titleY, titleLine)
+    ctx.font = `400 ${summaryFont}px ${SERIF}`
+    drawLines(ctx, excerptLines, SIDE, excerptY, summaryLine, MUTED)
+  }
   if (mode === 'full') {
     ctx.strokeStyle = '#b9b9b2'
     ctx.lineWidth = 2
@@ -659,6 +702,6 @@ export default function PostImageExporter({post}) {
       </div>
     </div>
     <div className="post-image-export-preview"><canvas ref={canvasRef} aria-label="文章图片预览" /></div>
-    <p className="post-image-export-note" aria-live="polite">{notice || (mode === 'summary' ? '适合社交平台与文章转发。' : '当前显示手机长图第 1 页预览；下载时按完整行智能分页，保持标题与正文连续，并自动打包。')}</p>
+    <p className="post-image-export-note" aria-live="polite">{notice || (mode === 'summary' ? '适合社交平台与文章转发。' : '正文不超过 2500 字时生成一张图；超过后按 2500 字分图，自动编号并仅在首图显示标题。')}</p>
   </section>
 }
