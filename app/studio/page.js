@@ -1,5 +1,6 @@
 import Studio from './studio'
 import './studio.css'
+import './markdown-editor.css'
 import {createClient,isConfigured} from '@/lib/supabase/server'
 import {demoPosts} from '@/lib/demo'
 import {getSiteAdmin} from '@/lib/auth'
