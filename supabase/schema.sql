@@ -138,6 +138,13 @@ grant execute on function public.is_site_admin() to authenticated,service_role;
 create or replace function public.get_public_comments(p_post_slug text) returns table(id uuid,name text,body text,created_at timestamptz) language sql stable security definer set search_path=public as $$select c.id,c.name,c.body,c.created_at from public.comments c where c.status='approved' and c.post_slug=p_post_slug and char_length(p_post_slug) between 1 and 180 order by c.created_at desc$$;
 revoke all on function public.get_public_comments(text) from public;
 grant execute on function public.get_public_comments(text) to anon,authenticated,service_role;
+create table if not exists public.post_views (post_id uuid primary key references public.posts(id) on delete cascade,view_count bigint not null default 0 check(view_count>=0),last_viewed_at timestamptz);
+alter table public.post_views enable row level security;
+drop policy if exists "admin reads post views" on public.post_views;
+create policy "admin reads post views" on public.post_views for select to authenticated using(public.is_site_admin());
+create or replace function public.record_post_view(p_post_slug text) returns bigint language plpgsql security definer set search_path=public as $$declare total bigint;begin if p_post_slug is null or p_post_slug!~'^[a-z0-9]+(?:-[a-z0-9]+)*$' or char_length(p_post_slug)>180 then return 0;end if;insert into public.post_views(post_id,view_count,last_viewed_at) select p.id,1,now() from public.posts p where p.slug=p_post_slug and p.status='published' on conflict(post_id) do update set view_count=public.post_views.view_count+1,last_viewed_at=excluded.last_viewed_at returning view_count into total;return coalesce(total,0);end$$;
+revoke all on function public.record_post_view(text) from public,anon,authenticated;
+grant execute on function public.record_post_view(text) to service_role;
 
 drop policy if exists "site content is public" on public.site_content;
 drop policy if exists "authenticated author inserts site content" on public.site_content;
@@ -179,8 +186,9 @@ create policy "published trail items are public" on public.trail_items for selec
 create policy "admin manages trail items" on public.trail_items for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
 alter table public.subscribers add column if not exists confirmation_sent_at timestamptz;
 
-revoke all on table public.comments,public.subscribers,public.email_campaigns,public.email_deliveries,public.rate_limits,public.site_admins from anon;
+revoke all on table public.comments,public.subscribers,public.email_campaigns,public.email_deliveries,public.rate_limits,public.site_admins,public.post_views from anon;
 revoke all on table public.rate_limits,public.site_admins from authenticated;
 grant select on table public.posts,public.site_content,public.books,public.trails,public.trail_items to anon,authenticated;
+grant select on table public.post_views to authenticated;
 alter default privileges for role postgres in schema public revoke all on tables from anon;
 commit;
