@@ -9,8 +9,9 @@ import './home.css'
 
 const domains = ['decode','execute','deploy','trek','roots']
 const domainName = key => labels[key]?.split('/ ')[1] || key
+const bookStatus = {Reading:'在读',Read:'已读','To Read':'想读'}
 
-export default function HomeClient({posts,content={},aboutText,showStudio=false}) {
+export default function HomeClient({posts,books=[],bookCount=0,trails=[],content={},aboutText,showStudio=false}) {
   const [filter,setFilter] = useState('all')
   const [selected,setSelected] = useState(null)
   const [menu,setMenu] = useState(false)
@@ -89,15 +90,36 @@ export default function HomeClient({posts,content={},aboutText,showStudio=false}
         </article>)}</div>
         {!shown.length&&<p className="home-empty" role="status">这个分类还没有日志。</p>}
       </section>
-      <section id="domains" className="section home-domains" aria-labelledby="home-domains-title">
-        <div className="home-section-heading"><h2 id="home-domains-title">日志分类</h2></div>
-        <div className="domain-grid">{domains.map(key=><Link className="domain-card" key={key} href={`/logs?domain=${key}`}><h3>{domainName(key)}</h3><div><span>{posts.filter(post=>post.domain===key).length} 篇</span><span className="domain-arrow" aria-hidden="true">↗</span></div></Link>)}</div>
+      <section id="reading" className="section home-reading" aria-label="书单与阅读轨迹">
+        <div className="reading-grid">
+          <section className="reading-books" aria-labelledby="home-books-title">
+            <header className="reading-panel-head"><div><small>THE SHELF / {bookCount} VOLUMES</small><h2 id="home-books-title">书单</h2></div><p>读过、正在读，以及准备打开的书。每一本都可能成为一篇日志的起点。</p></header>
+            <div className="reading-book-list">{books.map((book,index)=><Link className="reading-book" href={`/books#book-${book.id}`} key={book.id}>
+              <span className="reading-book-no">{String(index+1).padStart(2,'0')}</span>
+              <span className="reading-book-cover">{book.cover_url?<img src={book.cover_url} alt={`${book.title} 封面`} loading="lazy"/>:<span aria-hidden="true">无封面</span>}</span>
+              <span className="reading-book-copy"><small>{bookStatus[book.status]||book.status}{book.rating?` · ${'★'.repeat(book.rating)}`:''}</small><strong>{book.title}</strong><em>{book.author}</em></span>
+            </Link>)}</div>
+            {!books.length&&<p className="reading-empty">书架正在整理。</p>}
+            <div className="reading-panel-foot"><span>阅读记录与短评</span><Link href="/books">打开完整书单 <b aria-hidden="true">↗</b></Link></div>
+          </section>
+          <section className="reading-trails" aria-labelledby="home-trails-title">
+            <header className="reading-panel-head"><div><small>CURATED ROUTES / {trails.length} PATHS</small><h2 id="home-trails-title">轨迹</h2></div><p>把文章和书按问题重新连接。不是目录，而是一条可以顺着走下去的阅读路径。</p></header>
+            <ol>{trails.map((trail,index)=><li key={trail.id}><Link href={`/trails/${encodeURIComponent(trail.slug)}`}>
+              <span className="reading-trail-no">{String(index+1).padStart(2,'0')}</span>
+              <span className="reading-trail-copy"><small>{trail.trail_items?.length||0} 个节点</small><strong>{trail.title}</strong>{trail.summary&&<em>{trail.summary}</em>}<span className="reading-trail-dots" aria-hidden="true">{(trail.trail_items||[]).slice(0,10).map(item=><i className={`is-${item.item_type}`} key={item.id}/>)}</span></span>
+              <b className="reading-trail-open" aria-hidden="true">↗</b>
+            </Link></li>)}</ol>
+            {!trails.length&&<p className="reading-empty">路径正在铺设。</p>}
+            <div className="reading-panel-foot"><span>主题式阅读路径</span><Link href="/trails">查看全部轨迹 <b aria-hidden="true">↗</b></Link></div>
+          </section>
+        </div>
       </section>
-      <section id="subscribe" className="section subscribe-section" aria-labelledby="home-subscribe-title">
-        <div className="home-section-heading"><h2 id="home-subscribe-title">订阅更新</h2></div><div className="subscribe-grid"><SubscribeForm/></div>
-      </section>
-      <section id="message" className="section message-section" aria-labelledby="home-message-title">
-        <div className="home-section-heading"><h2 id="home-message-title">留言</h2></div><div className="message-grid"><InteractionForm kind="message"/></div>
+      <section id="subscribe" className="home-contact" aria-labelledby="home-contact-title">
+        <div className="contact-intro"><small>KEEP IN TOUCH</small><h2 id="home-contact-title">偶尔更新，<br/>随时联系。</h2></div>
+        <div className="contact-actions">
+          <div className="contact-subscribe"><div className="contact-copy"><b>订阅新日志</b><span>只在新内容发布时发送。</span></div><SubscribeForm/></div>
+          <details id="message" className="contact-message"><summary><span className="contact-copy"><b>给我留言</b><span>问题、线索，或只是打个招呼。</span></span><i aria-hidden="true">＋</i></summary><InteractionForm kind="message"/></details>
+        </div>
       </section>
     </main>
     <footer className="site-footer"><span>CHRIS / FIELD NOTES © 2026</span><div className="footer-meta"><button type="button" onClick={()=>setAboutOpen(true)}>ABOUT</button><Link href="/privacy">隐私政策</Link><a href="#top">返回顶部 ↑</a></div></footer>
