@@ -71,11 +71,16 @@ export default function HomeClient({posts,books=[],bookCount=0,trails=[],content
     </header>
     <main id="top">
       <section className="hero quote-hero" aria-label="首页引语">
-        <div className="hero-proofline" aria-hidden="true">
-          <span className="hero-workflow"><b>READ</b><i/><b>THINK</b><i/><b>WRITE</b></span>
+        <aside className="hero-reading-rail" aria-label="阅读与写作流程">
           <span className="hero-folio"><small>FIELD NOTE</small><b>001</b></span>
-        </div>
+          <ol className="hero-workflow">
+            <li><b>01</b><span>READ<em>阅读</em></span></li>
+            <li><b>02</b><span>THINK<em>理解</em></span></li>
+            <li><b>03</b><span>WRITE<em>记录</em></span></li>
+          </ol>
+        </aside>
         <blockquote className="hero-slogan">
+          <div className="hero-note-label" aria-hidden="true"><span>AN OPEN NOTE ON LIVING</span><i/></div>
           <h1><span>{heroTitle}</span><em>{heroEmphasis}</em></h1>
           <div className="hero-quote-meta"><p className="hero-deck" lang="en">{heroDeck}</p><div className="hero-attribution"><span aria-hidden="true"/><cite>E. B. White</cite></div></div>
         </blockquote>

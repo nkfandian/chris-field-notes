@@ -11,7 +11,9 @@ const INK = '#151713'
 const MUTED = '#696d65'
 const MOSS = '#526b3f'
 const MONO = "'IBM Plex Mono', monospace"
-const SERIF = "Georgia, 'Noto Serif SC', serif"
+// Keep Chinese, Latin letters and lining figures on one font baseline. Putting
+// Georgia first makes Canvas switch fonts inside a single line and drops digits.
+const SERIF = "'Songti SC', 'STSong', 'Noto Serif SC', 'Noto Serif CJK SC', Georgia, serif"
 const SITE = 'www.chrisreading.ink'
 const IMAGE_WIDTH = 1080
 const SIDE = 72
@@ -19,53 +21,49 @@ const CONTENT_WIDTH = IMAGE_WIDTH - SIDE * 2
 const MAX_PAGE_BODY_CHARS = 2500
 const SLOGAN_LEAD = '面对复杂，'
 const SLOGAN_EMPHASIS = '保持欢喜'
-const NO_LINE_START = '，。！？；：、）》】」』”’…'
-const NO_LINE_END = '（《【「『“‘'
+const NO_LINE_START = '，。！？；：、）》】」』〉〕〗〙〛”’…—％‰℃°,.!?;:%)]}'
+const NO_LINE_END = '（《【「『〈〔〖〘〚“‘([{'
+const SENTENCE_BREAKS = '。！？!?…'
+const CLAUSE_BREAKS = '；;，,、：:'
+const CJK_TOKEN_PATTERN = /[\u3400-\u9fff\uf900-\ufaff]|[，。！？；：、）》】」』〉〕〗〙〛”’…—％‰℃°（《【「『〈〔〖〘〚“‘]|[^\s\u3400-\u9fff\uf900-\ufaff，。！？；：、）》】」』〉〕〗〙〛”’…—％‰℃°（《【「『〈〔〖〘〚“‘]+|\s+/g
+
+function units(value = '') {
+  return Array.from(String(value))
+}
+
+function splitPlainLineForClosingMark(current, mark) {
+  const chars = units(current.trimEnd())
+  const carry = chars.pop() || ''
+  return [chars.join(''), `${carry}${mark}`]
+}
 
 function wrapText(ctx, text, maxWidth) {
-  const tokens = String(text || '').trim().match(/[\u4e00-\u9fff]|[^\s\u4e00-\u9fff]+|\s+/g) || []
+  const tokens = String(text || '').trim().match(CJK_TOKEN_PATTERN) || []
   const lines = []
   let current = ''
   for (const token of tokens) {
-    const pieces = ctx.measureText(token).width > maxWidth ? Array.from(token) : [token]
+    const pieces = ctx.measureText(token).width > maxWidth ? units(token) : [token]
     for (const piece of pieces) {
       const candidate = `${current}${piece}`
       if (current && ctx.measureText(candidate).width > maxWidth) {
-        lines.push(current.trimEnd())
-        current = piece.trimStart()
+        if (NO_LINE_START.includes(piece[0])) {
+          const [previous, next] = splitPlainLineForClosingMark(current, piece)
+          if (previous) lines.push(previous)
+          current = next
+        } else if (NO_LINE_END.includes(units(current.trimEnd()).at(-1))) {
+          const chars = units(current.trimEnd())
+          const opening = chars.pop()
+          if (chars.length) lines.push(chars.join(''))
+          current = `${opening || ''}${piece.trimStart()}`
+        } else {
+          lines.push(current.trimEnd())
+          current = piece.trimStart()
+        }
       } else current = candidate
     }
   }
   if (current.trim()) lines.push(current.trimEnd())
-  for (let index = 1; index < lines.length; index += 1) {
-    while (lines[index] && NO_LINE_START.includes(lines[index][0])) {
-      lines[index - 1] += lines[index][0]
-      lines[index] = lines[index].slice(1).trimStart()
-    }
-    while (lines[index - 1] && NO_LINE_END.includes(lines[index - 1].at(-1))) {
-      const mark = lines[index - 1].at(-1)
-      lines[index - 1] = lines[index - 1].slice(0, -1).trimEnd()
-      lines[index] = `${mark}${lines[index]}`
-    }
-  }
   return lines.filter(Boolean).length ? lines.filter(Boolean) : ['']
-}
-
-function balanceLastLine(ctx, input, maxWidth) {
-  const lines = [...input]
-  if (lines.length < 2) return lines
-  const lastIndex = lines.length - 1
-  while (ctx.measureText(lines[lastIndex]).width < ctx.measureText(lines[lastIndex - 1]).width * 0.58) {
-    const tokens = lines[lastIndex - 1].match(/[\u4e00-\u9fff]|[^\s\u4e00-\u9fff]+/g) || []
-    const token = tokens.at(-1)
-    if (!token || tokens.length < 2) break
-    const spacer = /[A-Za-z0-9]$/.test(token) && /^[A-Za-z0-9]/.test(lines[lastIndex]) ? ' ' : ''
-    const nextLast = `${token}${spacer}${lines[lastIndex]}`
-    if (ctx.measureText(nextLast).width > maxWidth) break
-    lines[lastIndex - 1] = lines[lastIndex - 1].slice(0, -token.length).trimEnd()
-    lines[lastIndex] = nextLast
-  }
-  return lines
 }
 
 const BODY_STYLES = {
@@ -89,10 +87,14 @@ function runWidth(ctx, run, style) {
   return ctx.measureText(run.text).width
 }
 
+function sameRunStyle(left, right) {
+  return left && right && left.bold === right.bold && left.italic === right.italic && left.strike === right.strike && left.code === right.code && left.href === right.href
+}
+
 function appendLineRun(line, run, text, width) {
   if (!text) return
   const previous = line.runs.at(-1)
-  if (previous && previous.bold === run.bold && previous.italic === run.italic && previous.strike === run.strike && previous.code === run.code && previous.href === run.href) {
+  if (sameRunStyle(previous, run)) {
     previous.text += text
     previous.width += width
   } else line.runs.push({...run, text, width})
@@ -114,14 +116,31 @@ function trimLineEnd(ctx, line, style) {
 
 function takeOpeningMark(ctx, line, style) {
   const last = line.runs.at(-1)
-  const mark = last?.text?.at(-1)
-  if (!mark || !NO_LINE_END.includes(mark) || line.runs.length === 1 && last.text.length === 1) return null
+  const chars = units(last?.text)
+  const mark = chars.at(-1)
+  if (!mark || !NO_LINE_END.includes(mark)) return null
   line.width -= last.width
-  last.text = last.text.slice(0, -1)
+  chars.pop()
+  last.text = chars.join('')
   last.width = runWidth(ctx, last, style)
   line.width += last.width
   if (!last.text) line.runs.pop()
   return {...last, text: mark, width: runWidth(ctx, {...last, text: mark}, style)}
+}
+
+function takeLastCharacter(ctx, line, style) {
+  const last = line.runs.at(-1)
+  const chars = units(last?.text)
+  const character = chars.pop()
+  if (!last || !character) return null
+  line.width -= last.width
+  last.text = chars.join('')
+  last.width = runWidth(ctx, last, style)
+  line.width += last.width
+  if (!last.text) line.runs.pop()
+  const carried = {...last, text: character}
+  carried.width = runWidth(ctx, carried, style)
+  return carried
 }
 
 function wrapRichRuns(ctx, runs, maxWidth, style) {
@@ -132,30 +151,42 @@ function wrapRichRuns(ctx, runs, maxWidth, style) {
     if (line.runs.length) lines.push(line)
     line = {runs: [], width: 0}
   }
-  for (const run of runs) {
-    const tokens = run.text.match(/[\u3400-\u9fff]|[，。！？；：、）》】」』”’…（《【「『“‘]|[^\s\u3400-\u9fff，。！？；：、）》】」』”’…（《【「『“‘]+|\s+/g) || []
-    for (let token of tokens) {
-      if (!line.runs.length) token = token.trimStart()
-      if (!token) continue
-      let tokenRun = {...run, text: token}
-      let width = runWidth(ctx, tokenRun, style)
-      const pieces = width > maxWidth ? Array.from(token) : [token]
-      for (let piece of pieces) {
-        if (!line.runs.length) piece = piece.trimStart()
-        if (!piece) continue
-        tokenRun = {...run, text: piece}
-        width = runWidth(ctx, tokenRun, style)
-        if (line.runs.length && line.width + width > maxWidth) {
-          if (NO_LINE_START.includes(piece[0])) {
-            appendLineRun(line, run, piece, width)
-            continue
-          }
-          const opening = takeOpeningMark(ctx, line, style)
-          commit()
-          if (opening) appendLineRun(line, opening, opening.text, opening.width)
-        }
-        appendLineRun(line, run, piece, width)
+  const placePiece = (run, rawPiece) => {
+    let piece = line.runs.length ? rawPiece : rawPiece.trimStart()
+    if (!piece) return
+    let pieceRun = {...run, text: piece}
+    let width = runWidth(ctx, pieceRun, style)
+    if (!line.runs.length && width > maxWidth && units(piece).length > 1) {
+      units(piece).forEach(character => placePiece(run, character))
+      return
+    }
+    if (line.runs.length && line.width + width > maxWidth) {
+      if (NO_LINE_START.includes(units(piece)[0])) {
+        const carried = takeLastCharacter(ctx, line, style)
+        commit()
+        if (carried) appendLineRun(line, carried, carried.text, carried.width)
+      } else {
+        const opening = takeOpeningMark(ctx, line, style)
+        commit()
+        if (opening) appendLineRun(line, opening, opening.text, opening.width)
       }
+      piece = piece.trimStart()
+      if (!piece) return
+      pieceRun = {...run, text: piece}
+      width = runWidth(ctx, pieceRun, style)
+      if (line.width + width > maxWidth && units(piece).length > 1) {
+        units(piece).forEach(character => placePiece(run, character))
+        return
+      }
+    }
+    appendLineRun(line, run, piece, width)
+  }
+  for (const run of runs) {
+    const tokens = run.text.match(CJK_TOKEN_PATTERN) || []
+    for (const token of tokens) {
+      const tokenRun = {...run, text: token}
+      const pieces = runWidth(ctx, tokenRun, style) > maxWidth ? units(token) : [token]
+      pieces.forEach(piece => placePiece(run, piece))
     }
   }
   commit()
@@ -193,10 +224,38 @@ function fragmentHeight(block) {
 }
 
 function runsCharCount(runs = []) {
-  return runs.reduce((count, run) => count + Array.from(run.text || '').length, 0)
+  return runs.reduce((count, run) => count + units(run.text).length, 0)
 }
 
-function splitRunsAtChars(runs = [], limit = MAX_PAGE_BODY_CHARS) {
+function runsValue(runs = []) {
+  return runs.map(run => run.text || '').join('')
+}
+
+function safeSplitIndex(value, limit) {
+  const chars = units(value)
+  if (chars.length <= limit) return chars.length
+  if (limit <= 1) return Math.max(0, limit)
+  const floor = Math.max(1, limit - Math.min(260, Math.floor(limit * .14)))
+  const findBreak = marks => {
+    for (let index = limit; index > floor; index -= 1) {
+      if (marks.includes(chars[index - 1]) && !NO_LINE_START.includes(chars[index] || '')) return index
+    }
+    return 0
+  }
+  let cut = findBreak(SENTENCE_BREAKS) || findBreak(CLAUSE_BREAKS)
+  if (!cut) {
+    for (let index = limit; index > floor; index -= 1) {
+      if (/\s/.test(chars[index - 1])) { cut = index; break }
+    }
+  }
+  if (!cut) cut = limit
+  while (cut > floor && NO_LINE_START.includes(chars[cut] || '')) cut -= 1
+  while (cut > floor && NO_LINE_END.includes(chars[cut - 1] || '')) cut -= 1
+  return cut || limit
+}
+
+function splitRunsAtChars(runs = [], requestedLimit = MAX_PAGE_BODY_CHARS) {
+  const limit = safeSplitIndex(runsValue(runs), requestedLimit)
   const head = []
   const tail = []
   let remaining = limit
@@ -244,7 +303,8 @@ function splitBlockAtChars(block, limit = MAX_PAGE_BODY_CHARS) {
         count += itemCount
         continue
       }
-      const [headItem, tailItem] = splitRunsAtChars(item, limit - count)
+      const available = limit - count
+      const [headItem, tailItem] = splitRunsAtChars(item, available)
       if (headItem.length) headItems.push(headItem)
       if (tailItem.length) tailItems.push(tailItem)
       splitting = true
@@ -271,21 +331,38 @@ function splitPostBlocksByChars(value = '') {
   for (const block of parsePostBlocks(value)) {
     let pending = block
     while (pending) {
-      const limit = count === MAX_PAGE_BODY_CHARS ? MAX_PAGE_BODY_CHARS : MAX_PAGE_BODY_CHARS - count
-      const [part, tail] = splitBlockAtChars(pending, limit)
-      const partCount = blockCharCount(part)
-      if (!partCount) {
-        if (current.length) current.push(part)
-        else if (pages.length) pages.at(-1).push(part)
-        else current.push(part)
-        pending = tail
+      const pendingCount = blockCharCount(pending)
+      if (!pendingCount) {
+        if (current.length) current.push(pending)
+        else if (pages.length) pages.at(-1).push(pending)
+        else current.push(pending)
+        pending = null
         continue
       }
-      if (current.length && partCount && count + partCount > MAX_PAGE_BODY_CHARS) flush()
-      current.push(part)
-      count += partCount
-      if (count === MAX_PAGE_BODY_CHARS) flush()
-      pending = tail
+      let remaining = MAX_PAGE_BODY_CHARS - count
+      if (/^h[1-3]$/.test(pending.type) && current.length && remaining < pendingCount + 120) {
+        flush()
+        remaining = MAX_PAGE_BODY_CHARS
+      }
+      if (pendingCount <= remaining) {
+        current.push(pending)
+        count += pendingCount
+        pending = null
+        if (count === MAX_PAGE_BODY_CHARS) flush()
+        continue
+      }
+      if (current.length && remaining < Math.min(240, Math.ceil(pendingCount * .3))) {
+        flush()
+        continue
+      }
+      const [part, tail] = splitBlockAtChars(pending, remaining)
+      const partCount = blockCharCount(part)
+      if (partCount) {
+        current.push(part)
+        count += partCount
+      }
+      flush()
+      pending = tail || null
     }
   }
   flush()
@@ -295,7 +372,14 @@ function splitPostBlocksByChars(value = '') {
 function layoutBodyPages(value = '') {
   const measureCanvas = document.createElement('canvas')
   const ctx = measureCanvas.getContext('2d')
+  configureCanvasText(ctx)
   return splitPostBlocksByChars(value).map(page => page.map(block => layoutBlock(ctx, block)).filter(Boolean))
+}
+
+function configureCanvasText(ctx) {
+  ctx.textBaseline = 'alphabetic'
+  ctx.fontKerning = 'normal'
+  ctx.textRendering = 'optimizeLegibility'
 }
 
 function drawRichLine(ctx, line, style, baseline) {
@@ -560,10 +644,11 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyP
   const titleLine = 102
   const summaryFont = 44
   const summaryLine = 74
+  configureCanvasText(ctx)
   ctx.font = `700 ${titleFont}px ${SERIF}`
-  const titleLines = balanceLastLine(ctx, wrapText(ctx, info.title, CONTENT_WIDTH), CONTENT_WIDTH)
+  const titleLines = wrapText(ctx, info.title, CONTENT_WIDTH)
   ctx.font = `400 ${summaryFont}px ${SERIF}`
-  const excerptLines = balanceLastLine(ctx, wrapText(ctx, info.excerpt, CONTENT_WIDTH), CONTENT_WIDTH)
+  const excerptLines = wrapText(ctx, info.excerpt, CONTENT_WIDTH)
 
   const titleY = 330
   const excerptY = titleY + titleLines.length * titleLine + 34
@@ -575,6 +660,7 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyP
   const height = endcapY + 212
   ctx.canvas.width = IMAGE_WIDTH
   ctx.canvas.height = height
+  configureCanvasText(ctx)
   ctx.fillStyle = PAPER
   ctx.fillRect(0, 0, IMAGE_WIDTH, height)
   drawMark(ctx, logo, SIDE, 48, 76)
