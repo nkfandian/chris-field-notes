@@ -57,6 +57,8 @@ export default function HomeClient({posts,books=[],bookCount=0,trails=[],content
   const heroEmphasis = legacyHero || content.hero_emphasis==='我记录理解发生的过程。' ? '保持欢喜。' : content.hero_emphasis
   const legacyDeck = !content.hero_deck || content.hero_deck.startsWith('一个实用主义者的公开工作台') || content.hero_deck.startsWith('现实的世界千疮百孔')
   const heroDeck = legacyDeck ? 'The theme of my life is complexity-through-joy.' : content.hero_deck
+  const heroAttribution = legacyDeck ? 'E. B. WHITE' : 'FIELD NOTES'
+  const latestPost = posts[0]
 
   return <div className="home-page">
     <a className="home-skip-link" href="#log">跳至最新日志</a>
@@ -70,21 +72,29 @@ export default function HomeClient({posts,books=[],bookCount=0,trails=[],content
       </nav>
     </header>
     <main id="top">
-      <section className="hero quote-hero" aria-label="首页引语">
-        <aside className="hero-reading-rail" aria-label="阅读与写作流程">
-          <span className="hero-folio"><small>FIELD NOTE</small><b>001</b></span>
-          <ol className="hero-workflow">
-            <li><b>01</b><span>READ<em>阅读</em></span></li>
-            <li><b>02</b><span>THINK<em>理解</em></span></li>
-            <li><b>03</b><span>WRITE<em>记录</em></span></li>
-          </ol>
-        </aside>
-        <blockquote className="hero-slogan">
-          <div className="hero-note-label" aria-hidden="true"><span>AN OPEN NOTE ON LIVING</span><i/></div>
-          <h1><span>{heroTitle}</span><em>{heroEmphasis}</em></h1>
-          <div className="hero-quote-meta"><p className="hero-deck" lang="en">{heroDeck}</p><div className="hero-attribution"><span aria-hidden="true"/><cite>E. B. White</cite></div></div>
-        </blockquote>
-        <a className="hero-next" href="#log"><span>继续阅读</span><i aria-hidden="true"/><b aria-hidden="true">↓</b></a>
+      <section className="hero field-hero" aria-labelledby="home-hero-title">
+        <svg className="hero-contours" viewBox="0 0 1000 720" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <path d="M1020 89C853 15 717 14 633 74c-103 73-50 172-150 227-93 51-223-5-315 58-87 60-101 180-190 239"/>
+          <path d="M1044 137c-164-77-293-76-371-22-93 65-43 157-136 208-91 50-212 3-300 63-82 56-99 161-186 222"/>
+          <path d="M1067 187c-157-79-279-79-353-29-84 57-36 141-123 190-89 50-201 12-285 67-77 51-96 143-181 204"/>
+          <path d="M1086 240c-150-82-264-84-334-38-76 50-30 127-111 173-86 49-189 21-269 72-72 46-92 125-175 186"/>
+          <path d="M1102 295c-143-85-248-91-313-48-69 44-24 113-99 157-83 48-177 30-253 76-66 41-87 109-168 170"/>
+        </svg>
+        <div className="hero-edition" aria-hidden="true"><span>FIELD NOTES</span><b>VOL. 01</b></div>
+        <div className="hero-intro">
+          <div className="hero-kicker"><span>PERSONAL ARCHIVE</span><i/><span>READING · WRITING · WALKING</span></div>
+          <h1 id="home-hero-title"><span>{heroTitle}</span><em>{heroEmphasis}</em></h1>
+          <p className="hero-manifesto">在这里记录阅读留下的问题、行走改变的视角，<br/>以及写作如何把两者重新连接。</p>
+          <div className="hero-actions"><a className="hero-primary" href="#log">翻开日志 <span aria-hidden="true">↘</span></a><a href="#reading">去往书单与轨迹</a></div>
+        </div>
+        {latestPost&&<article className="hero-latest" aria-labelledby="hero-latest-title">
+          <span className="hero-paperclip" aria-hidden="true"/>
+          <header><div><small>NEW ENTRY</small><b>最新日志</b></div>{latestPost.published_at&&<time dateTime={latestPost.published_at}>{latestPost.published_at.slice(0,10).replaceAll('-',' / ')}</time>}</header>
+          <div className="hero-latest-copy"><small>{domainName(latestPost.domain)}</small><h2 id="hero-latest-title"><Link href={`/logs/${encodeURIComponent(latestPost.slug)}`}>{latestPost.title}</Link></h2>{latestPost.excerpt&&<p>{latestPost.excerpt}</p>}</div>
+          <footer><span>NOTE / 001</span><Link href={`/logs/${encodeURIComponent(latestPost.slug)}`}>阅读全文 <b aria-hidden="true">↗</b></Link></footer>
+        </article>}
+        <div className="hero-note"><span>A NOTE TO SELF</span><p lang="en">{heroDeck}</p><cite>{heroAttribution}</cite></div>
+        <a className="hero-next" href="#log"><span>SCROLL TO READ</span><i aria-hidden="true"/><b aria-hidden="true">↓</b></a>
       </section>
       <section id="log" className="section home-logs" aria-labelledby="home-logs-title">
         <div className="home-section-heading"><h2 id="home-logs-title">最新日志</h2><Link className="all-logs-link" href={filter==='all'?'/logs':`/logs?domain=${filter}`}>查看全部 <span aria-hidden="true">↗</span></Link></div>
