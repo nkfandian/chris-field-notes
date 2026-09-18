@@ -84,7 +84,6 @@ export default function HomeClient({posts,books=[],bookCount=0,trails=[],content
         <div className="hero-intro">
           <div className="hero-kicker"><span>PERSONAL ARCHIVE</span><i/><span>READING · WRITING · WALKING</span></div>
           <h1 id="home-hero-title"><span>{heroTitle}</span><em>{heroEmphasis}</em></h1>
-          <p className="hero-manifesto">在这里记录阅读留下的问题、行走改变的视角，<br/>以及写作如何把两者重新连接。</p>
           <div className="hero-actions"><a className="hero-primary" href="#log">翻开日志 <span aria-hidden="true">↘</span></a><a href="#reading">去往书单与轨迹</a></div>
         </div>
         {latestPost&&<article className="hero-latest" aria-labelledby="hero-latest-title">
