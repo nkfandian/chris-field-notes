@@ -1,0 +1,142 @@
+/* Public-facing palette: old paper, letterpress ink and a restrained dry cinnabar. */
+:is(.home-page,.logs-index,.log-page,.books-page,.trails-page,.trail-detail,.search-page,.privacy-page){
+  --paper:#f4f0e7;
+  --paper-deep:#e9e1d4;
+  --ink:#27231e;
+  --muted:#71695f;
+  --moss:#8a4b3d;
+  --accent:#8a4b3d;
+  --accent-soft:#b98572;
+  --line:#d2c8b8;
+  --charcoal:#332e28;
+  background:var(--paper);
+  color:var(--ink);
+}
+
+body:has(:is(.home-page,.logs-index,.log-page,.books-page,.trails-page,.trail-detail,.search-page,.privacy-page)){
+  background:#f4f0e7;
+  color:#27231e;
+}
+
+:is(.home-page,.logs-index,.log-page,.books-page,.trails-page,.trail-detail,.search-page,.privacy-page) :is(a,button,input,textarea):focus-visible{
+  outline-color:var(--accent);
+}
+
+/* Public navigation is opaque paper; its solidity is part of the print-like system. */
+.home-page .site-header,
+.logs-index>nav,
+.log-page>nav,
+.books-page>nav,
+.trails-page>nav,
+.trail-detail>nav,
+.search-page>nav,
+.privacy-nav{
+  background:var(--paper);
+  border-color:var(--line);
+}
+
+.home-page .site-header{
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+
+.home-page .site-header nav :is(a,button),
+:is(.logs-index,.log-page,.books-page,.trails-page,.trail-detail,.search-page,.privacy-page) nav a{
+  text-underline-offset:.45em;
+  text-decoration-thickness:1px;
+}
+
+.home-page .site-header nav :is(a,button):hover,
+:is(.logs-index,.log-page,.books-page,.trails-page,.trail-detail,.search-page,.privacy-page) nav a:hover{
+  color:var(--accent);
+}
+
+/* Index controls read as editorial tabs instead of application pills. */
+.logs-filters,
+.book-controls{
+  border-color:var(--line);
+}
+
+.logs-filters a,
+.book-controls button{
+  border:0;
+  border-bottom:2px solid transparent;
+  background:transparent;
+  color:var(--muted);
+}
+
+.logs-filters a:hover,
+.book-controls button:hover{
+  color:var(--ink);
+  border-bottom-color:var(--line);
+}
+
+.logs-filters a.active,
+.book-controls button.active{
+  border-bottom-color:var(--accent);
+  background:transparent;
+  color:var(--accent);
+}
+
+.book-controls{
+  background:rgba(244,240,231,.96);
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+}
+
+.book-card>img,
+.book-cover-fallback{
+  background:var(--paper-deep);
+  border:1px solid var(--line);
+  box-shadow:5px 6px 0 rgba(51,46,40,.08);
+}
+
+.log-body blockquote{
+  border-left-color:var(--accent);
+  background:var(--paper-deep);
+}
+
+.log-body code,
+.log-body figure img{
+  background:var(--paper-deep);
+}
+
+.log-page aside,
+.share-dialog,
+.qr-stage,
+.poster-preview{
+  border-color:var(--line);
+}
+
+.share-overlay{
+  background:rgba(51,46,40,.72);
+}
+
+.privacy-footer,
+.home-page .site-footer{
+  background:var(--charcoal);
+}
+
+@media(max-width:600px){
+  .logs-index>nav,
+  .log-page nav{
+    background:rgba(244,240,231,.97);
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+  }
+
+  .logs-filters a,
+  .book-controls button{
+    min-height:44px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  :is(.logs-index,.log-page,.books-page,.trails-page,.trail-detail,.search-page,.privacy-page) nav>a,
+  .books-page .book-copy footer a{
+    min-height:44px;
+    display:inline-flex;
+    align-items:center;
+  }
+}

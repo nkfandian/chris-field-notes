@@ -1,4 +1,5 @@
 import './globals.css'
+import './public-theme.css'
 import './mobile.css'
 import './interaction.css'
 import './subscribe.css'
@@ -46,7 +47,7 @@ export const metadata={
   appleWebApp:{capable:true,title:'FIELD NOTES',statusBarStyle:'black-translucent'}
 }
 
-export const viewport={themeColor:'#efeee8',colorScheme:'light'}
+export const viewport={themeColor:'#f4f0e7',colorScheme:'light'}
 
 const ADSENSE_CLIENT='ca-pub-5286360916046186'
 
