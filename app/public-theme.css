@@ -1,12 +1,12 @@
-/* Public-facing palette: old paper, letterpress ink and a restrained dry cinnabar. */
+/* Public-facing palette: old paper, letterpress ink and a clear paper indigo. */
 :is(.home-page,.logs-index,.log-page,.books-page,.trails-page,.trail-detail,.search-page,.privacy-page){
   --paper:#f4f0e7;
   --paper-deep:#e9e1d4;
   --ink:#27231e;
   --muted:#71695f;
-  --moss:#8a4b3d;
-  --accent:#8a4b3d;
-  --accent-soft:#b98572;
+  --moss:#3f718c;
+  --accent:#3f718c;
+  --accent-soft:#86a7b6;
   --line:#d2c8b8;
   --charcoal:#332e28;
   background:var(--paper);

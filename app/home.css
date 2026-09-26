@@ -250,7 +250,7 @@
   .home-page *, .home-page *::after { transition: none !important; }
 }
 
-/* 2026 public refresh — old paper, ink and dry cinnabar. */
+/* 2026 public refresh — old paper, ink and a clear paper indigo. */
 .home-page {
   background: var(--paper);
 }
@@ -267,9 +267,7 @@
 .home-page .field-hero {
   min-height: min(730px, calc(100svh - 80px));
   border-bottom: 1px solid var(--line);
-  background:
-    linear-gradient(90deg, transparent 0 calc(var(--home-gutter) - 22px), rgba(138,75,61,.16) calc(var(--home-gutter) - 22px) calc(var(--home-gutter) - 21px), transparent calc(var(--home-gutter) - 21px)),
-    var(--paper);
+  background: var(--paper);
   color: var(--ink);
 }
 
@@ -278,8 +276,8 @@
   left: auto;
   right: -12vw;
   bottom: -43%;
-  border-color: rgba(138,75,61,.12);
-  box-shadow: 0 0 0 50px rgba(138,75,61,.035), 0 0 0 118px rgba(138,75,61,.025), 0 0 0 192px rgba(138,75,61,.018);
+  border-color: rgba(63,113,140,.12);
+  box-shadow: 0 0 0 50px rgba(63,113,140,.035), 0 0 0 118px rgba(63,113,140,.025), 0 0 0 192px rgba(63,113,140,.018);
 }
 
 .home-page .hero-contours {
@@ -368,9 +366,10 @@
   min-height: 456px;
   border: 1px solid var(--line);
   background: var(--paper-deep);
-  box-shadow: 10px 10px 0 rgba(51,46,40,.07);
-  transform: none;
-  transition: border-color .18s ease, box-shadow .18s ease;
+  box-shadow: 18px 22px 0 rgba(39,35,30,.12), 0 28px 62px rgba(39,35,30,.16);
+  transform: rotate(-.65deg);
+  transform-origin: 58% 48%;
+  transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
 }
 
 .home-page .hero-latest::before {
@@ -378,15 +377,23 @@
   background: repeating-linear-gradient(0deg, transparent 0 39px, rgba(113,105,95,.11) 39px 40px);
 }
 
-.home-page .hero-latest::after,
+.home-page .hero-latest::after {
+  display: block;
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, #d8d0c3 0 49%, var(--paper) 50% 100%);
+}
+
 .home-page .hero-paperclip {
-  display: none;
+  display: block;
+  border-color: #868b89;
+  box-shadow: inset 0 0 0 3px var(--paper-deep), inset 0 0 0 5px #868b89, inset 0 0 0 8px var(--paper-deep);
 }
 
 .home-page .hero-latest:hover {
   border-color: var(--accent-soft);
-  box-shadow: 10px 10px 0 rgba(138,75,61,.08);
-  transform: none;
+  box-shadow: 14px 18px 0 rgba(39,35,30,.11), 0 34px 72px rgba(39,35,30,.2);
+  transform: rotate(-.1deg) translateY(-5px);
 }
 
 .home-page .hero-latest header,
@@ -525,7 +532,7 @@
 
 .home-page .reading-book:hover .reading-book-cover {
   border-color: var(--accent-soft);
-  box-shadow: 5px 6px 0 rgba(138,75,61,.09);
+  box-shadow: 5px 6px 0 rgba(63,113,140,.1);
   transform: none;
 }
 
@@ -624,9 +631,7 @@
     min-height: 468px;
     padding-top: 46px;
     padding-bottom: 24px;
-    background:
-      linear-gradient(90deg, transparent 0 calc(var(--home-gutter) - 12px), rgba(138,75,61,.14) calc(var(--home-gutter) - 12px) calc(var(--home-gutter) - 11px), transparent calc(var(--home-gutter) - 11px)),
-      var(--paper);
+    background: var(--paper);
   }
 
   .home-page .hero-edition,
