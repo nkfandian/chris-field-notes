@@ -67,7 +67,7 @@ export default function HomeClient({posts,books=[],bookCount=0,trails=[],content
       <button ref={menuRef} type="button" className="menu-button" aria-expanded={menu} aria-controls="home-navigation" onClick={()=>setMenu(!menu)}>{menu?'关闭 ×':'菜单'}</button>
       <nav id="home-navigation" aria-label="主导航" onClick={event=>{if(event.target.closest('a'))setMenu(false)}}>
         <a href="#log">日志</a><Link href="/books">书单</Link><Link href="/trails">轨迹</Link><Link href="/search">搜索</Link>
-        <button type="button" className="nav-about" onClick={()=>{setAboutOpen(true);setMenu(false)}}>ABOUT</button>
+        <Link className="nav-about" href="/about" onClick={event=>{event.preventDefault();setAboutOpen(true);setMenu(false)}}>ABOUT</Link>
         <a href="#subscribe">订阅</a>{showStudio&&<Link className="admin-entry" href="/studio">STUDIO ↗</Link>}
       </nav>
     </header>
@@ -141,7 +141,7 @@ export default function HomeClient({posts,books=[],bookCount=0,trails=[],content
         </div>
       </section>
     </main>
-    <footer className="site-footer"><span>CHRIS / FIELD NOTES © 2026</span><div className="footer-meta"><button type="button" onClick={()=>setAboutOpen(true)}>ABOUT</button><Link href="/privacy">隐私政策</Link><a href="#top">返回顶部 ↑</a></div></footer>
+    <footer className="site-footer"><span>CHRIS / FIELD NOTES © 2026</span><div className="footer-meta"><Link href="/about" onClick={event=>{event.preventDefault();setAboutOpen(true)}}>ABOUT</Link><Link href="/privacy">隐私政策</Link><a href="#top">返回顶部 ↑</a></div></footer>
     {aboutOpen&&<><button className="about-backdrop" onClick={()=>setAboutOpen(false)} aria-label="关闭 ABOUT" tabIndex={-1}/><section ref={dialogRef} className="about-modal" role="dialog" aria-modal="true" aria-label="ABOUT"><header><button type="button" onClick={()=>setAboutOpen(false)}>关闭 ×</button></header><p>{aboutText}</p></section></>}
     {selected&&<><button className="backdrop" onClick={()=>setSelected(null)} aria-label="关闭日志详情" tabIndex={-1}/><aside ref={dialogRef} className="drawer" role="dialog" aria-modal="true" aria-labelledby="home-detail-title"><button type="button" onClick={()=>setSelected(null)}>关闭 ×</button><h2 id="home-detail-title">日志详情</h2><dl><dt>发布日期</dt><dd>{selected.published_at?.slice(0,10)}</dd>{selected.thesis&&<><dt>核心判断</dt><dd>{selected.thesis}</dd></>}{selected.tools&&<><dt>输入与工具</dt><dd>{selected.tools}</dd></>}</dl></aside></>}
   </div>

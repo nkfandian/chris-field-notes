@@ -3,10 +3,10 @@ import {demoPosts} from '@/lib/demo'
 import {createClient,isConfigured} from '@/lib/supabase/server'
 import {getSiteAdmin} from '@/lib/auth'
 import StructuredData from './components/structured-data'
-import {SITE_DESCRIPTION,SITE_LANGUAGE,SITE_NAME,SITE_URL,WEBSITE_ID} from '@/lib/seo'
+import {AUTHOR_ID,PUBLISHER_ID,RSS_ALTERNATES,SITE_DESCRIPTION,SITE_LANGUAGE,SITE_NAME,SITE_URL,WEBSITE_ID,firstPostImage,ogImage,seoDescription} from '@/lib/seo'
 import {DEFAULT_ABOUT_TEXT,resolveAboutText} from '@/lib/about'
 export const dynamic='force-dynamic'
-export const metadata={alternates:{canonical:'/',languages:{'zh-CN':'/','x-default':'/'}}}
+export const metadata={alternates:{canonical:'/',languages:{'zh-CN':'/','x-default':'/'},types:RSS_ALTERNATES}}
 export default async function Page(){
  let posts=demoPosts,books=[],bookCount=0,trails=[],content={},aboutText=DEFAULT_ABOUT_TEXT,showStudio=false
  if(isConfigured()){
@@ -27,6 +27,6 @@ export default async function Page(){
   aboutText=resolveAboutText(about?.value||{},content)
   showStudio=Boolean(admin)
  }
- const schema={'@context':'https://schema.org','@type':'Blog','@id':`${SITE_URL}/#blog`,url:SITE_URL,name:SITE_NAME,description:SITE_DESCRIPTION,inLanguage:SITE_LANGUAGE,isPartOf:{'@id':WEBSITE_ID},blogPost:posts.slice(0,10).map(post=>({'@type':'BlogPosting',headline:post.title,description:post.excerpt,url:`${SITE_URL}/logs/${encodeURIComponent(post.slug)}`,datePublished:post.published_at}))}
+ const schema={'@context':'https://schema.org','@type':'Blog','@id':`${SITE_URL}/#blog`,url:SITE_URL,name:SITE_NAME,description:SITE_DESCRIPTION,inLanguage:SITE_LANGUAGE,isPartOf:{'@id':WEBSITE_ID},author:{'@id':AUTHOR_ID},publisher:{'@id':PUBLISHER_ID},blogPost:posts.slice(0,10).map(post=>{const url=`${SITE_URL}/logs/${encodeURIComponent(post.slug)}`,contentImage=firstPostImage(post.body),image=contentImage||ogImage(post.title);return {'@type':'BlogPosting','@id':`${url}#article`,headline:post.title,description:seoDescription(post.excerpt||post.thesis||post.body),url,image,datePublished:post.published_at,dateModified:post.updated_at||post.published_at,author:{'@id':AUTHOR_ID},publisher:{'@id':PUBLISHER_ID}}})}
  return <><StructuredData data={schema}/><HomeClient posts={posts} books={books} bookCount={bookCount} trails={trails} content={content} aboutText={aboutText} showStudio={showStudio}/></>
 }

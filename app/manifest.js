@@ -8,8 +8,8 @@ export default function manifest(){
     start_url:'/',
     scope:'/',
     display:'standalone',
-    background_color:'#efeee8',
-    theme_color:'#151713',
+    background_color:'#f4f0e7',
+    theme_color:'#27231e',
     lang:SITE_LANGUAGE,
     categories:['books','education','lifestyle'],
     icons:[{src:'/field-notes-mark.png',sizes:'512x512',type:'image/png',purpose:'any maskable'}]

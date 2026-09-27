@@ -30,7 +30,7 @@ export async function POST(request){
  revalidatePath('/logs')
  revalidatePath('/')
  if(post.status==='published'||input.id){
-  try{indexing=await notifyIndexNow([`/logs/${encodeURIComponent(post.slug)}`,'/logs','/'])}catch(error){indexing={accepted:false,error:error.message}}
+  try{indexing=await notifyIndexNow([`/logs/${encodeURIComponent(post.slug)}`,`/logs?domain=${post.domain}`,'/logs','/'])}catch(error){indexing={accepted:false,error:error.message}}
  }
  return Response.json({post,notification,indexing})
 }
