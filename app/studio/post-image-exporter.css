@@ -1,8 +1,8 @@
 .post-image-export {
   margin: 3.25rem 0 2.5rem;
   padding: 1.4rem;
-  border: 1px solid var(--ink);
-  background: rgba(82, 107, 63, 0.045);
+  border: 1px solid var(--line);
+  background: rgba(63, 113, 140, 0.05);
 }
 
 .post-image-export-head {
@@ -53,24 +53,24 @@
 
 .post-image-export-actions button:hover,
 .post-image-export-actions button.active {
-  border-color: var(--ink);
-  background: var(--ink);
+  border-color: var(--accent);
+  background: var(--accent);
   color: var(--paper);
 }
 
 .post-image-export-actions .download-image {
-  border-color: var(--moss);
-  background: var(--moss);
+  border-color: var(--accent);
+  background: var(--accent);
   color: white;
 }
 
 .post-image-export-actions .download-image.secondary {
   background: transparent;
-  color: var(--moss);
+  color: var(--accent);
 }
 
 .post-image-export-actions .download-image:hover {
-  background: #3f5630;
+  background: #315a70;
   color: white;
 }
 
@@ -82,7 +82,7 @@
 .post-image-export-preview {
   overflow: auto;
   border: 1px solid var(--line);
-  background: #d9d8d1;
+  background: var(--paper-deep);
   padding: 0.7rem;
 }
 
@@ -92,7 +92,7 @@
   min-width: 36rem;
   height: auto;
   background: var(--paper);
-  box-shadow: 0 12px 28px rgba(21, 23, 19, 0.12);
+  box-shadow: 0 12px 28px rgba(39, 35, 30, 0.12);
 }
 
 @media (max-width: 700px) {

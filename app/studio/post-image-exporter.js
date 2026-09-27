@@ -6,10 +6,12 @@ import {parsePostBlocks} from '@/lib/post-format'
 import qrcode from 'qrcode-generator'
 import './post-image-exporter.css'
 
-const PAPER = '#efeee8'
-const INK = '#151713'
-const MUTED = '#696d65'
-const MOSS = '#526b3f'
+const PAPER = '#f4f0e7'
+const DEEP_PAPER = '#e9e1d4'
+const INK = '#27231e'
+const MUTED = '#71695f'
+const MOSS = '#3f718c'
+const LINE = '#d2c8b8'
 const MONO = "'IBM Plex Mono', monospace"
 // Keep Chinese, Latin letters and lining figures on one font baseline. Putting
 // Georgia first makes Canvas switch fonts inside a single line and drops digits.
@@ -402,7 +404,7 @@ function drawRichLine(ctx, line, style, baseline) {
     ctx.font = richFont(run, style)
     const width = run.width ?? runWidth(ctx, run, style)
     if (run.code && run.text) {
-      ctx.fillStyle = '#dfded6'
+      ctx.fillStyle = DEEP_PAPER
       ctx.fillRect(x - 4, baseline - style.fontSize * 0.82, width + 8, style.fontSize * 1.08)
     }
     ctx.fillStyle = run.href ? MOSS : style.color
@@ -425,7 +427,7 @@ function drawBodyPage(ctx, blocks, startY) {
   for (const block of blocks) {
     y += block.gapBefore
     if (block.type === 'hr') {
-      ctx.strokeStyle = '#b9b9b2'
+      ctx.strokeStyle = LINE
       ctx.lineWidth = 2
       ctx.beginPath()
       ctx.moveTo(SIDE, y + 14)
@@ -514,7 +516,7 @@ function drawQr(ctx, code, x, y, size) {
       }
     }
   }
-  ctx.strokeStyle = '#b9b9b2'
+  ctx.strokeStyle = LINE
   ctx.lineWidth = 2
   ctx.strokeRect(x, y, size, size)
 }
@@ -692,7 +694,7 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyP
     drawLines(ctx, excerptLines, SIDE, excerptY, summaryLine, MUTED)
   }
   if (mode === 'full') {
-    ctx.strokeStyle = '#b9b9b2'
+    ctx.strokeStyle = LINE
     ctx.lineWidth = 2
     ctx.beginPath()
     ctx.moveTo(SIDE, dividerY)
