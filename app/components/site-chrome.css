@@ -65,6 +65,15 @@ html{scroll-padding-top:84px}
 .sc-footer-bar a:hover{color:#fff}
 .sc-footer :is(a,button,summary):focus-visible{outline:2px solid var(--accent-soft);outline-offset:3px}
 
+/* 关于弹窗（沿用上一版的弹窗样式） */
+.sc-about-backdrop{position:fixed;inset:0;z-index:70;border:0;background:rgba(39,35,30,.6);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);cursor:default}
+.sc-about{--paper:#f4f0e7;--ink:#27231e;--muted:#71695f;--accent:#3f718c;position:fixed;left:50%;top:50%;z-index:71;width:min(760px,calc(100vw - 3rem));max-height:calc(100dvh - 32px);overflow-y:auto;overscroll-behavior:contain;transform:translate(-50%,-50%);padding:0 2.5rem 2.8rem;background:var(--paper);color:var(--ink);border:1px solid var(--ink);box-shadow:0 30px 90px rgba(0,0,0,.22)}
+.sc-about header{display:flex;justify-content:flex-end;padding:.9rem 0 0}
+.sc-about header button{min-height:44px;padding:0;border:0;background:none;color:var(--muted);font:500 12px var(--mono);letter-spacing:.11em;cursor:pointer}
+.sc-about header button:hover{color:var(--ink)}
+.sc-about header button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.sc-about p{margin:1.4rem 0 0;font:600 clamp(1.3rem,2vw,1.75rem)/1.9 var(--serif);letter-spacing:.015em;white-space:pre-line}
+
 @media(max-width:800px){
   html{scroll-padding-top:72px}
   .sc-header{height:60px;gap:1rem}
@@ -80,6 +89,8 @@ html{scroll-padding-top:84px}
 }
 @media(max-width:600px){
   .sc-header,.sc-footer{--sc-gutter:5vw}
+  .sc-about{width:calc(100vw - 2rem);padding:0 1.35rem 1.8rem}
+  .sc-about p{margin-top:.8rem;font-size:1.13rem;line-height:1.85}
   .sc-subscribe{grid-template-columns:1fr;gap:12px}
   .sc-message .interaction-form{grid-template-columns:1fr}
   .sc-message .interaction-form>:is(label,button){grid-column:1}

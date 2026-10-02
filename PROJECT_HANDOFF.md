@@ -216,7 +216,7 @@ npm run start
 | 路径 | 功能 | 关键文件 |
 |---|---|---|
 | `/` | 首页：首屏、日志、书单、轨迹（订阅和留言在共用页脚里） | `app/page.js`、`app/home-client.js`、`app/home.css` |
-| `/about` | 可抓取的作者/网站介绍页 | `app/about/page.js` |
+| `/about` | 可抓取的作者/网站介绍页（SEO 作者页，导航里不再直接链接；文章署名 `rel=author` 和 Sitemap 仍指向它） | `app/about/page.js` |
 | `/logs` | 全部日志与栏目筛选 | `app/logs/page.js` |
 | `/logs/[slug]` | 日志正文、分享、书籍关联、相关文章、评论 | `app/logs/[slug]/*` |
 | `/books` | 书单、筛选和短评 | `app/books/*` |
@@ -276,6 +276,7 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 - `app/page.js`：服务器侧读取首页所有数据。
 - `app/home-client.js`：首页首屏、日志筛选、书单与轨迹区块。
 - `app/components/site-header.js` / `site-footer.js` / `site-chrome.css`：**所有公开页面共用**的顶部导航（含移动端菜单）和深色页脚（订阅、留言、站点链接）。新增公开页面时直接使用这两个组件，并给 `<main>` 加 `id="content"`（跳转链接用）。
+- `app/components/about-modal.js`：导航和页脚里的“关于”打开弹窗，只显示后台“ABOUT 文本”那一段文字（读取前先显示 `lib/about.js` 的默认文字）；无 JS 时链接仍进入 `/about`。
 - `app/not-found.js`：带共用页眉页脚的 404 页面。
 - `lib/trails.js`：把轨迹节点汇总成“3 篇日志 · 10 本书”这类文字。
 - `app/public-theme.css`：公开页面新版配色的统一覆盖层。
@@ -841,6 +842,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-10-02 | 去掉书单、轨迹的说明句（首页两个区块和 `/books`、`/trails` 页），首页区块标题改为单列；“关于”改回弹窗，只保留一段介绍文字 | 用户要求去掉装饰语、恢复弹窗式介绍；`/about` 页面保留用于 SEO，只是不再出现在导航里 |
 | 2026-10-02 | 前端设计整理：①所有公开页面共用新的页眉导航和深色页脚（订阅、留言、链接），首页 ABOUT 弹窗改为直接进入 `/about`；②“核心判断”功能全部移除（文章页、后台编辑器、首页详情抽屉、搜索、SEO 描述；数据库列保留不读写）；③文章标题缩小、去掉负字间距，正文与末尾区块统一 760px 列宽，分享改为一行按钮；④书单页改为封面网格（手机为紧凑列表）并补上标题，短评可展开，高度从约 35000px 降到约 12600px；⑤轨迹页补标题与说明，节点改为“3 篇日志 · 10 本书”文字；⑥最新日志卡片显示真实编号；⑦信息类小字统一提到 12px 以上；⑧新增带页眉页脚的 404 页面，IndexNow 验证文件改用 rewrite；⑨修复 `align-items: end` 构建警告 | 用户要求统一导航、去掉核心判断并同步考虑移动端；所有页面在 1440px 和 390px 宽度下截图检查过，无横向滚动 |
 | 2026-10-02 | 按代码审查修复：①AdSense 不再加载到后台和带令牌页面；②推送改为原子领取 + Resend 批量发送 + 幂等键，保存按钮防重复提交；③后台不能恢复已退订用户、有效订阅数只计 `active`；④首页不再把全部正文发给访客（270KB→73KB）；⑤网页正文改用 `post-format.js`，与邮件/长图一致；⑥手动群发改批量发送；⑦`CRON_SECRET` 未设置时拒绝定时接口，新增 `vercel.json` 每日定时任务；⑧已发布日志锁定 slug；⑨定时清理 `rate_limits`。另按用户要求把订阅改为单次确认（提交即生效） | 审查发现的安全、重复发信和一致性问题。**需要手动操作**：在 Supabase SQL 编辑器执行 `supabase/migrations/20261002_single_opt_in.sql`（激活历史待确认订阅者）；在两个 Vercel 项目设置 `CRON_SECRET`。网页渲染统一后，`legacy-5sal6qv1aqvcyaf7eu9u` 中以 `*` 开头的几行从错误的 “undefined” 变为斜体正文（原意可能是列表，需在后台把 `*` 改成 `- `） |
 | 2026-10-02 | 第 0 节新增 0.1“给下一位 agent 的开场提示词”，替换原先的简短提示 | 用户在不同 agent 之间切换，需要一段可直接复制、包含读取远端文档和更新变更记录要求的提示词 |

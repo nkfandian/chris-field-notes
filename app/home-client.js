@@ -64,7 +64,7 @@ export default function HomeClient({posts,books=[],bookCount=0,trails=[],content
       <section id="reading" className="section home-reading" aria-label="书单与阅读轨迹">
         <div className="reading-grid">
           <section className="reading-books" aria-labelledby="home-books-title">
-            <header className="reading-panel-head"><div><small>THE SHELF / {bookCount} VOLUMES</small><h2 id="home-books-title">书单</h2></div><p>读过、正在读，以及准备打开的书。每一本都可能成为一篇日志的起点。</p></header>
+            <header className="reading-panel-head"><div><small>THE SHELF / {bookCount} VOLUMES</small><h2 id="home-books-title">书单</h2></div></header>
             <div className="reading-book-list">{books.map((book,index)=><Link className="reading-book" href={`/books#book-${book.id}`} key={book.id}>
               <span className="reading-book-no">{String(index+1).padStart(2,'0')}</span>
               <span className="reading-book-cover">{book.cover_url?<img src={book.cover_url} alt={`${book.title} 封面`} loading="lazy"/>:<span aria-hidden="true">无封面</span>}</span>
@@ -74,7 +74,7 @@ export default function HomeClient({posts,books=[],bookCount=0,trails=[],content
             <div className="reading-panel-foot"><span>阅读记录与短评</span><Link href="/books">打开完整书单 <b aria-hidden="true">↗</b></Link></div>
           </section>
           <section className="reading-trails" aria-labelledby="home-trails-title">
-            <header className="reading-panel-head"><div><small>ROUTES / {trails.length} PATHS</small><h2 id="home-trails-title">轨迹</h2></div><p>把文章和书按问题重新连接。不是目录，而是一条可以顺着走下去的阅读路径。</p></header>
+            <header className="reading-panel-head"><div><small>ROUTES / {trails.length} PATHS</small><h2 id="home-trails-title">轨迹</h2></div></header>
             <ol>{trails.map((trail,index)=><li key={trail.id}><Link href={`/trails/${encodeURIComponent(trail.slug)}`}>
               <span className="reading-trail-no">{String(index+1).padStart(2,'0')}</span>
               <span className="reading-trail-copy"><small>{trailComposition(trail.trail_items)}</small><strong>{trail.title}</strong>{trail.summary&&<em>{trail.summary}</em>}</span>

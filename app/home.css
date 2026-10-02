@@ -90,7 +90,7 @@
 .home-page :is(.reading-books, .reading-trails) { min-width: 0; padding: clamp(30px, 3.7vw, 52px); display: flex; flex-direction: column; }
 .home-page .reading-books { background: color-mix(in srgb, var(--paper) 88%, white); }
 .home-page .reading-trails { background: var(--ink); color: var(--paper); }
-.home-page .reading-panel-head { display: grid; grid-template-columns: minmax(120px, .75fr) minmax(180px, 1fr); gap: clamp(20px, 3vw, 44px); align-items: end; }
+.home-page .reading-panel-head { display: grid; grid-template-columns: 1fr; gap: clamp(20px, 3vw, 44px); align-items: end; }
 .home-page .reading-panel-head small { color: var(--moss); font: 12px/1.5 var(--mono); letter-spacing: .08em; white-space: nowrap; }
 .home-page .reading-panel-head h2 { margin: 8px 0 0; font-size: clamp(34px, 4vw, 54px); line-height: 1; letter-spacing: 0; }
 .home-page .reading-panel-head p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.8; text-wrap: pretty; }
