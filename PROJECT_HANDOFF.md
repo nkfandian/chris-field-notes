@@ -20,13 +20,35 @@
 8. **在同一个提交中更新本文件**：受影响的章节（代码地图、技术债、规则等）同步修改，并在第 22 节追加一行变更记录。
 9. 如果发布到生产，确认两个 Vercel 状态都为 `success`，再检查真实域名。
 
-推荐给下一位大模型的开场提示：
+### 0.1 给下一位 agent 的开场提示词
+
+把下面整段复制给新的 agent（Codex、Cursor、Claude Code 等），只需把最后一行换成本次任务：
 
 ```text
-请先完整阅读项目根目录 PROJECT_HANDOFF.md（特别是第 22 节变更记录），再查看 git log。项目是线上运行的 Next.js + Supabase 个人网站。
-先检查工作区和远端 main 的真实状态，保留用户已有修改。所有文章格式变更必须同时验证网页、订阅邮件和长图导出；所有发布操作必须验证两个 Vercel 部署状态。
-每次修改项目时，在同一个提交中更新 PROJECT_HANDOFF.md 的相关章节，并在第 22 节追加变更记录。
+项目目录：/Users/chris/Documents/Codex/2026-07-11/anti-gravity-anti-gravity/outputs/personal-os
+GitHub：https://github.com/nkfandian/chris-field-notes（main 分支即线上生产）
+
+开始前请按顺序做：
+1. 在项目目录运行 git fetch origin main，然后完整阅读远端最新版的 PROJECT_HANDOFF.md（git show origin/main:PROJECT_HANDOFF.md），特别是第 0 节和第 22 节变更记录。
+2. 运行 git log --oneline -15 origin/main，了解最近的修改。
+3. 从 origin/main 新建分支或工作树再修改；不要在本地 deploy-sync 分支上开发，不要强推。
+
+修改时遵守：
+- 修改后运行 npm run build。
+- 所有文章格式变更必须同时验证网页、订阅邮件和长图导出。
+- 在同一个提交里更新 PROJECT_HANDOFF.md 的相关章节，并在第 22 节最上方追加一行变更记录。
+- 推送到 main 会直接发布到线上；推送后确认两个 Vercel 部署（chris-field-notes、chris-field-notes-web）都是 success。
+- 不要在线上把测试文章设为"发布"，那样会给真实订阅者群发邮件。
+
+这次的任务是：【在这里写你要改什么】
 ```
+
+使用说明：
+
+- **云端 agent（无法访问本机目录）**：把第一行换成“请克隆 https://github.com/nkfandian/chris-field-notes”，其余照用。
+- **为什么读远端版本**：本地 `deploy-sync` 分支里的旧文件可能不是最新版（没有变更记录），必须以 `origin/main` 为准。
+- **推送权限**：agent 所在环境需要登录有权限的 GitHub 账号（例如 `gh auth login`）才能推送。
+- **收尾检查**：任务完成后确认第 22 节已追加变更记录，没有就让 agent 补上。
 
 ---
 
@@ -791,5 +813,6 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-10-02 | 第 0 节新增 0.1“给下一位 agent 的开场提示词”，替换原先的简短提示 | 用户在不同 agent 之间切换，需要一段可直接复制、包含读取远端文档和更新变更记录要求的提示词 |
 | 2026-10-02 | 第 2.1 节改为“以实时核对为准”，不再写死远端提交 SHA；新增第 22 节变更记录；第 0 节加入“同一提交更新本文件”的规则 | 写死的 SHA 每次提交后都会过时；变更记录让下一位接手者快速了解最近变化 |
 | 2026-10-02 | 新增 `PROJECT_HANDOFF.md` 到仓库根目录（提交 `533d273`） | 让其他开发者或大模型无需历史对话即可接手；仅文档变更，线上代码不变 |
