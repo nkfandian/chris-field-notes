@@ -34,6 +34,7 @@ const privateApiRoutes=['/api/campaigns','/api/indexnow','/api/interactions','/a
 
 export default {
  poweredByHeader:false,
+ async rewrites(){return [{source:'/:key([a-fA-F0-9-]{8,128}).txt',destination:'/api/indexnow-key/:key'}]},
  async headers(){return [
   {source:'/:path*',headers:securityHeaders},
   {source:'/studio/:path*',headers:privateHeaders},

@@ -1,0 +1,8 @@
+.not-found-page{min-height:60vh;padding:clamp(4rem,14vh,9rem) 6vw 12vh;background:#f4f0e7;color:#27231e}
+body:has(.not-found-page){background:#f4f0e7}
+.not-found-page small{font:12px var(--mono);letter-spacing:.12em;color:#3f718c}
+.not-found-page h1{margin:1rem 0;font:700 clamp(2.2rem,5vw,3.6rem)/1.25 var(--serif);letter-spacing:0}
+.not-found-page p{max-width:560px;margin:0;color:#71695f;line-height:1.85}
+.not-found-page nav{display:flex;flex-wrap:wrap;gap:.5rem 1.6rem;margin-top:2.4rem}
+.not-found-page nav a{display:inline-flex;align-items:center;min-height:44px;color:#3f718c;font:13px var(--mono);text-decoration:none;border-bottom:1px solid currentColor}
+@media(max-width:600px){.not-found-page{padding:4rem 5vw 9vh}}

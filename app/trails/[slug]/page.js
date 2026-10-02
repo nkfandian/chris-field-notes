@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import {notFound} from 'next/navigation'
-import Logo from '../../components/logo'
+import SiteHeader from '../../components/site-header'
+import SiteFooter from '../../components/site-footer'
+import {trailComposition} from '@/lib/trails'
 import {createClient,isConfigured} from '@/lib/supabase/server'
 import StructuredData from '../../components/structured-data'
 import {SITE_LANGUAGE,SITE_URL,pageMetadata} from '@/lib/seo'
@@ -64,5 +66,5 @@ export default async function TrailPage({params}){
     ]}
   ]}
   const typeLabel={post:'日志',book:'书籍',note:'短注'}
-  return <main className="trail-detail"><StructuredData data={schema}/><nav><Link href="/trails">← 轨迹</Link><Link href="/"><Logo compact/></Link></nav><header><h1>{trail.title}</h1>{trail.summary&&<p>{trail.summary}</p>}</header><ol>{resolved.map(({item,target,href,title,position})=><li key={item.id}><span>{String(position).padStart(2,'0')}</span><div><small>{typeLabel[item.item_type]||item.item_type}</small><h2>{title}</h2>{(item.note||target?.excerpt||target?.review)&&<p>{item.note||target?.excerpt||target?.review}</p>}{href&&<Link href={href}>打开 →</Link>}</div></li>)}</ol></main>
+  return <><SiteHeader current="trails"/><main className="trail-detail" id="content"><StructuredData data={schema}/><header><Link className="trail-back" href="/trails">← 全部轨迹</Link><h1>{trail.title}</h1>{trail.summary&&<p>{trail.summary}</p>}<small>{trailComposition(items||[])}</small></header><ol>{resolved.map(({item,target,href,title,position})=><li key={item.id}><span>{String(position).padStart(2,'0')}</span><div><small>{typeLabel[item.item_type]||item.item_type}</small><h2>{title}</h2>{(item.note||target?.excerpt||target?.review)&&<p>{item.note||target?.excerpt||target?.review}</p>}{href&&<Link href={href}>打开 →</Link>}</div></li>)}</ol></main><SiteFooter/></>
 }

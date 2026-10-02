@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import {createClient,isConfigured} from '@/lib/supabase/server'
 import {demoPosts,labels} from '@/lib/demo'
-import Logo from '../components/logo'
+import SiteHeader from '../components/site-header'
+import SiteFooter from '../components/site-footer'
 import StructuredData from '../components/structured-data'
 import {SITE_LANGUAGE,SITE_URL,WEBSITE_ID,pageMetadata} from '@/lib/seo'
 import './index.css'
@@ -39,5 +40,5 @@ export default async function LogsPage({searchParams}){
   }else if(domain!=='all')posts=posts.filter(post=>post.domain===domain)
   const path=domain==='all'?'/logs':`/logs?domain=${domain}`,url=`${SITE_URL}${path}`
   const schema={'@context':'https://schema.org','@graph':[{'@type':'CollectionPage','@id':url,url,name:meta.title,description:meta.description,inLanguage:SITE_LANGUAGE,isPartOf:{'@id':WEBSITE_ID},mainEntity:{'@type':'ItemList',numberOfItems:posts.length,itemListElement:posts.map((post,index)=>({'@type':'ListItem',position:index+1,url:`${SITE_URL}/logs/${encodeURIComponent(post.slug)}`,name:post.title,description:post.excerpt}))}},{'@type':'BreadcrumbList','@id':`${url}#breadcrumb`,itemListElement:[{'@type':'ListItem',position:1,name:'首页',item:SITE_URL},{'@type':'ListItem',position:2,name:domain==='all'?'日志':meta.title,item:url}]}]}
-  return <main className="logs-index"><StructuredData data={schema}/><nav><Link href="/">← 首页</Link><Link href="/" aria-label="CHRIS / FIELD NOTES 首页"><Logo compact/></Link></nav><header><div><h1>{domain==='all'?'日志':labels[domain].split('/ ')[1]}</h1><p>{meta.description}</p></div><span>{posts.length} 篇</span></header><div className="logs-filters" aria-label="日志栏目">{domains.map(item=><Link className={item===domain?'active':''} aria-current={item===domain?'page':undefined} href={item==='all'?'/logs':`/logs?domain=${item}`} key={item}>{item==='all'?'全部':labels[item].split('/ ')[1]}</Link>)}</div><section>{posts.map((post,index)=><Link className="log-index-entry" href={`/logs/${encodeURIComponent(post.slug)}`} key={post.id}><span>{String(index+1).padStart(2,'0')}</span><div><small>{labels[post.domain]?.split('/ ')[1]||post.domain}</small><h2>{post.title}</h2><p>{post.excerpt}</p></div><time dateTime={post.published_at}>{post.published_at?.slice(0,10)}</time></Link>)}</section></main>
+  return <><SiteHeader current="logs"/><main className="logs-index" id="content"><StructuredData data={schema}/><header><div><h1>{domain==='all'?'日志':labels[domain].split('/ ')[1]}</h1><p>{meta.description}</p></div><span>{posts.length} 篇</span></header><div className="logs-filters" aria-label="日志栏目">{domains.map(item=><Link className={item===domain?'active':''} aria-current={item===domain?'page':undefined} href={item==='all'?'/logs':`/logs?domain=${item}`} key={item}>{item==='all'?'全部':labels[item].split('/ ')[1]}</Link>)}</div><section>{posts.map((post,index)=><Link className="log-index-entry" href={`/logs/${encodeURIComponent(post.slug)}`} key={post.id}><span>{String(index+1).padStart(2,'0')}</span><div><small>{labels[post.domain]?.split('/ ')[1]||post.domain}</small><h2>{post.title}</h2><p>{post.excerpt}</p></div><time dateTime={post.published_at}>{post.published_at?.slice(0,10)}</time></Link>)}</section></main><SiteFooter/></>
 }

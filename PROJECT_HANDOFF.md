@@ -215,7 +215,7 @@ npm run start
 
 | 路径 | 功能 | 关键文件 |
 |---|---|---|
-| `/` | 首页：首屏、日志、书单、轨迹、订阅、留言 | `app/page.js`、`app/home-client.js`、`app/home.css` |
+| `/` | 首页：首屏、日志、书单、轨迹（订阅和留言在共用页脚里） | `app/page.js`、`app/home-client.js`、`app/home.css` |
 | `/about` | 可抓取的作者/网站介绍页 | `app/about/page.js` |
 | `/logs` | 全部日志与栏目筛选 | `app/logs/page.js` |
 | `/logs/[slug]` | 日志正文、分享、书籍关联、相关文章、评论 | `app/logs/[slug]/*` |
@@ -261,7 +261,7 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 | `GET /sitemap.xml` | 公开 | 动态 Sitemap，含栏目、日志图片、轨迹 |
 | `GET /robots.txt` | 公开 | 抓取策略 |
 | `GET /opensearch.xml` | 公开 | 浏览器站内搜索描述 |
-| `GET /[indexNowKey].txt` | 搜索引擎 | IndexNow 所有权验证 |
+| `GET /{key}.txt` | 搜索引擎 | IndexNow 所有权验证；由 `next.config.mjs` 的 rewrite 转到 `app/api/indexnow-key/[key]/route.js`（不要再用根目录动态路由，否则所有一级路径的 404 都会落到它） |
 
 `next.config.mjs` 为所有页面设置 CSP、HSTS、COOP、Permissions-Policy 等安全头；Studio、令牌页和私有 API 带 `X-Robots-Tag: noindex`。
 
@@ -274,7 +274,10 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 - `app/layout.js`：全站 metadata、结构化数据、AdSense 验证 meta。
 - `app/components/site-analytics.js`：GA、Vercel Analytics 和 AdSense 脚本；后台和带令牌页面（`/studio`、`/reset-password`、`/subscribe/confirm`、`/unsubscribe`）一律不加载。
 - `app/page.js`：服务器侧读取首页所有数据。
-- `app/home-client.js`：首页交互、筛选、弹窗、移动菜单。
+- `app/home-client.js`：首页首屏、日志筛选、书单与轨迹区块。
+- `app/components/site-header.js` / `site-footer.js` / `site-chrome.css`：**所有公开页面共用**的顶部导航（含移动端菜单）和深色页脚（订阅、留言、站点链接）。新增公开页面时直接使用这两个组件，并给 `<main>` 加 `id="content"`（跳转链接用）。
+- `app/not-found.js`：带共用页眉页脚的 404 页面。
+- `lib/trails.js`：把轨迹节点汇总成“3 篇日志 · 10 本书”这类文字。
 - `app/public-theme.css`：公开页面新版配色的统一覆盖层。
 - `app/home.css`：首页完整布局；文件后半段有新版覆盖规则。
 - `app/studio/studio.css`：后台布局和新版配色覆盖。
@@ -329,7 +332,7 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 - `domain text`：`decode | execute | deploy | trek | roots`
 - `excerpt text`
 - `body text`
-- `thesis text`
+- `thesis text`：**已停用**（2026-10-02 起“核心判断”功能全部移除）；列和历史数据保留，前台、后台和保存接口都不再读写
 - `tools text`
 - `status text`：`draft | published`
 - `published_at date`
@@ -614,6 +617,13 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 - `app/studio/studio.css` 对 Studio 重新定义相同新版变量。
 - `app/home.css` 前部仍有旧暗色首屏规则，文件后部的 `2026 public refresh` 区块覆盖为当前浅色版本。
 - 修改首页时必须读完整个 `home.css`，否则很容易改到已被后文覆盖的规则。
+- 页眉页脚的样式只在 `app/components/site-chrome.css`，自带色板变量，不依赖页面作用域；`globals.css` 里有一条针对所有 `footer` 元素的旧规则，`site-chrome.css` 已显式覆盖。
+
+### 14.3.1 字号与标题规则（2026-10-02）
+
+- 需要阅读的信息（作者、日期、栏目、评分、按钮、表单标签、说明文字）最小 12px；只有纯装饰的英文小标签（如 `VOL. 01`、`SCROLL TO READ`）可以更小。
+- 中文标题不用负字间距（`letter-spacing: 0`），字重 700；页面标题统一 `clamp(2.4rem, 5vw, 4rem)`，文章标题 `clamp(2.1rem, 4.6vw, 3.6rem)`。
+- 文章页的正文、工具说明、分享、相关文章、评论共用同一列宽 `--log-col: 760px`；末尾区块标题约 1.35rem。
 
 ### 14.4 已确认的移动端要求
 
@@ -623,6 +633,8 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 - 书单与轨迹位于日志之后，并各自具有不同的信息结构。
 - 订阅和留言区域保持紧凑。
 - 微信图片避免小号说明文字，手机上必须直接可读。
+- 所有公开页面在 800px 以下使用同一个“菜单”下拉导航，链接点击区域至少 44px。
+- 书单在 600px 以下是“小封面 + 文字”的紧凑列表，桌面端是封面网格；筛选按钮在手机上横向滑动，不吸顶。
 
 ---
 
@@ -697,7 +709,7 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 10. **发布动作会群发真实订阅者**：生产环境不能随意把测试文章设为 published。
 11. **浏览量是总量计数，不是独立访客分析**：限流只抑制高频重复，不代表严格 UV。
 12. **根目录旧静态站仍在 Git 中**：可能误导新接手者。
-13. **当前构建有一个不阻断发布的 CSS 兼容性警告**：`app/globals.css` 中仍有 `align-items: end`，Autoprefixer 建议改为 `align-items: flex-end`；`npm run build` 仍会成功，后续整理遗留 CSS 时可一并修复。
+13. ~~CSS 兼容性构建警告~~：已于 2026-10-02 修复，当前构建无警告。
 
 ---
 
@@ -715,7 +727,8 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 
 - [ ] Chrome 实际截图检查，不只看代码
 - [ ] 600 px 以下不显示首屏最新日志卡片
-- [ ] 导航菜单可键盘操作
+- [ ] 导航菜单可键盘操作（Esc 关闭）；当前栏目高亮
+- [ ] 390px 宽度下所有公开页面没有横向滚动
 - [ ] 书单、轨迹、订阅、留言没有异常占高
 - [ ] 纸靛蓝色值在公开页与后台一致
 
@@ -828,6 +841,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-10-02 | 前端设计整理：①所有公开页面共用新的页眉导航和深色页脚（订阅、留言、链接），首页 ABOUT 弹窗改为直接进入 `/about`；②“核心判断”功能全部移除（文章页、后台编辑器、首页详情抽屉、搜索、SEO 描述；数据库列保留不读写）；③文章标题缩小、去掉负字间距，正文与末尾区块统一 760px 列宽，分享改为一行按钮；④书单页改为封面网格（手机为紧凑列表）并补上标题，短评可展开，高度从约 35000px 降到约 12600px；⑤轨迹页补标题与说明，节点改为“3 篇日志 · 10 本书”文字；⑥最新日志卡片显示真实编号；⑦信息类小字统一提到 12px 以上；⑧新增带页眉页脚的 404 页面，IndexNow 验证文件改用 rewrite；⑨修复 `align-items: end` 构建警告 | 用户要求统一导航、去掉核心判断并同步考虑移动端；所有页面在 1440px 和 390px 宽度下截图检查过，无横向滚动 |
 | 2026-10-02 | 按代码审查修复：①AdSense 不再加载到后台和带令牌页面；②推送改为原子领取 + Resend 批量发送 + 幂等键，保存按钮防重复提交；③后台不能恢复已退订用户、有效订阅数只计 `active`；④首页不再把全部正文发给访客（270KB→73KB）；⑤网页正文改用 `post-format.js`，与邮件/长图一致；⑥手动群发改批量发送；⑦`CRON_SECRET` 未设置时拒绝定时接口，新增 `vercel.json` 每日定时任务；⑧已发布日志锁定 slug；⑨定时清理 `rate_limits`。另按用户要求把订阅改为单次确认（提交即生效） | 审查发现的安全、重复发信和一致性问题。**需要手动操作**：在 Supabase SQL 编辑器执行 `supabase/migrations/20261002_single_opt_in.sql`（激活历史待确认订阅者）；在两个 Vercel 项目设置 `CRON_SECRET`。网页渲染统一后，`legacy-5sal6qv1aqvcyaf7eu9u` 中以 `*` 开头的几行从错误的 “undefined” 变为斜体正文（原意可能是列表，需在后台把 `*` 改成 `- `） |
 | 2026-10-02 | 第 0 节新增 0.1“给下一位 agent 的开场提示词”，替换原先的简短提示 | 用户在不同 agent 之间切换，需要一段可直接复制、包含读取远端文档和更新变更记录要求的提示词 |
 | 2026-10-02 | 第 2.1 节改为“以实时核对为准”，不再写死远端提交 SHA；新增第 22 节变更记录；第 0 节加入“同一提交更新本文件”的规则 | 写死的 SHA 每次提交后都会过时；变更记录让下一位接手者快速了解最近变化 |

@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import Logo from '../components/logo'
+import SiteHeader from '../components/site-header'
+import SiteFooter from '../components/site-footer'
 import StructuredData from '../components/structured-data'
 import {createClient,isConfigured} from '@/lib/supabase/server'
 import {DEFAULT_ABOUT_TEXT,resolveAboutText} from '@/lib/about'
@@ -35,11 +36,9 @@ export default async function AboutPage(){
     ['method','如何写与如何读',<div key="method"><p>文章以作者的观察、阅读和实践为起点。涉及工具与方法时，页面会尽量保留“输入与工具”等说明，让读者知道内容如何形成。</p><p>你可以从<Link href="/logs">全部日志</Link>按时间阅读，也可以从<Link href="/books">书单</Link>或<Link href="/trails">阅读轨迹</Link>进入某个主题。</p></div>],
     ['contact','作者与联系',<div key="contact"><p>本站作者署名为 Chris。新日志可以通过<Link href="/#subscribe">邮件订阅</Link>或 <a href="/feed.xml">RSS</a> 获取；问题、线索和反馈可以从首页留言。</p><p>关于订阅、评论、访问统计和第三方服务的数据处理方式，请查看<Link href="/privacy">隐私政策</Link>。</p></div>]
   ]
-  return <main className="privacy-page about-page" id="top">
+  return <><SiteHeader current="about"/><main className="privacy-page about-page" id="content">
     <StructuredData data={schema}/>
-    <nav className="privacy-nav"><Link href="/" aria-label={`${SITE_NAME} 首页`}><Logo compact/></Link><span>ABOUT</span><Link href="/">返回首页</Link></nav>
     <header className="privacy-hero"><h1>关于 Chris<br/>与 FIELD NOTES</h1><div className="privacy-intro"><p>{SITE_DESCRIPTION}</p><dl><div><dt>作者</dt><dd>Chris</dd></div><div><dt>语言</dt><dd>中文 / zh-CN</dd></div><div><dt>更新</dt><dd>不定期</dd></div></dl></div></header>
     <div className="privacy-layout"><aside aria-label="关于页面目录"><span>目录</span><ol>{sections.map(([id,label],index)=><li key={id}><a href={`#${id}`}><b>{String(index+1).padStart(2,'0')}</b>{label}</a></li>)}</ol></aside><article className="privacy-copy">{sections.map(([id,label,content],index)=><section id={id} key={id}><header><span>{String(index+1).padStart(2,'0')}</span><h2>{label}</h2></header><div>{content}</div></section>)}</article></div>
-    <footer className="privacy-footer"><Link href="/"><Logo compact/></Link><Link href="/logs">继续阅读日志 →</Link></footer>
-  </main>
+  </main><SiteFooter/></>
 }
