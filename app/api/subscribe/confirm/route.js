@@ -12,6 +12,9 @@ export async function POST(request){
   if(!await enforceRateLimit(db,clientKey(request,'subscribe-confirm'),20,3600))return Response.json({ok:false},{status:429})
   const {data,error}=await db.from('subscribers').update({status:'active',verified_at:new Date().toISOString(),confirmation_token:crypto.randomUUID(),updated_at:new Date().toISOString()}).eq('confirmation_token',token).eq('status','pending').select('id').maybeSingle()
   if(error)throw error
-  return Response.json({ok:Boolean(data)},{status:data?200:400,headers:{'Cache-Control':'no-store'}})
+  // 改为单次确认后，旧确认邮件里的链接可能指向已生效的订阅。
+  let active=Boolean(data)
+  if(!active){const {data:current}=await db.from('subscribers').select('id').eq('confirmation_token',token).eq('status','active').maybeSingle();active=Boolean(current)}
+  return Response.json({ok:active},{status:active?200:400,headers:{'Cache-Control':'no-store'}})
  }catch(error){console.error('subscription confirmation failed',error);return Response.json({ok:false},{status:500})}
 }

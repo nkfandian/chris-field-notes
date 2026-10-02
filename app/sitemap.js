@@ -23,7 +23,7 @@ export default async function sitemap(){
       {url:`${SITE_URL}/books`,changeFrequency:'weekly',priority:.8},
       {url:`${SITE_URL}/trails`,changeFrequency:'weekly',priority:.8},
       {url:`${SITE_URL}/about`,changeFrequency:'monthly',priority:.65},
-      {url:`${SITE_URL}/privacy`,lastModified:'2026-07-16',changeFrequency:'yearly',priority:.3},
+      {url:`${SITE_URL}/privacy`,lastModified:'2026-10-02',changeFrequency:'yearly',priority:.3},
       ...demoPosts.map(postEntry)
     ]
   }
@@ -46,7 +46,7 @@ export default async function sitemap(){
     {url:`${SITE_URL}/books`,lastModified:bookDate,changeFrequency:'weekly',priority:.8},
     {url:`${SITE_URL}/trails`,lastModified:trailDate,changeFrequency:'weekly',priority:.8},
     {url:`${SITE_URL}/about`,lastModified:about?.updated_at,changeFrequency:'monthly',priority:.65},
-    {url:`${SITE_URL}/privacy`,lastModified:'2026-07-16',changeFrequency:'yearly',priority:.3},
+    {url:`${SITE_URL}/privacy`,lastModified:'2026-10-02',changeFrequency:'yearly',priority:.3},
     ...(posts||[]).map(postEntry),
     ...(trails||[]).map(trail=>({url:`${SITE_URL}/trails/${encodeURIComponent(trail.slug)}`,lastModified:trail.updated_at,changeFrequency:'monthly',priority:.7}))
   ]

@@ -32,7 +32,7 @@ export default async function LogsPage({searchParams}){
   let posts=demoPosts
   if(isConfigured()){
     const db=await createClient()
-    let query=db.from('posts').select('*').eq('status','published').order('published_at',{ascending:false})
+    let query=db.from('posts').select('id,slug,title,excerpt,domain,published_at').eq('status','published').order('published_at',{ascending:false})
     if(domain!=='all')query=query.eq('domain',domain)
     const {data}=await query
     posts=data||[]

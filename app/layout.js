@@ -44,6 +44,8 @@ export const metadata={
   },
   openGraph:{siteName:SITE_NAME,title:SITE_NAME,description:SITE_DESCRIPTION,type:'website',locale:SITE_LOCALE,url:'/',images:[{url:ogImage('面对复杂，保持欢喜'),width:1200,height:630,alt:SITE_NAME}]},
   twitter:{card:'summary_large_image',title:SITE_NAME,description:SITE_DESCRIPTION,images:[ogImage('面对复杂，保持欢喜')]},
+  // AdSense 站点验证用 meta；广告脚本只在公开页面由 SiteAnalytics 加载。
+  other:{'google-adsense-account':'ca-pub-5286360916046186'},
   appleWebApp:{capable:true,title:'FIELD NOTES',statusBarStyle:'black-translucent'}
 }
 
@@ -57,4 +59,4 @@ const siteSchema={'@context':'https://schema.org','@graph':[
   {'@type':'WebSite','@id':WEBSITE_ID,url:SITE_URL,name:SITE_NAME,alternateName:'FIELD NOTES',description:SITE_DESCRIPTION,inLanguage:SITE_LANGUAGE,author:{'@id':AUTHOR_ID},publisher:{'@id':PUBLISHER_ID},potentialAction:{'@type':'SearchAction',target:{'@type':'EntryPoint',urlTemplate:`${SITE_URL}/search?q={search_term_string}`} ,'query-input':'required name=search_term_string'}}
 ]}
 
-export default function RootLayout({children}){const gaId=process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID||'G-GKQVSFLWM4';return <html lang={SITE_LANGUAGE}><head><link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title={SITE_NAME}/><script async src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`} crossOrigin="anonymous"/></head><body><StructuredData data={siteSchema}/><div className="grain"/>{children}<SiteAnalytics gaId={gaId}/></body></html>}
+export default function RootLayout({children}){const gaId=process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID||'G-GKQVSFLWM4';return <html lang={SITE_LANGUAGE}><head><link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title={SITE_NAME}/></head><body><StructuredData data={siteSchema}/><div className="grain"/>{children}<SiteAnalytics gaId={gaId} adsenseClient={ADSENSE_CLIENT}/></body></html>}

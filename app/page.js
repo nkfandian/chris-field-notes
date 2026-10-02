@@ -12,7 +12,7 @@ export default async function Page(){
  if(isConfigured()){
   const db=await createClient()
   const [postResult,bookResult,trailResult,{data:site},{data:about},admin]=await Promise.all([
-   db.from('posts').select('*').eq('status','published').order('published_at',{ascending:false}),
+   db.from('posts').select('id,slug,title,excerpt,thesis,tools,domain,body,published_at,updated_at').eq('status','published').order('published_at',{ascending:false}),
    db.from('books').select('id,title,author,cover_url,status,rating,language',{count:'exact'}).order('sort_order',{ascending:true}).order('created_at',{ascending:false}).limit(4),
    db.from('trails').select('id,slug,title,summary,updated_at,trail_items(id,item_type)').eq('status','published').order('updated_at',{ascending:false}).limit(3),
    db.from('site_content').select('value').eq('key','home').maybeSingle(),
@@ -28,5 +28,7 @@ export default async function Page(){
   showStudio=Boolean(admin)
  }
  const schema={'@context':'https://schema.org','@type':'Blog','@id':`${SITE_URL}/#blog`,url:SITE_URL,name:SITE_NAME,description:SITE_DESCRIPTION,inLanguage:SITE_LANGUAGE,isPartOf:{'@id':WEBSITE_ID},author:{'@id':AUTHOR_ID},publisher:{'@id':PUBLISHER_ID},blogPost:posts.slice(0,10).map(post=>{const url=`${SITE_URL}/logs/${encodeURIComponent(post.slug)}`,contentImage=firstPostImage(post.body),image=contentImage||ogImage(post.title);return {'@type':'BlogPosting','@id':`${url}#article`,headline:post.title,description:seoDescription(post.excerpt||post.thesis||post.body),url,image,datePublished:post.published_at,dateModified:post.updated_at||post.published_at,author:{'@id':AUTHOR_ID},publisher:{'@id':PUBLISHER_ID}}})}
- return <><StructuredData data={schema}/><HomeClient posts={posts} books={books} bookCount={bookCount} trails={trails} content={content} aboutText={aboutText} showStudio={showStudio}/></>
+ // 正文只用于结构化数据，不传给客户端组件，避免每位访客下载全部文章正文。
+ const listPosts=posts.map(({body,...post})=>post)
+ return <><StructuredData data={schema}/><HomeClient posts={listPosts} books={books} bookCount={bookCount} trails={trails} content={content} aboutText={aboutText} showStudio={showStudio}/></>
 }

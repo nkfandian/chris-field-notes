@@ -68,7 +68,7 @@ export default function HomeClient({posts,books=[],bookCount=0,trails=[],content
       <nav id="home-navigation" aria-label="主导航" onClick={event=>{if(event.target.closest('a'))setMenu(false)}}>
         <a href="#log">日志</a><Link href="/books">书单</Link><Link href="/trails">轨迹</Link><Link href="/search">搜索</Link>
         <Link className="nav-about" href="/about" onClick={event=>{event.preventDefault();setAboutOpen(true);setMenu(false)}}>ABOUT</Link>
-        <a href="#subscribe">订阅</a>{showStudio&&<Link className="admin-entry" href="/studio">STUDIO ↗</Link>}
+        <a href="#subscribe">订阅</a>{/* 用整页跳转进入后台，避免公开页已加载的广告和统计脚本留在后台页面 */}{showStudio&&<a className="admin-entry" href="/studio">STUDIO ↗</a>}
       </nav>
     </header>
     <main id="top">

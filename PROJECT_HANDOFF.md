@@ -179,14 +179,14 @@ npm run start
 | `NEXT_PUBLIC_SUPABASE_URL` | 浏览器与服务器 | 是 | Supabase 项目 URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 浏览器与服务器 | 是 | Supabase anon key；仍必须依赖 RLS |
 | `SUPABASE_SERVICE_ROLE_KEY` | 仅服务器 | **否** | 公共表单、浏览量、邮件、限流等服务端操作 |
-| `RESEND_API_KEY` | 仅服务器 | **否** | 订阅确认、自动推送、手动群发 |
+| `RESEND_API_KEY` | 仅服务器 | **否** | 新日志自动推送、手动群发 |
 | `NOTIFICATION_FROM` | 仅服务器 | 通常否 | Resend 已验证发件人，例如 `名称 <mail@domain>` |
 
 ### 5.2 运维与可选变量
 
 | 变量 | 说明 |
 |---|---|
-| `CRON_SECRET` | 保护 `GET /api/notifications`，用于重试未完成推送 |
+| `CRON_SECRET` | **必须在两个 Vercel 项目都设置**。Vercel Cron 每天调用 `GET /api/notifications` 时自动携带；未设置时该接口一律返回 401，定时重试不会运行 |
 | `RATE_LIMIT_SALT` | 限流哈希盐；未设置时回退到 service role key |
 | `INDEXNOW_KEY` | 可选；未设置时从服务端高熵密钥派生 |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | GA4；代码内目前有默认值 `G-GKQVSFLWM4` |
@@ -224,7 +224,7 @@ npm run start
 | `/trails/[slug]` | 轨迹详情，连接日志、书和短注 | `app/trails/[slug]/page.js` |
 | `/search` | 站内搜索 | `app/search/*` |
 | `/privacy` | 隐私政策 | `app/privacy/*` |
-| `/subscribe/confirm` | 双重确认订阅 | `app/subscribe/confirm/*` |
+| `/subscribe/confirm` | 旧版确认链接的兼容页（订阅已改为单次确认，新订阅不再发确认邮件） | `app/subscribe/confirm/*` |
 | `/unsubscribe` | 退订 | `app/unsubscribe/*` |
 | `/reset-password` | 后台管理员密码重置 | `app/reset-password/page.js` |
 
@@ -248,13 +248,13 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 |---|---|---|
 | `POST /api/posts` | 管理员 | 创建/更新日志、触发邮件、刷新缓存、通知 IndexNow |
 | `POST /api/interactions` | 公开 | 提交评论或网站留言，默认 `pending` |
-| `POST /api/subscribe` | 公开 | 创建待确认订阅并发送确认邮件 |
-| `POST /api/subscribe/confirm` | 公开令牌页 | 激活订阅 |
+| `POST /api/subscribe` | 公开 | 提交邮箱即生效（`active` + `verified_at`），不发确认邮件 |
+| `POST /api/subscribe/confirm` | 公开令牌页 | 兼容旧确认链接；订阅已生效时也返回成功 |
 | `POST /api/unsubscribe` | 公开令牌页 | 退订并旋转管理令牌 |
 | `POST /api/views` | 文章页 | 记录浏览量，带限流 |
 | `POST /api/campaigns` | 管理员 | 向有效订阅者手动群发 |
 | `POST /api/notifications` | 管理员 | 重试未完成的新日志通知 |
-| `GET /api/notifications` | 外部 cron | Bearer `CRON_SECRET` 触发重试 |
+| `GET /api/notifications` | Vercel Cron（`vercel.json`，每天 01:00 UTC） | Bearer `CRON_SECRET` 触发推送重试，并清理两天前的 `rate_limits` |
 | `POST /api/indexnow` | 管理员 | 刷新路径并提交 IndexNow |
 | `GET /api/og?title=...` | 公开 | 生成 1200×630 分享图 |
 | `GET /feed.xml` | 公开 | RSS 2.0，最多 50 篇日志 |
@@ -271,7 +271,8 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 
 ### 7.1 入口与公共基础
 
-- `app/layout.js`：全站 metadata、结构化数据、GA/Vercel Analytics、AdSense。
+- `app/layout.js`：全站 metadata、结构化数据、AdSense 验证 meta。
+- `app/components/site-analytics.js`：GA、Vercel Analytics 和 AdSense 脚本；后台和带令牌页面（`/studio`、`/reset-password`、`/subscribe/confirm`、`/unsubscribe`）一律不加载。
 - `app/page.js`：服务器侧读取首页所有数据。
 - `app/home-client.js`：首页交互、筛选、弹窗、移动菜单。
 - `app/public-theme.css`：公开页面新版配色的统一覆盖层。
@@ -287,14 +288,15 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 - `lib/supabase/admin.js`：service role 客户端；只能服务器使用。
 - `lib/auth.js`：读取当前 Auth 用户并调用 `is_site_admin()`。
 - `lib/security.js`：来源检查、请求大小限制、限流键、输入清理。
+- `lib/resend.js`：Resend 发信封装（批量接口、幂等键、节流与 429 重试）。
 - `supabase/schema.sql`：新环境完整初始化脚本，已包含最终安全策略。
 - `supabase/migrations/*`：线上数据库的增量迁移历史。
 
 ### 7.3 内容与格式
 
 - `app/studio/markdown-editor.js`：后台格式按钮和标记插入。
-- `app/logs/[slug]/post-body.js`：网页端正文渲染。
-- `lib/post-format.js`：邮件和长图共享的格式解析器。
+- `app/logs/[slug]/post-body.js`：网页端正文渲染（基于 `post-format.js` 的解析结果生成 React 元素）。
+- `lib/post-format.js`：网页、邮件和长图**共用**的格式解析器。
 - `lib/notifications.js`：新日志邮件 HTML 和投递状态。
 - `lib/email-preview.js`：邮件 preheader/纯文本摘要。
 - `app/studio/post-image-exporter.js`：Canvas 摘要图与全文图。
@@ -392,18 +394,18 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 #### `subscribers`
 
 - `email` 唯一。
-- `status`：`pending | active | unsubscribed`。
-- `verified_at`：完成双重确认后写入。
-- `confirmation_token`：确认订阅令牌，每次使用后旋转。
+- `status`：`pending | active | unsubscribed`。`pending` 只在历史数据中出现，新订阅直接为 `active`。
+- `verified_at`：订阅生效时写入（单次确认，提交即写入）。推送只发给 `active` 且 `verified_at` 非空的人。
+- `confirmation_token`：旧版确认令牌，仅兼容旧确认链接。
 - `manage_token`：退订管理令牌，使用后旋转。
-- `confirmation_sent_at`：防止短时间重复发确认邮件。
+- `confirmation_sent_at`：旧版字段，已不再写入。
 - `source`：例如 `website` 或历史 `firebase`。
 
 #### 邮件与运维表
 
 - `email_campaigns`：手动群发历史。
 - `email_deliveries`：每篇日志对每个订阅者的投递状态，唯一键 `(post_id, subscriber_id)`。
-- `rate_limits`：服务端限流桶。
+- `rate_limits`：服务端限流桶；每日定时任务删除两天前的记录。
 - `post_views`：每篇文章总浏览量和最后访问时间。
 - `site_admins`：后台管理员白名单，关联 `auth.users`。
 
@@ -448,12 +450,14 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 任何格式功能都必须同时修改和验证：
 
 1. `app/studio/markdown-editor.js`：编辑器按钮/标记插入。
-2. `app/logs/[slug]/post-body.js`：网页正文渲染。
-3. `lib/post-format.js`：共享语义解析。
+2. `app/logs/[slug]/post-body.js`：网页正文渲染（只负责把解析结果变成 React 元素）。
+3. `lib/post-format.js`：三端共享的语义解析；新增语法首先改这里。
 4. `lib/notifications.js`：邮件 HTML 输出。
 5. `app/studio/post-image-exporter.js`：Canvas 长图绘制。
 
 这是项目历史上最重要的回归点：曾经出现网页显示正常，但邮件和下载图片直接显示 Markdown 代码的问题。不要只修网页端。
+
+2026-10-02 起网页端也改用 `post-format.js` 解析，三端共用同一套规则；不要再在 `post-body.js` 里写独立的正则解析。
 
 URL 只允许 `http(s)`，正文链接额外允许 `mailto:`；不要放宽到 `javascript:` 或任意协议。
 
@@ -504,15 +508,20 @@ URL 只允许 `http(s)`，正文链接额外允许 `mailto:`；不要放宽到 `
 
 1. 保存文章。
 2. 调用 `deliverPending()`。
-3. 给所有 `active` 且 `verified_at` 非空的订阅者发送邮件。
-4. 为每个订阅者写 `email_deliveries`。
-5. 全部成功后写入 `notification_sent_at`。
-6. 刷新首页、日志索引和文章路径。
-7. 提交文章、栏目、日志索引和首页到 IndexNow。
+3. 按 100 人一批，先在 `email_deliveries` 中**原子领取**投递（新行插入即领取；`failed` 行和超过 15 分钟的 `sending` 行通过条件更新领取），只给领取成功的人发送。
+4. 通过 Resend 批量接口发送，每封带幂等键（文章 ID + 订阅者 ID）。
+5. 按结果把每行更新为 `sent` 或 `failed`。
+6. 全部成功后写入 `notification_sent_at`。
+7. 刷新首页、日志索引和文章路径。
+8. 提交文章、栏目、日志索引和首页到 IndexNow。
 
 重要：把草稿第一次切换成“发布”会真实群发，不能拿生产订阅者做随意测试。测试邮件应使用隔离环境或明确的测试订阅者。
 
 已发送文章后继续编辑，不会自动再次群发，因为 `notification_sent_at` 已存在。
+
+防重复发送：保存期间按钮禁用；即使并发调用 `deliverPending()`（重复点击、两个 Vercel 项目的定时任务同时运行），原子领取也保证同一订阅者不会被两个请求同时发送。未完成的推送由每日 Vercel Cron 自动重试，也可以由管理员 `POST /api/notifications` 手动触发。
+
+链接锁定：曾发布过的日志（`status='published'` 或 `notification_sent_at` 非空）不能修改 slug，`/api/posts` 会拒绝，后台输入框为只读。
 
 ### 11.2 邮件格式
 
@@ -520,16 +529,21 @@ URL 只允许 `http(s)`，正文链接额外允许 `mailto:`；不要放宽到 `
 - 新日志邮件支持标题、段落、加粗、斜体、删除线、行内代码、链接、列表、引用、居中、图片和分隔线。
 - 邮件带隐藏 preheader 和退订链接。
 - `email_deliveries` 使重试具备幂等性：已经成功的订阅者不会重复发送。
+- 手动群发（`/api/campaigns`）同样按 100 封一批发送；它不记录每个收件人的结果，只记录成功/失败总数。
 
 ### 11.3 订阅生命周期
 
-1. 用户提交邮箱。
-2. 服务端创建/恢复 `pending` 记录。
-3. 发送确认链接。
-4. 用户确认后变为 `active`，写 `verified_at`，旋转确认令牌。
-5. 退订通过 `manage_token`，完成后旋转令牌。
+**单次确认（用户 2026-10-02 明确要求）**：输入邮箱即生效，不发确认邮件。
 
-接口采用通用响应文案，避免暴露某邮箱是否已订阅。
+1. 用户提交邮箱。
+2. 服务端新建或恢复记录为 `active`，写入 `verified_at`。
+3. 下一篇新日志发布时开始收到邮件；每封邮件底部有退订链接。
+4. 退订通过 `manage_token`，完成后旋转令牌。
+5. 后台只能“停用”订阅，不能把已退订的人恢复；退订者只能本人在网站重新订阅。
+
+所有情况返回同一句“订阅成功”，不暴露某邮箱此前是否已订阅。
+
+已知取舍：任何人都能替别人的邮箱订阅，只靠每 IP 每小时 3 次、每邮箱每天 2 次的限流抑制滥用。如果出现大量冒名订阅或投诉，再考虑恢复双重确认。
 
 ---
 
@@ -652,6 +666,7 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 - 评论公开读取不能直接 `select email,status`。
 - 公共写入必须经服务器 API、origin 检查、长度限制和限流。
 - 订阅确认、退订、密码重置页面必须 `noindex`。
+- 后台和带令牌的页面不能加载任何第三方脚本（广告、统计）。从公开页进入后台必须整页跳转（普通 `<a>`，不要用 `next/link`），否则公开页已加载的脚本会留在后台。
 - CSP 新增第三方域名时，只添加真实需要的最小范围。
 - 删除或重命名公开 slug 前，要处理旧链接、轨迹引用、canonical、Sitemap 和 IndexNow。
 
@@ -675,7 +690,7 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 3. **`.env.example` 不完整**：缺少 service role、Resend、cron、限流和站长验证变量。
 4. **邮件仍保留旧绿色视觉值**：`lib/notifications.js` 和 `app/api/campaigns/route.js` 仍使用 `#efeee8 / #151713 / #526b3f`；功能正确，但视觉尚未完全统一到纸靛蓝。
 5. **样式文件包含历史覆盖层**：尤其 `app/home.css` 和 `app/globals.css`，不要只读文件前半段。
-6. **格式解析有两套入口**：网页使用 `post-body.js`，邮件/长图使用 `post-format.js`；新增语法必须同时维护。
+6. ~~格式解析有两套入口~~：已于 2026-10-02 统一到 `post-format.js`。
 7. **正文图片只支持远程 URL**：没有站内上传或 Supabase Storage UI。
 8. **长图暂不绘制正文图片**：图片块会被跳过。
 9. **Vercel 有两个部署项目**：只看一个成功可能造成误判。
@@ -721,7 +736,7 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 - [ ] 非管理员 Auth 用户仍无管理权限
 - [ ] 匿名用户看不到评论邮箱、订阅者、浏览量
 - [ ] 评论默认 pending，审核后才公开
-- [ ] 订阅确认与退订令牌使用后旋转
+- [ ] 退订令牌使用后旋转；后台不能恢复已退订用户
 
 ### 18.5 发布与 SEO
 
@@ -792,7 +807,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 - 远端 `main` 是唯一的生产基线；本地 `deploy-sync` 只是历史开发线（见第 2.1 节）。
 - 公共前端、Studio 和日志长图已经统一为纸张米白、深墨和纸靛蓝体系。
 - SEO 作者页、栏目页、RSS、Sitemap、结构化数据和 IndexNow 已部署。
-- 浏览量、订阅双重确认、评论审核、邮件投递状态和管理员白名单已启用。
+- 浏览量、单次确认订阅、评论审核、邮件投递状态（原子领取 + 批量发送）和管理员白名单已启用。
 - 最新 900×500 微信引流图存在于独立工作目录，尚未并入网站仓库。
 
 下一位接手者可以直接从本文的第 2、4、5、7、8、9、10、18、22 节开始工作，无需读取此前对话。
@@ -813,6 +828,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-10-02 | 按代码审查修复：①AdSense 不再加载到后台和带令牌页面；②推送改为原子领取 + Resend 批量发送 + 幂等键，保存按钮防重复提交；③后台不能恢复已退订用户、有效订阅数只计 `active`；④首页不再把全部正文发给访客（270KB→73KB）；⑤网页正文改用 `post-format.js`，与邮件/长图一致；⑥手动群发改批量发送；⑦`CRON_SECRET` 未设置时拒绝定时接口，新增 `vercel.json` 每日定时任务；⑧已发布日志锁定 slug；⑨定时清理 `rate_limits`。另按用户要求把订阅改为单次确认（提交即生效） | 审查发现的安全、重复发信和一致性问题。**需要手动操作**：在 Supabase SQL 编辑器执行 `supabase/migrations/20261002_single_opt_in.sql`（激活历史待确认订阅者）；在两个 Vercel 项目设置 `CRON_SECRET`。网页渲染统一后，`legacy-5sal6qv1aqvcyaf7eu9u` 中以 `*` 开头的几行从错误的 “undefined” 变为斜体正文（原意可能是列表，需在后台把 `*` 改成 `- `） |
 | 2026-10-02 | 第 0 节新增 0.1“给下一位 agent 的开场提示词”，替换原先的简短提示 | 用户在不同 agent 之间切换，需要一段可直接复制、包含读取远端文档和更新变更记录要求的提示词 |
 | 2026-10-02 | 第 2.1 节改为“以实时核对为准”，不再写死远端提交 SHA；新增第 22 节变更记录；第 0 节加入“同一提交更新本文件”的规则 | 写死的 SHA 每次提交后都会过时；变更记录让下一位接手者快速了解最近变化 |
 | 2026-10-02 | 新增 `PROJECT_HANDOFF.md` 到仓库根目录（提交 `533d273`） | 让其他开发者或大模型无需历史对话即可接手；仅文档变更，线上代码不变 |
