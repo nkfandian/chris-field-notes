@@ -254,6 +254,7 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 | 路径 | 调用方 | 功能 |
 |---|---|---|
 | `POST /api/posts` | 管理员 | 创建/更新日志、触发邮件、刷新缓存、通知 IndexNow |
+| `POST /api/uploads/sign` | 管理员 | 为编辑器“⤒ 上传图片”签发 5 分钟有效的 R2 直传地址；浏览器再 PUT 到 `*.r2.cloudflarestorage.com`（CSP `connect-src` 已放行这一个域）。带来源检查和 2KB 请求体限制 |
 | `POST /api/interactions` | 公开 | 提交评论或网站留言，默认 `pending` |
 | `POST /api/subscribe` | 公开 | 提交邮箱即生效（`active` + `verified_at`），不发确认邮件 |
 | `POST /api/subscribe/confirm` | 公开令牌页 | 兼容旧确认链接；订阅已生效时也返回成功 |
@@ -483,7 +484,7 @@ URL 只允许 `http(s)`，正文链接额外允许 `mailto:`；不要放宽到 `
 - 正文不超过 2500 个字符：只生成一张全文图。
 - 超过 2500 个字符：按每页最多 2500 字符拆分。
 - 每张图显示页码，例如 `01 / 03`。
-- 只有第一张显示文章标题和摘要；后续图片不重复标题。
+- 摘要图显示标题和摘要；全文长图只有第一张显示标题（不显示摘要），后续图片不重复标题。
 - 切图不能截断同一行文字，也不能破坏行内加粗/斜体/链接等样式。
 - 尽量在句号、问号、感叹号、分号、逗号或空格处分段。
 - 避免 `，。！？；：、）》】」』…` 等标点出现在新行开头。
@@ -505,7 +506,9 @@ URL 只允许 `http(s)`，正文链接额外允许 `mailto:`；不要放宽到 `
 
 不要把 Georgia 放到中文字体之前；Canvas 在同一行切换字体会导致数字基线和宽度异常。
 
-图片型 Markdown 块目前不会进入全文长图正文，它们在 `layoutBlock()` 中返回 `null`。网页和邮件仍会显示文章图片。如果要让长图包含图片，需要单独设计跨域加载、Canvas 污染和分页策略。
+正文图片会画进全文长图：以 `crossOrigin=anonymous` 加载（R2 图床已配 CORS；没有 CORS 的外链图片会加载失败并被跳过，不会污染 Canvas），单张 8 秒超时，同一地址只加载一次。图片先按版心宽 936px 缩放，高于 640px 时按比例缩小宽度并居中（竖图不变形）。
+
+间距规则：正文按“下一行基线”推进，图片和分隔线用 `BODY_TEXT_ASCENT`（38px）换算到可见边缘。第一页标题与正文之间的分隔线距标题末行和正文首行的可见间距相等（约 56px）；图片上下与文字的间距也约 56px。修改这些常量后必须实际生成长图检查。
 
 ---
 
@@ -630,7 +633,7 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 ### 14.3.1 字号与标题规则（2026-10-02）
 
 - 需要阅读的信息（作者、日期、栏目、评分、按钮、表单标签、说明文字）最小 12px；只有纯装饰的英文小标签（如 `VOL. 01`、`SCROLL TO READ`）可以更小。
-- 中文标题不用负字间距（`letter-spacing: 0`），字重 700；页面标题统一 `clamp(2.4rem, 5vw, 4rem)`，文章标题 `clamp(2.1rem, 4.6vw, 3.6rem)`。
+- 中文标题不用负字间距（`letter-spacing: 0`），字重 700；页面标题统一 `clamp(2.2rem, 4vw, 3.2rem)`（手机 2.1rem），文章标题 `clamp(1.9rem, 3.4vw, 2.75rem)`（手机最大 2rem），文章正文 1.08rem / 行高 1.95（手机 1.02rem / 1.9）。文章页不显示摘要，标题下直接是署名和正文，所以标题不宜再放大。
 - 文章页的正文、工具说明、分享、相关文章、评论共用同一列宽 `--log-col: 760px`；末尾区块标题约 1.35rem。
 
 ### 14.4 已确认的移动端要求
@@ -849,6 +852,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-10-17 | 修复 Muse 当天改动的遗留问题：①CSP `connect-src` 放行 `https://*.r2.cloudflarestorage.com`，否则编辑器直传 R2 会被浏览器拦截；②长图竖图不再被压扁（超高时按比例缩宽并居中）；③长图分隔线移到标题与正文正中，图片与上下文字留出一致间距；④图片加载加 8 秒超时与缓存；⑤`package-lock.json` 同步，AWS SDK 固定为 3.1152.0（此前 `npm ci` 会失败）；⑥上传签名接口加来源检查与请求体限制；⑦文章标题与正文字号下调一档、手机标题不再被拆成两行，各索引页标题同步降一档 | 用户反馈“整体视觉像放大了”和长图横线不协调。实际原因：文章页去掉摘要后标题直接压在正文上显得过大，CSS 并无全站放大。长图在本地用真实日志 + 600×1200 竖图实测 |
 | 2026-10-17 | R2 图床基础设施配好（均不在 Git 中）：① R2 订阅激活（$0/月免费档）；② 建桶 `chris-field-notes-images`（WNAM）；③ 自定义域名 `img.chrisreading.ink` 已接通并生效（DNS 已解析）；④ CORS 已配（`https://www.chrisreading.ink` + `https://chrisreading.ink`，GET/PUT/HEAD，MaxAge 3600）；⑤ API 令牌（Object Read & Write，仅限该桶，S3 凭证已取）；⑥ 两个 Vercel 项目（chris-field-notes、chris-field-notes-web）各加 5 个 `R2_*` 环境变量（Production）。本提交推送后两项目自动重新部署，编辑器上传按钮即生效 | 临时 Admin 令牌（设 CORS 用）已删除；首个令牌因未记 S3 密钥已作废。注意：`_dmarc` 仍无记录、邮件转发测试仍未通过 |
 | 2026-10-17 | 图片上传与摘要显示调整：①编辑器新增“⤒ 上传图片”按钮，本地图片经 `/api/uploads/sign` 拿一次性签名直传 Cloudflare R2，自动插入 markdown（`@aws-sdk/client-s3` + `s3-request-presigner`，`.env.example` 新增 5 个 `R2_*` 变量）；②日志正文页去掉标题与正文之间的摘要段落，显示变为标题→正文；摘要字段保留，继续用于 SEO、首页卡片、搜索、相关文章和编辑器；③长图导出同步：全文模式不再绘制摘要（标题→正文），正文中的图片开始渲染进长图（预加载 `crossOrigin=anonymous`，按比例缩放、最大高度 640px，加载失败则跳过）；摘要图模式保持标题+摘要不变 | 用户要求。注意：①需在 Cloudflare 建 R2 桶、配 API 令牌、开公共访问并设置 CORS（`PUT`/`GET` 允许本站域名，否则浏览器直传和长图 canvas 会失败），再在两个 Vercel 项目配置 `R2_*` 环境变量；②推送后跑 `npm run build` 验证 |
 | 2026-10-17 | 域名迁移与收信切换（均不在 Git 中）：① `chrisreading.ink` 从 Namecheap 转入 Cloudflare，转入费 $25.20 已付，Namecheap 侧已点 Approve 放行（转入完成后到期延至 2027-11-28）；② NS 已切到 Cloudflare（colette/marek），域名 Active；③ 收信迁到 Cloudflare Email Routing：根域 MX 改为 route1/2/3.mx.cloudflare.net，删除 Namecheap eforward 两条旧 MX，catch-all 规则 → 站长 Gmail（已验证、Active）；发信记录保留未动（`send.updates` MX → amazonses，`resend._domainkey.updates` TXT） | 注意事项：① `_dmarc` 尚无记录；② 端到端转发测试未通过——测试邮件发出 26 分钟后转发副本仍未到达（收件箱/垃圾箱均无），收信链路需复测后再视为可用 |

@@ -1,7 +1,7 @@
 .trails-page,.trail-detail{min-height:60vh;padding:0 6vw 12vh}
 .trails-page a,.trail-detail a{color:inherit;text-decoration:none}
 .trails-head{margin:clamp(3rem,8vh,5rem) 0 2rem;max-width:760px}
-.trails-head h1{font:700 clamp(2.4rem,5vw,4rem)/1.15 var(--serif);letter-spacing:0;margin:0}
+.trails-head h1{font:700 clamp(2.2rem,4vw,3.2rem)/1.15 var(--serif);letter-spacing:0;margin:0}
 .trails-head p{margin:1rem 0 0;color:var(--muted);font:1rem/1.8 var(--serif)}
 .trail-index{border-top:1px solid var(--line)}
 .trail-index>a{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:1.6rem;align-items:center;padding:2rem 0;border-bottom:1px solid var(--line)}
@@ -18,7 +18,7 @@
 .trail-detail>header{padding:clamp(3rem,8vh,5rem) 0 4rem;max-width:820px}
 .trail-back{font:12px var(--mono);color:var(--muted)}
 .trail-back:hover{color:var(--moss)}
-.trail-detail h1{font:700 clamp(2.4rem,5vw,4rem)/1.2 var(--serif);letter-spacing:0;margin:1rem 0}
+.trail-detail h1{font:700 clamp(2.2rem,4vw,3.2rem)/1.2 var(--serif);letter-spacing:0;margin:1rem 0}
 .trail-detail>header p{margin:0 0 1rem;max-width:720px;color:var(--muted);font-size:1.1rem;line-height:1.85}
 .trail-detail>header small,.trail-detail li small{font:12px var(--mono);color:var(--moss);letter-spacing:.06em}
 .trail-detail ol{list-style:none;margin:0;padding:0;position:relative}
@@ -31,7 +31,7 @@
 @media(max-width:600px){
   .trails-page,.trail-detail{padding:0 5vw 9vh}
   .trails-head{margin:2.4rem 0 1.4rem}
-  .trails-head h1{font-size:2.3rem}
+  .trails-head h1{font-size:2.1rem}
   .trail-index>a{grid-template-columns:30px minmax(0,1fr) auto;gap:.9rem;padding:1.6rem 0}
   .trail-index h2{font-size:1.4rem}
   .trail-detail>header{padding:2.4rem 0 2.6rem}

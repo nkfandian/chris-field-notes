@@ -2,6 +2,7 @@ import {S3Client, PutObjectCommand} from '@aws-sdk/client-s3'
 import {getSignedUrl} from '@aws-sdk/s3-request-presigner'
 import {createClient} from '@/lib/supabase/server'
 import {getSiteAdmin} from '@/lib/auth'
+import {jsonMutationGuard,parseJsonBody} from '@/lib/security'
 
 const IMAGE_TYPES = {
   'image/jpeg': 'jpg',
@@ -26,17 +27,16 @@ function r2Config() {
 // 管理员向 R2 直传图片：先向本接口申请一次性上传地址，浏览器再 PUT 到 R2。
 // 文件不经过 Vercel，避免 serverless 的请求体大小限制。
 export async function POST(request) {
+  const blocked = jsonMutationGuard(request, 2048)
+  if (blocked) return blocked
   const db = await createClient()
   const user = await getSiteAdmin(db)
   if (!user) return Response.json({error: 'unauthorized'}, {status: 401})
   const config = r2Config()
   if (!config) return Response.json({error: 'R2 未配置，请检查环境变量'}, {status: 500})
-  let input
-  try {
-    input = await request.json()
-  } catch {
-    return Response.json({error: '请求格式无效'}, {status: 400})
-  }
+  const parsed = await parseJsonBody(request, 2048)
+  if (parsed.response) return parsed.response
+  const input = parsed.data
   const {filename = '', contentType = '', size = 0} = input || {}
   const ext = IMAGE_TYPES[contentType]
   if (!ext) return Response.json({error: '只支持 JPG / PNG / WebP / GIF / AVIF 图片'}, {status: 400})

@@ -1,7 +1,7 @@
 /* 书单：封面网格；筛选为编辑式标签，不吸顶，避免在手机上占据屏幕。 */
 .books-page{min-height:60vh;padding:0 6vw 12vh}
 .books-head{margin:clamp(3rem,8vh,5rem) 0 2rem;max-width:760px}
-.books-head h1{font:700 clamp(2.4rem,5vw,4rem)/1.15 var(--serif);letter-spacing:0;margin:0}
+.books-head h1{font:700 clamp(2.2rem,4vw,3.2rem)/1.15 var(--serif);letter-spacing:0;margin:0}
 .books-head p{margin:1rem 0 0;color:var(--muted);font:1rem/1.8 var(--serif)}
 .book-controls{padding:.6rem 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .book-filter{display:grid;grid-template-columns:56px minmax(0,1fr);align-items:center;gap:1rem}
@@ -31,7 +31,7 @@
 @media(max-width:600px){
   .books-page{padding:0 5vw 9vh}
   .books-head{margin:2.4rem 0 1.4rem}
-  .books-head h1{font-size:2.3rem}
+  .books-head h1{font-size:2.1rem}
   .books-head p{font-size:.95rem}
   .book-filter{grid-template-columns:40px minmax(0,1fr);gap:.6rem}
   .book-filter>div{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-right:-5vw;padding-right:5vw}

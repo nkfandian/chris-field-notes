@@ -22,6 +22,10 @@ const SIDE = 72
 const CONTENT_WIDTH = IMAGE_WIDTH - SIDE * 2
 const MAX_PAGE_BODY_CHARS = 2500
 const MAX_BODY_IMAGE_HEIGHT = 640
+// 正文以“下一行基线”推进；图片和分隔线按这个偏移换算到可见边缘，保证上下留白一致。
+const BODY_TEXT_ASCENT = 38
+const IMAGE_GAP = 56
+const IMAGE_LOAD_TIMEOUT = 8000
 const SLOGAN_LEAD = '面对复杂，'
 const SLOGAN_EMPHASIS = '保持欢喜'
 const NO_LINE_START = '，。！？；：、）》】」』〉〕〗〙〛”’…—％‰℃°,.!?;:%)]}'
@@ -200,9 +204,14 @@ function layoutBlock(ctx, block, imageMap) {
   if (block.type === 'image') {
     const img = imageMap ? imageMap.get(block.src) : null
     if (!img || !img.naturalWidth) return null
-    const width = CONTENT_WIDTH
-    const height = Math.min(Math.round(width * img.naturalHeight / img.naturalWidth), MAX_BODY_IMAGE_HEIGHT)
-    return {type: 'image', img, width, height, gapBefore: 26, gapAfter: 30}
+    // 先按版心宽度缩放；超过高度上限时按比例缩小宽度，避免竖图被压扁。
+    let width = CONTENT_WIDTH
+    let height = Math.round(width * img.naturalHeight / img.naturalWidth)
+    if (height > MAX_BODY_IMAGE_HEIGHT) {
+      height = MAX_BODY_IMAGE_HEIGHT
+      width = Math.round(height * img.naturalWidth / img.naturalHeight)
+    }
+    return {type: 'image', img, width, height, gapBefore: 0, gapAfter: IMAGE_GAP}
   }
   if (block.type === 'hr') return {type: 'hr', gapBefore: 18, gapAfter: 24, lineHeight: 42, lines: []}
   const list = block.type === 'ul' || block.type === 'ol'
@@ -391,14 +400,20 @@ function bodyImageSources(value = '') {
   return sources
 }
 
+// 同一地址只加载一次（编辑时预览会反复重绘）；超时或失败的图片直接跳过。
+const bodyImageCache = new Map()
 function loadBodyImage(src) {
-  return new Promise(resolve => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => resolve(img)
-    img.onerror = () => resolve(null)
-    img.src = src
-  })
+  if (!bodyImageCache.has(src)) {
+    bodyImageCache.set(src, new Promise(resolve => {
+      const img = new Image()
+      const timer = setTimeout(() => resolve(null), IMAGE_LOAD_TIMEOUT)
+      img.crossOrigin = 'anonymous'
+      img.onload = () => { clearTimeout(timer); resolve(img) }
+      img.onerror = () => { clearTimeout(timer); bodyImageCache.delete(src); resolve(null) }
+      img.src = src
+    }))
+  }
+  return bodyImageCache.get(src)
 }
 
 async function loadBodyImages(value = '') {
@@ -466,7 +481,7 @@ function drawBodyPage(ctx, blocks, startY) {
     y += block.gapBefore
     if (block.type === 'image') {
       const x = SIDE + (CONTENT_WIDTH - block.width) / 2
-      ctx.drawImage(block.img, x, y, block.width, block.height)
+      ctx.drawImage(block.img, x, y - BODY_TEXT_ASCENT, block.width, block.height)
       y += block.height + block.gapAfter
       continue
     }
@@ -700,10 +715,14 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyP
   const titleY = 330
   const excerptY = titleY + titleLines.length * titleLine + 34
   const introBottom = showExcerpt ? excerptY + excerptLines.length * summaryLine : titleY + titleLines.length * titleLine
-  const dividerY = showIntro ? introBottom + 54 : 268
+  // 全文图：分隔线与标题末行、正文首行的可见间距相等（约 56px）。
+  const lastTitleBaseline = titleY + (titleLines.length - 1) * titleLine
+  const dividerY = mode === 'full'
+    ? (showIntro ? lastTitleBaseline + 76 : 268)
+    : (showIntro ? introBottom + 54 : 268)
   const bodyHeight = mode === 'full' ? bodyPage.reduce((height, block) => height + fragmentHeight(block), 0) : 0
 
-  const bodyY = dividerY + 58
+  const bodyY = dividerY + BODY_TEXT_ASCENT + 58
   const endcapY = mode === 'full' ? bodyY + bodyHeight + 34 : dividerY + 32
   const height = endcapY + 212
   ctx.canvas.width = IMAGE_WIDTH

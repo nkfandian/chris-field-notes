@@ -9,7 +9,7 @@ const csp=[
  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
  "font-src 'self' data: https://fonts.gstatic.com",
  "img-src 'self' data: blob: https:",
- "connect-src 'self' https://*.supabase.co https://*.google-analytics.com https://*.vercel-insights.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com",
+ "connect-src 'self' https://*.supabase.co https://*.r2.cloudflarestorage.com https://*.google-analytics.com https://*.vercel-insights.com https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com",
  "frame-src https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com",
  "worker-src 'self' blob:",
  "manifest-src 'self'",
