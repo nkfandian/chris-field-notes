@@ -1,6 +1,6 @@
 # CHRIS / FIELD NOTES 项目交接文档
 
-> 最后核对：2026-10-02（Asia/Shanghai）
+> 最后核对：2026-10-17（Asia/Shanghai）
 >
 > 目标：让新的开发者或大模型无需依赖历史聊天记录，即可安全地继续修改、验证和发布本项目。
 
@@ -58,6 +58,9 @@ GitHub：https://github.com/nkfandian/chris-field-notes（main 分支即线上�
 |---|---|
 | 产品名 | `CHRIS / FIELD NOTES` |
 | 线上域名 | <https://www.chrisreading.ink> |
+| 域名注册商 | Cloudflare（2026-10-17 从 Namecheap 转入；转入完成后到期 2027-11-28） |
+| DNS | Cloudflare（NS：colette.ns.cloudflare.com / marek.ns.cloudflare.com） |
+| 域名收信 | Cloudflare Email Routing：根域 MX 为 route1/2/3.mx.cloudflare.net，catch-all 转发到站长 Gmail；发信仍走 Resend（`send.updates` 子域），不受影响 |
 | GitHub | <https://github.com/nkfandian/chris-field-notes> |
 | GitHub 默认分支 | `main` |
 | 本机项目目录 | `/Users/chris/Documents/Codex/2026-07-11/anti-gravity-anti-gravity/outputs/personal-os` |
@@ -842,6 +845,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-10-17 | 域名迁移与收信切换（均不在 Git 中）：① `chrisreading.ink` 从 Namecheap 转入 Cloudflare，转入费 $25.20 已付，Namecheap 侧已点 Approve 放行（转入完成后到期延至 2027-11-28）；② NS 已切到 Cloudflare（colette/marek），域名 Active；③ 收信迁到 Cloudflare Email Routing：根域 MX 改为 route1/2/3.mx.cloudflare.net，删除 Namecheap eforward 两条旧 MX，catch-all 规则 → 站长 Gmail（已验证、Active）；发信记录保留未动（`send.updates` MX → amazonses，`resend._domainkey.updates` TXT） | 注意事项：① `_dmarc` 尚无记录；② 端到端转发测试未通过——测试邮件发出 26 分钟后转发副本仍未到达（收件箱/垃圾箱均无），收信链路需复测后再视为可用 |
 | 2026-10-02 | 去掉书单、轨迹的说明句（首页两个区块和 `/books`、`/trails` 页），首页区块标题改为单列；“关于”改回弹窗，只保留一段介绍文字 | 用户要求去掉装饰语、恢复弹窗式介绍；`/about` 页面保留用于 SEO，只是不再出现在导航里 |
 | 2026-10-02 | 前端设计整理：①所有公开页面共用新的页眉导航和深色页脚（订阅、留言、链接），首页 ABOUT 弹窗改为直接进入 `/about`；②“核心判断”功能全部移除（文章页、后台编辑器、首页详情抽屉、搜索、SEO 描述；数据库列保留不读写）；③文章标题缩小、去掉负字间距，正文与末尾区块统一 760px 列宽，分享改为一行按钮；④书单页改为封面网格（手机为紧凑列表）并补上标题，短评可展开，高度从约 35000px 降到约 12600px；⑤轨迹页补标题与说明，节点改为“3 篇日志 · 10 本书”文字；⑥最新日志卡片显示真实编号；⑦信息类小字统一提到 12px 以上；⑧新增带页眉页脚的 404 页面，IndexNow 验证文件改用 rewrite；⑨修复 `align-items: end` 构建警告 | 用户要求统一导航、去掉核心判断并同步考虑移动端；所有页面在 1440px 和 390px 宽度下截图检查过，无横向滚动 |
 | 2026-10-02 | 按代码审查修复：①AdSense 不再加载到后台和带令牌页面；②推送改为原子领取 + Resend 批量发送 + 幂等键，保存按钮防重复提交；③后台不能恢复已退订用户、有效订阅数只计 `active`；④首页不再把全部正文发给访客（270KB→73KB）；⑤网页正文改用 `post-format.js`，与邮件/长图一致；⑥手动群发改批量发送；⑦`CRON_SECRET` 未设置时拒绝定时接口，新增 `vercel.json` 每日定时任务；⑧已发布日志锁定 slug；⑨定时清理 `rate_limits`。另按用户要求把订阅改为单次确认（提交即生效） | 审查发现的安全、重复发信和一致性问题。**需要手动操作**：在 Supabase SQL 编辑器执行 `supabase/migrations/20261002_single_opt_in.sql`（激活历史待确认订阅者）；在两个 Vercel 项目设置 `CRON_SECRET`。网页渲染统一后，`legacy-5sal6qv1aqvcyaf7eu9u` 中以 `*` 开头的几行从错误的 “undefined” 变为斜体正文（原意可能是列表，需在后台把 `*` 改成 `- `） |
