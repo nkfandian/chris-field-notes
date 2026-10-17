@@ -184,6 +184,10 @@ npm run start
 | `SUPABASE_SERVICE_ROLE_KEY` | 仅服务器 | **否** | 公共表单、浏览量、邮件、限流等服务端操作 |
 | `RESEND_API_KEY` | 仅服务器 | **否** | 新日志自动推送、手动群发 |
 | `NOTIFICATION_FROM` | 仅服务器 | 通常否 | Resend 已验证发件人，例如 `名称 <mail@domain>` |
+| `R2_ACCOUNT_ID` | 仅服务器 | **否** | Cloudflare 账户 ID（R2 S3 接口 endpoint 用） |
+| `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | 仅服务器 | **否** | R2 的 S3 API 令牌（需 Object 写权限） |
+| `R2_BUCKET` | 仅服务器 | 是 | R2 图床桶名，例如 `chris-field-notes-images` |
+| `R2_PUBLIC_URL` | 仅服务器 | 是 | 图床公网地址，例如 `https://img.chrisreading.ink`（需开公共访问 + CORS） |
 
 ### 5.2 运维与可选变量
 
@@ -845,6 +849,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-10-17 | 图片上传与摘要显示调整：①编辑器新增“⤒ 上传图片”按钮，本地图片经 `/api/uploads/sign` 拿一次性签名直传 Cloudflare R2，自动插入 markdown（`@aws-sdk/client-s3` + `s3-request-presigner`，`.env.example` 新增 5 个 `R2_*` 变量）；②日志正文页去掉标题与正文之间的摘要段落，显示变为标题→正文；摘要字段保留，继续用于 SEO、首页卡片、搜索、相关文章和编辑器；③长图导出同步：全文模式不再绘制摘要（标题→正文），正文中的图片开始渲染进长图（预加载 `crossOrigin=anonymous`，按比例缩放、最大高度 640px，加载失败则跳过）；摘要图模式保持标题+摘要不变 | 用户要求。注意：①需在 Cloudflare 建 R2 桶、配 API 令牌、开公共访问并设置 CORS（`PUT`/`GET` 允许本站域名，否则浏览器直传和长图 canvas 会失败），再在两个 Vercel 项目配置 `R2_*` 环境变量；②推送后跑 `npm run build` 验证 |
 | 2026-10-17 | 域名迁移与收信切换（均不在 Git 中）：① `chrisreading.ink` 从 Namecheap 转入 Cloudflare，转入费 $25.20 已付，Namecheap 侧已点 Approve 放行（转入完成后到期延至 2027-11-28）；② NS 已切到 Cloudflare（colette/marek），域名 Active；③ 收信迁到 Cloudflare Email Routing：根域 MX 改为 route1/2/3.mx.cloudflare.net，删除 Namecheap eforward 两条旧 MX，catch-all 规则 → 站长 Gmail（已验证、Active）；发信记录保留未动（`send.updates` MX → amazonses，`resend._domainkey.updates` TXT） | 注意事项：① `_dmarc` 尚无记录；② 端到端转发测试未通过——测试邮件发出 26 分钟后转发副本仍未到达（收件箱/垃圾箱均无），收信链路需复测后再视为可用 |
 | 2026-10-02 | 去掉书单、轨迹的说明句（首页两个区块和 `/books`、`/trails` 页），首页区块标题改为单列；“关于”改回弹窗，只保留一段介绍文字 | 用户要求去掉装饰语、恢复弹窗式介绍；`/about` 页面保留用于 SEO，只是不再出现在导航里 |
 | 2026-10-02 | 前端设计整理：①所有公开页面共用新的页眉导航和深色页脚（订阅、留言、链接），首页 ABOUT 弹窗改为直接进入 `/about`；②“核心判断”功能全部移除（文章页、后台编辑器、首页详情抽屉、搜索、SEO 描述；数据库列保留不读写）；③文章标题缩小、去掉负字间距，正文与末尾区块统一 760px 列宽，分享改为一行按钮；④书单页改为封面网格（手机为紧凑列表）并补上标题，短评可展开，高度从约 35000px 降到约 12600px；⑤轨迹页补标题与说明，节点改为“3 篇日志 · 10 本书”文字；⑥最新日志卡片显示真实编号；⑦信息类小字统一提到 12px 以上；⑧新增带页眉页脚的 404 页面，IndexNow 验证文件改用 rewrite；⑨修复 `align-items: end` 构建警告 | 用户要求统一导航、去掉核心判断并同步考虑移动端；所有页面在 1440px 和 390px 宽度下截图检查过，无横向滚动 |

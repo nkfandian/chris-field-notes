@@ -21,6 +21,7 @@ const IMAGE_WIDTH = 1080
 const SIDE = 72
 const CONTENT_WIDTH = IMAGE_WIDTH - SIDE * 2
 const MAX_PAGE_BODY_CHARS = 2500
+const MAX_BODY_IMAGE_HEIGHT = 640
 const SLOGAN_LEAD = '面对复杂，'
 const SLOGAN_EMPHASIS = '保持欢喜'
 const NO_LINE_START = '，。！？；：、）》】」』〉〕〗〙〛”’…—％‰℃°,.!?;:%)]}'
@@ -195,8 +196,14 @@ function wrapRichRuns(ctx, runs, maxWidth, style) {
   return lines.length ? lines : [{runs: [{text: '', width: 0}], width: 0}]
 }
 
-function layoutBlock(ctx, block) {
-  if (block.type === 'image') return null
+function layoutBlock(ctx, block, imageMap) {
+  if (block.type === 'image') {
+    const img = imageMap ? imageMap.get(block.src) : null
+    if (!img || !img.naturalWidth) return null
+    const width = CONTENT_WIDTH
+    const height = Math.min(Math.round(width * img.naturalHeight / img.naturalWidth), MAX_BODY_IMAGE_HEIGHT)
+    return {type: 'image', img, width, height, gapBefore: 26, gapAfter: 30}
+  }
   if (block.type === 'hr') return {type: 'hr', gapBefore: 18, gapAfter: 24, lineHeight: 42, lines: []}
   const list = block.type === 'ul' || block.type === 'ol'
   const style = {...(BODY_STYLES[list ? 'list' : block.type] || BODY_STYLES.paragraph)}
@@ -222,6 +229,7 @@ function layoutBlock(ctx, block) {
 }
 
 function fragmentHeight(block) {
+  if (block.type === 'image') return block.gapBefore + block.height + block.gapAfter
   return block.gapBefore + block.gapAfter + (block.type === 'hr' ? block.lineHeight : block.lines.reduce((height, line) => height + block.lineHeight + (line.extraAfter || 0), 0))
 }
 
@@ -371,11 +379,41 @@ function splitPostBlocksByChars(value = '') {
   return pages.length ? pages : [[]]
 }
 
-function layoutBodyPages(value = '') {
+function bodyImageSources(value = '') {
+  const sources = []
+  const seen = new Set()
+  for (const block of parsePostBlocks(value)) {
+    if (block.type === 'image' && block.src && !seen.has(block.src)) {
+      seen.add(block.src)
+      sources.push(block.src)
+    }
+  }
+  return sources
+}
+
+function loadBodyImage(src) {
+  return new Promise(resolve => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => resolve(img)
+    img.onerror = () => resolve(null)
+    img.src = src
+  })
+}
+
+async function loadBodyImages(value = '') {
+  const sources = bodyImageSources(value)
+  const images = await Promise.all(sources.map(loadBodyImage))
+  const map = new Map()
+  sources.forEach((src, index) => { if (images[index]) map.set(src, images[index]) })
+  return map
+}
+
+function layoutBodyPages(value = '', imageMap) {
   const measureCanvas = document.createElement('canvas')
   const ctx = measureCanvas.getContext('2d')
   configureCanvasText(ctx)
-  return splitPostBlocksByChars(value).map(page => page.map(block => layoutBlock(ctx, block)).filter(Boolean))
+  return splitPostBlocksByChars(value).map(page => page.map(block => layoutBlock(ctx, block, imageMap)).filter(Boolean))
 }
 
 function configureCanvasText(ctx) {
@@ -426,6 +464,12 @@ function drawBodyPage(ctx, blocks, startY) {
   let y = startY
   for (const block of blocks) {
     y += block.gapBefore
+    if (block.type === 'image') {
+      const x = SIDE + (CONTENT_WIDTH - block.width) / 2
+      ctx.drawImage(block.img, x, y, block.width, block.height)
+      y += block.height + block.gapAfter
+      continue
+    }
     if (block.type === 'hr') {
       ctx.strokeStyle = LINE
       ctx.lineWidth = 2
@@ -642,6 +686,7 @@ function zipImages(files) {
 function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyPage = []} = {}) {
   const info = articleInfo(post)
   const showIntro = mode !== 'full' || pageNumber === 1
+  const showExcerpt = mode === 'summary'
   const titleFont = 82
   const titleLine = 102
   const summaryFont = 44
@@ -650,11 +695,12 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyP
   ctx.font = `700 ${titleFont}px ${SERIF}`
   const titleLines = wrapText(ctx, info.title, CONTENT_WIDTH)
   ctx.font = `400 ${summaryFont}px ${SERIF}`
-  const excerptLines = wrapText(ctx, info.excerpt, CONTENT_WIDTH)
+  const excerptLines = showExcerpt ? wrapText(ctx, info.excerpt, CONTENT_WIDTH) : []
 
   const titleY = 330
   const excerptY = titleY + titleLines.length * titleLine + 34
-  const dividerY = showIntro ? excerptY + excerptLines.length * summaryLine + 54 : 268
+  const introBottom = showExcerpt ? excerptY + excerptLines.length * summaryLine : titleY + titleLines.length * titleLine
+  const dividerY = showIntro ? introBottom + 54 : 268
   const bodyHeight = mode === 'full' ? bodyPage.reduce((height, block) => height + fragmentHeight(block), 0) : 0
 
   const bodyY = dividerY + 58
@@ -690,8 +736,10 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyP
   if (showIntro) {
     ctx.font = `700 ${titleFont}px ${SERIF}`
     drawLines(ctx, titleLines, SIDE, titleY, titleLine)
-    ctx.font = `400 ${summaryFont}px ${SERIF}`
-    drawLines(ctx, excerptLines, SIDE, excerptY, summaryLine, MUTED)
+    if (showExcerpt) {
+      ctx.font = `400 ${summaryFont}px ${SERIF}`
+      drawLines(ctx, excerptLines, SIDE, excerptY, summaryLine, MUTED)
+    }
   }
   if (mode === 'full') {
     ctx.strokeStyle = LINE
@@ -732,7 +780,10 @@ export default function PostImageExporter({post}) {
     async function render() {
       if (document.fonts?.ready) await document.fonts.ready
       if (cancelled || !canvasRef.current) return
-      const pages = layoutBodyPages(post.body || post.excerpt || '')
+      const body = post.body || post.excerpt || ''
+      const imageMap = mode === 'full' ? await loadBodyImages(body) : new Map()
+      if (cancelled || !canvasRef.current) return
+      const pages = layoutBodyPages(body, imageMap)
       drawCanvas(canvasRef.current.getContext('2d'), post, mode, logoRef.current, {pageNumber: 1, pageCount: pages.length, bodyPage: pages[0]})
     }
     render()
@@ -744,7 +795,9 @@ export default function PostImageExporter({post}) {
     const base = filePart(post.slug || post.title)
     try {
       if (document.fonts?.ready) await document.fonts.ready
-      const pages = targetMode === 'full' ? layoutBodyPages(post.body || post.excerpt || '') : [[]]
+      const body = post.body || post.excerpt || ''
+      const imageMap = targetMode === 'full' ? await loadBodyImages(body) : new Map()
+      const pages = targetMode === 'full' ? layoutBodyPages(body, imageMap) : [[]]
       setNotice(targetMode === 'full' ? `正在生成全文图片（共 ${pages.length} 张）…` : '正在生成摘要图…')
       const images = []
       for (let index = 0; index < pages.length; index += 1) {

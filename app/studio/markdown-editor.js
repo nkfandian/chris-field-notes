@@ -1,6 +1,6 @@
 'use client'
 
-import {useRef} from 'react'
+import {useRef, useState} from 'react'
 
 const tools = [
   ['h2','H2','小标题'],['h3','H3','三级标题'],['bold','B','加粗'],['italic','I','斜体'],['strike','S','删除线'],
@@ -14,6 +14,36 @@ function linePrefix(value,prefix) {
 
 export default function MarkdownEditor({value,onChange}) {
   const textareaRef = useRef(null)
+  const fileRef = useRef(null)
+  const [uploading, setUploading] = useState(false)
+  function insertText(text) {
+    const textarea = textareaRef.current
+    if (!textarea) { onChange((value || '') + text); return }
+    const start = textarea.selectionStart, end = textarea.selectionEnd
+    update((value || '').slice(0, start) + text + (value || '').slice(end), start + text.length, start + text.length)
+  }
+  async function uploadImage(file) {
+    if (!file || uploading) return
+    setUploading(true)
+    try {
+      const sign = await fetch('/api/uploads/sign', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({filename: file.name, contentType: file.type, size: file.size}),
+      })
+      const data = await sign.json()
+      if (!sign.ok) throw new Error(data.error || '获取上传地址失败')
+      const put = await fetch(data.uploadUrl, {method: 'PUT', headers: {'Content-Type': file.type}, body: file})
+      if (!put.ok) throw new Error('上传到图床失败')
+      const alt = file.name.replace(/\.[^.]+$/, '') || '文章配图'
+      insertText(`![${alt}](${data.publicUrl})`)
+    } catch (error) {
+      alert(`图片上传失败：${error.message}`)
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
   function update(next,selectionStart,selectionEnd) {
     onChange(next)
     requestAnimationFrame(() => {
@@ -47,9 +77,10 @@ export default function MarkdownEditor({value,onChange}) {
     <div className="markdown-toolbar" role="toolbar" aria-label="正文格式工具">
       <div className="toolbar-group">{tools.slice(0,5).map(([kind,label,title])=><button type="button" key={kind} onClick={()=>apply(kind)} aria-label={title} title={title} className={kind==='italic'?'toolbar-italic':''}>{label}</button>)}</div>
       <div className="toolbar-group">{tools.slice(5,10).map(([kind,label,title])=><button type="button" key={kind} onClick={()=>apply(kind)} aria-label={title} title={title}>{label}</button>)}</div>
-      <div className="toolbar-group">{tools.slice(10).map(([kind,label,title])=><button type="button" key={kind} onClick={()=>apply(kind)} aria-label={title} title={title}>{label}</button>)}</div>
+      <div className="toolbar-group">{tools.slice(10).map(([kind,label,title])=><button type="button" key={kind} onClick={()=>apply(kind)} aria-label={title} title={title}>{label}</button>)}<button type="button" onClick={()=>fileRef.current?.click()} disabled={uploading} aria-label="上传图片" title="上传本地图片到图床">{uploading?'…':'⤒'}</button></div>
     </div>
+    <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/avif" hidden onChange={event=>uploadImage(event.target.files?.[0])} aria-label="选择要上传的图片" />
     <textarea ref={textareaRef} className="body" rows="16" value={value||''} onChange={event=>onChange(event.target.value)} aria-label="正文内容" />
-    <details className="markdown-help"><summary>格式说明</summary><p>选择文字后点击工具按钮，链接和图片按钮会插入示例地址，请替换为实际地址。</p><div><code>## 小标题</code><code>**加粗**</code><code>*斜体*</code><code>- 列表项</code><code>&gt; 引用</code><code>:::center-bold</code></div></details>
+    <details className="markdown-help"><summary>格式说明</summary><p>选择文字后点击工具按钮，链接按钮会插入示例地址请替换；⤒ 按钮可直接上传本地图片到图床并插入。</p><div><code>## 小标题</code><code>**加粗**</code><code>*斜体*</code><code>- 列表项</code><code>&gt; 引用</code><code>:::center-bold</code></div></details>
   </div>
 }

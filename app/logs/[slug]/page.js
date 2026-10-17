@@ -75,7 +75,7 @@ export default async function LogPage({params}){
   ]}
   return <><SiteHeader current="logs"/><main className="log-page" id="content">
     <PostViewTracker slug={slug}/><StructuredData data={jsonLd}/>
-    <article><header><Link className="log-category" href={`/logs?domain=${post.domain}`}>{labels[post.domain]?.split('/ ')[1]||post.domain}</Link><h1>{post.title}</h1>{post.excerpt&&<p>{post.excerpt}</p>}<div className="log-byline"><Link href="/about" rel="author">Chris</Link><time dateTime={dated(post.published_at)}>{post.published_at}</time></div></header><div className="log-body"><PostBody body={post.body||post.excerpt}/></div>{post.tools&&<aside><b>输入与工具</b><p>{post.tools}</p></aside>}</article>
+    <article><header><Link className="log-category" href={`/logs?domain=${post.domain}`}>{labels[post.domain]?.split('/ ')[1]||post.domain}</Link><h1>{post.title}</h1><div className="log-byline"><Link href="/about" rel="author">Chris</Link><time dateTime={dated(post.published_at)}>{post.published_at}</time></div></header><div className="log-body"><PostBody body={post.body||post.excerpt}/></div>{post.tools&&<aside><b>输入与工具</b><p>{post.tools}</p></aside>}</article>
     <ShareTools slug={slug} title={post.title}/>
     {books.length>0&&<section className="linked-section"><header><h2>相关书籍</h2></header><div>{books.map(book=><Link key={book.id} href={`/books#book-${book.id}`}><h3>{book.title}</h3><p>{book.author}</p></Link>)}</div></section>}
     {related.length>0&&<section className="linked-section"><header><h2>相关文章</h2></header><div>{related.map(item=><Link key={item.id} href={`/logs/${encodeURIComponent(item.slug)}`}><span>{labels[item.domain]?.split('/ ')[1]}</span><h3>{item.title}</h3><p>{item.excerpt}</p></Link>)}</div></section>}
