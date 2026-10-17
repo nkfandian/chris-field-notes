@@ -2,7 +2,7 @@
 
 import {useEffect, useRef, useState} from 'react'
 import {labels} from '@/lib/demo'
-import {parsePostBlocks} from '@/lib/post-format'
+import {imageCaption, parsePostBlocks} from '@/lib/post-format'
 import qrcode from 'qrcode-generator'
 import './post-image-exporter.css'
 
@@ -26,6 +26,13 @@ const MAX_BODY_IMAGE_HEIGHT = 640
 const BODY_TEXT_ASCENT = 38
 const IMAGE_GAP = 56
 const IMAGE_LOAD_TIMEOUT = 8000
+// 配图像装裱在纸上的照片：米灰衬纸 + 细边线 + 纸面偏移投影，并用暖白“正片叠底”压掉刺眼的纯白。
+const IMAGE_MAT = 18
+const IMAGE_SHADOW = 10
+const IMAGE_TINT = '#faf5ec'
+const CAPTION_FONT = 28
+const CAPTION_LINE = 40
+
 const SLOGAN_LEAD = '面对复杂，'
 const SLOGAN_EMPHASIS = '保持欢喜'
 const NO_LINE_START = '，。！？；：、）》】」』〉〕〗〙〛”’…—％‰℃°,.!?;:%)]}'
@@ -204,14 +211,20 @@ function layoutBlock(ctx, block, imageMap) {
   if (block.type === 'image') {
     const img = imageMap ? imageMap.get(block.src) : null
     if (!img || !img.naturalWidth) return null
-    // 先按版心宽度缩放；超过高度上限时按比例缩小宽度，避免竖图被压扁。
-    let width = CONTENT_WIDTH
-    let height = Math.round(width * img.naturalHeight / img.naturalWidth)
-    if (height > MAX_BODY_IMAGE_HEIGHT) {
-      height = MAX_BODY_IMAGE_HEIGHT
-      width = Math.round(height * img.naturalWidth / img.naturalHeight)
+    // 先按版心宽度（扣除衬纸和投影）缩放；超过高度上限时按比例缩小宽度，避免竖图被压扁。
+    let imgW = CONTENT_WIDTH - IMAGE_MAT * 2 - IMAGE_SHADOW
+    let imgH = Math.round(imgW * img.naturalHeight / img.naturalWidth)
+    if (imgH > MAX_BODY_IMAGE_HEIGHT) {
+      imgH = MAX_BODY_IMAGE_HEIGHT
+      imgW = Math.round(imgH * img.naturalWidth / img.naturalHeight)
     }
-    return {type: 'image', img, width, height, gapBefore: 0, gapAfter: IMAGE_GAP}
+    const frameW = imgW + IMAGE_MAT * 2
+    const frameH = imgH + IMAGE_MAT * 2
+    ctx.font = `400 ${CAPTION_FONT}px ${SERIF}`
+    const caption = imageCaption(block.alt)
+    const captionLines = caption ? wrapText(ctx, caption, CONTENT_WIDTH - 120).slice(0, 2) : []
+    const captionHeight = captionLines.length ? 22 + captionLines.length * CAPTION_LINE : 0
+    return {type: 'image', img, imgW, imgH, frameW, frameH, captionLines, height: frameH + IMAGE_SHADOW + captionHeight, gapBefore: 0, gapAfter: IMAGE_GAP}
   }
   if (block.type === 'hr') return {type: 'hr', gapBefore: 18, gapAfter: 24, lineHeight: 42, lines: []}
   const list = block.type === 'ul' || block.type === 'ol'
@@ -475,13 +488,43 @@ function drawRichLine(ctx, line, style, baseline) {
   }
 }
 
+function drawFramedImage(ctx, block, top) {
+  const frameX = Math.round(SIDE + (CONTENT_WIDTH - block.frameW - IMAGE_SHADOW) / 2)
+  const imgX = frameX + IMAGE_MAT
+  const imgY = top + IMAGE_MAT
+  ctx.save()
+  ctx.fillStyle = 'rgba(51, 46, 40, 0.09)'
+  ctx.fillRect(frameX + IMAGE_SHADOW, top + IMAGE_SHADOW, block.frameW, block.frameH)
+  ctx.fillStyle = DEEP_PAPER
+  ctx.fillRect(frameX, top, block.frameW, block.frameH)
+  ctx.strokeStyle = LINE
+  ctx.lineWidth = 2
+  ctx.strokeRect(frameX + 1, top + 1, block.frameW - 2, block.frameH - 2)
+  ctx.drawImage(block.img, imgX, imgY, block.imgW, block.imgH)
+  ctx.globalCompositeOperation = 'multiply'
+  ctx.fillStyle = IMAGE_TINT
+  ctx.fillRect(imgX, imgY, block.imgW, block.imgH)
+  ctx.globalCompositeOperation = 'source-over'
+  ctx.strokeStyle = 'rgba(51, 46, 40, 0.14)'
+  ctx.lineWidth = 1
+  ctx.strokeRect(imgX + 0.5, imgY + 0.5, block.imgW - 1, block.imgH - 1)
+  if (block.captionLines.length) {
+    ctx.font = `400 ${CAPTION_FONT}px ${SERIF}`
+    ctx.fillStyle = MUTED
+    ctx.textAlign = 'center'
+    const centerX = frameX + block.frameW / 2
+    const firstBaseline = top + block.frameH + IMAGE_SHADOW + 22 + CAPTION_FONT
+    block.captionLines.forEach((line, index) => ctx.fillText(line, centerX, firstBaseline + index * CAPTION_LINE))
+  }
+  ctx.restore()
+}
+
 function drawBodyPage(ctx, blocks, startY) {
   let y = startY
   for (const block of blocks) {
     y += block.gapBefore
     if (block.type === 'image') {
-      const x = SIDE + (CONTENT_WIDTH - block.width) / 2
-      ctx.drawImage(block.img, x, y - BODY_TEXT_ASCENT, block.width, block.height)
+      drawFramedImage(ctx, block, y - BODY_TEXT_ASCENT)
       y += block.height + block.gapAfter
       continue
     }

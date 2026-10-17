@@ -1,4 +1,4 @@
-import {parsePostBlocks} from '@/lib/post-format'
+import {imageCaption, parsePostBlocks} from '@/lib/post-format'
 
 // 网页、邮件和长图共用 lib/post-format.js 的解析结果，保证三端格式一致。
 function styled(run,key){
@@ -23,7 +23,7 @@ function Inline({runs=[]}){
 
 function Block({block}){
   if(block.type==='hr')return <hr/>
-  if(block.type==='image')return block.src?<figure><img src={block.src} alt={block.alt} loading="lazy" referrerPolicy="no-referrer"/><figcaption>{block.alt==='文章配图'?'':block.alt}</figcaption></figure>:null
+  if(block.type==='image')return block.src?<figure><img src={block.src} alt={block.alt} loading="lazy" referrerPolicy="no-referrer"/><figcaption>{imageCaption(block.alt)}</figcaption></figure>:null
   if(block.type==='h1'||block.type==='h2'||block.type==='h3'){const Tag=block.type;return <Tag><Inline runs={block.runs}/></Tag>}
   if(block.type==='ul'||block.type==='ol'){const Tag=block.type;return <Tag>{block.items.map((item,index)=><li key={index}><Inline runs={item}/></li>)}</Tag>}
   if(block.type==='quote')return <blockquote><p><Inline runs={block.runs}/></p></blockquote>

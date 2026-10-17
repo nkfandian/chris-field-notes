@@ -35,8 +35,8 @@ export default function MarkdownEditor({value,onChange}) {
       if (!sign.ok) throw new Error(data.error || '获取上传地址失败')
       const put = await fetch(data.uploadUrl, {method: 'PUT', headers: {'Content-Type': file.type}, body: file})
       if (!put.ok) throw new Error('上传到图床失败')
-      const alt = file.name.replace(/\.[^.]+$/, '') || '文章配图'
-      insertText(`![${alt}](${data.publicUrl})`)
+      // 说明留空（网页和长图都不显示）；需要图注时在方括号里补写。
+      insertText(`![](${data.publicUrl})`)
     } catch (error) {
       alert(`图片上传失败：${error.message}`)
     } finally {
