@@ -23,7 +23,12 @@ function Inline({runs=[]}){
 
 function Block({block}){
   if(block.type==='hr')return <hr/>
-  if(block.type==='image')return block.src?<figure><img src={block.src} alt={block.alt} loading="lazy" referrerPolicy="no-referrer"/><figcaption>{imageCaption(block.alt)}</figcaption></figure>:null
+  if(block.type==='image'){
+    if(!block.src)return null
+    const caption=imageCaption(block.alt)
+    // 与长图一致的“装裱”结构：衬纸相框 → 照片（叠暖白）→ 图注
+    return <figure><span className="photo-frame"><span className="photo"><img src={block.src} alt={caption||'文章配图'} loading="lazy" referrerPolicy="no-referrer"/></span></span>{caption&&<figcaption>{caption}</figcaption>}</figure>
+  }
   if(block.type==='h1'||block.type==='h2'||block.type==='h3'){const Tag=block.type;return <Tag><Inline runs={block.runs}/></Tag>}
   if(block.type==='ul'||block.type==='ol'){const Tag=block.type;return <Tag>{block.items.map((item,index)=><li key={index}><Inline runs={item}/></li>)}</Tag>}
   if(block.type==='quote')return <blockquote><p><Inline runs={block.runs}/></p></blockquote>

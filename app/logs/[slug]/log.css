@@ -28,10 +28,13 @@
 .log-body .center-bold{text-align:center;font-weight:700;margin:2.5rem 0}
 .log-body .center-bold p{margin-bottom:.7rem}
 .log-body hr{margin:2.6rem 0;border:0;border-top:1px solid var(--line)}
-.log-body figure{margin:2.6rem 0}
-.log-body figure img{display:block;width:100%;max-width:100%;height:auto;max-height:78vh;object-fit:contain;background:var(--paper-deep);border:1px solid var(--line)}
-.log-body figcaption{margin-top:.65rem;font:12px/1.6 var(--mono);color:var(--muted);text-align:center}
-.log-body figcaption:empty{display:none}
+/* 配图装裱（与长图一致）：米灰衬纸 + 细边线 + 纸面投影，图片叠一层暖白正片叠底，相框收紧到图片尺寸 */
+.log-body figure{margin:2.6rem 0;text-align:center}
+.log-body .photo-frame{display:inline-block;max-width:calc(100% - 8px);padding:16px;background:var(--paper-deep);border:1px solid var(--line);box-shadow:8px 9px 0 rgba(51,46,40,.09);vertical-align:top}
+.log-body .photo{position:relative;display:block}
+.log-body .photo img{display:block;max-width:100%;width:auto;height:auto;max-height:min(70vh,560px);margin:0 auto;border:0;background:none;outline:1px solid rgba(51,46,40,.14);outline-offset:-1px}
+.log-body .photo::after{content:'';position:absolute;inset:0;background:#faf5ec;mix-blend-mode:multiply;pointer-events:none}
+.log-body figcaption{margin-top:1rem;font:12px/1.6 var(--mono);color:var(--muted);text-align:center}
 .log-page aside{margin:3rem 0 0;padding-top:1.2rem;border-top:1px solid var(--line)}
 .log-page aside b{font:500 12px var(--mono);letter-spacing:.08em;color:var(--moss)}
 .log-page aside p{margin:.5rem 0 0;color:var(--muted);line-height:1.8}
@@ -55,6 +58,9 @@
   .log-byline{margin-top:1.4rem}
   .log-body{margin-top:1.7rem;padding-top:1.8rem;font-size:1.02rem;line-height:1.9}
   .log-body p{margin:0 0 1.5rem}
+  .log-body figure{margin:2.2rem 0}
+  .log-body .photo-frame{max-width:calc(100% - 5px);padding:9px;box-shadow:5px 6px 0 rgba(51,46,40,.09)}
+  .log-body .photo img{max-height:62vh}
   .linked-section{margin-top:3.5rem}
   .linked-section>div{grid-template-columns:1fr}
   .linked-section>div>a,.linked-section>div>a+a{padding:1.2rem 0;border-left:0}
