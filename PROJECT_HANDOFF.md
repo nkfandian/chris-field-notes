@@ -309,7 +309,8 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 - `app/studio/markdown-editor.js`：后台格式按钮和标记插入。
 - `app/logs/[slug]/post-body.js`：网页端正文渲染（基于 `post-format.js` 的解析结果生成 React 元素）。
 - `lib/post-format.js`：网页、邮件和长图**共用**的格式解析器。
-- `lib/notifications.js`：新日志邮件 HTML 和投递状态。
+- `lib/notifications.js`：新日志邮件内容和投递状态。
+- `lib/email-template.js`：所有订阅邮件（新日志、手动群发）共用的版式与内联样式；改邮件外观只改这里。
 - `lib/email-preview.js`：邮件 preheader/纯文本摘要。
 - `app/studio/post-image-exporter.js`：Canvas 摘要图与全文图。
 
@@ -545,6 +546,8 @@ URL 只允许 `http(s)`，正文链接额外允许 `mailto:`；不要放宽到 `
 
 - Resend 通过 REST API 调用。
 - 新日志邮件支持标题、段落、加粗、斜体、删除线、行内代码、链接、列表、引用、居中、图片和分隔线。
+- 邮件版式与网站**手机端日志页**一致：纸靛蓝色板，顺序为 栏目 → 标题 → “Chris · 日期” → 分隔线 → 正文 → “在网站阅读与评论 →”按钮 → 退订说明。正文里**不显示摘要**；摘要只作为收件箱预览文字（隐藏 preheader）。版心 600px，正文 16px / 行高 1.9。
+- 纯文本版本为“标题 + 正文纯文字 + 链接”。最长的现有日志（约 1.1 万字）生成的邮件约 68KB，低于 Gmail 102KB 截断线；特别长的文章发布前可留意。
 - 邮件带隐藏 preheader 和退订链接。
 - `email_deliveries` 使重试具备幂等性：已经成功的订阅者不会重复发送。
 - 手动群发（`/api/campaigns`）同样按 100 封一批发送；它不记录每个收件人的结果，只记录成功/失败总数。
@@ -715,7 +718,7 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 1. **本地 `deploy-sync` 与远端提交历史不同**：必须从真实远端 main 开新分支，不要在 `deploy-sync` 上继续开发。
 2. **没有自动化测试**：任何核心改动都依赖构建和人工回归。
 3. **`.env.example` 不完整**：缺少 service role、Resend、cron、限流和站长验证变量。
-4. **邮件仍保留旧绿色视觉值**：`lib/notifications.js` 和 `app/api/campaigns/route.js` 仍使用 `#efeee8 / #151713 / #526b3f`；功能正确，但视觉尚未完全统一到纸靛蓝。
+4. ~~邮件仍保留旧绿色视觉值~~：已于 2026-10-17 统一为纸靛蓝，见 `lib/email-template.js`。
 5. **样式文件包含历史覆盖层**：尤其 `app/home.css` 和 `app/globals.css`，不要只读文件前半段。
 6. ~~格式解析有两套入口~~：已于 2026-10-02 统一到 `post-format.js`。
 7. **正文图片只支持远程 URL**：没有站内上传或 Supabase Storage UI。
@@ -856,6 +859,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-10-17 | 订阅邮件改版：新日志邮件和手动群发共用新模块 `lib/email-template.js`，配色换成纸靛蓝，版式与网站手机端日志页一致（栏目 → 标题 → 署名日期 → 分隔线 → 正文），去掉标题下的摘要（摘要仅保留为收件箱预览文字）；去掉“NEW ENTRY”“CHRIS / OPEN INDEX”和迁移时期的历史说明；纯文本版本改为标题 + 正文 | 用户反馈邮件仍是旧版配色且保留摘要。已用真实日志（含 R2 配图与引用）在 390px 和 1280px 宽度渲染对比网站手机页 |
 | 2026-10-17 | 长图配图装裱：衬纸 + 细边线 + 纸面投影 + 暖白正片叠底，图注居中显示；图注规则抽到 `post-format.js` 的 `imageCaption()`，网页、邮件、长图共用（三篇旧文里的占位图注“Alt”不再显示）；编辑器上传图片不再把文件名写进图注 | 用户反馈白底配图放在米色长图里突兀。已用白底截图、彩色照片、竖图三类测试图本地实际生成长图检查 |
 | 2026-10-17 | 修复 Muse 当天改动的遗留问题：①CSP `connect-src` 放行 `https://*.r2.cloudflarestorage.com`，否则编辑器直传 R2 会被浏览器拦截；②长图竖图不再被压扁（超高时按比例缩宽并居中）；③长图分隔线移到标题与正文正中，图片与上下文字留出一致间距；④图片加载加 8 秒超时与缓存；⑤`package-lock.json` 同步，AWS SDK 固定为 3.1152.0（此前 `npm ci` 会失败）；⑥上传签名接口加来源检查与请求体限制；⑦文章标题与正文字号下调一档、手机标题不再被拆成两行，各索引页标题同步降一档 | 用户反馈“整体视觉像放大了”和长图横线不协调。实际原因：文章页去掉摘要后标题直接压在正文上显得过大，CSS 并无全站放大。长图在本地用真实日志 + 600×1200 竖图实测 |
 | 2026-10-17 | R2 图床基础设施配好（均不在 Git 中）：① R2 订阅激活（$0/月免费档）；② 建桶 `chris-field-notes-images`（WNAM）；③ 自定义域名 `img.chrisreading.ink` 已接通并生效（DNS 已解析）；④ CORS 已配（`https://www.chrisreading.ink` + `https://chrisreading.ink`，GET/PUT/HEAD，MaxAge 3600）；⑤ API 令牌（Object Read & Write，仅限该桶，S3 凭证已取）；⑥ 两个 Vercel 项目（chris-field-notes、chris-field-notes-web）各加 5 个 `R2_*` 环境变量（Production）。本提交推送后两项目自动重新部署，编辑器上传按钮即生效 | 临时 Admin 令牌（设 CORS 用）已删除；首个令牌因未记 S3 密钥已作废。注意：`_dmarc` 仍无记录、邮件转发测试仍未通过 |
