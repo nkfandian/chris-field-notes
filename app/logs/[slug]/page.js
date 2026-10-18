@@ -6,6 +6,7 @@ import InteractionForm from '@/app/components/interaction-form'
 import PostBody from './post-body'
 import ShareTools from './share-tools'
 import PostViewTracker from './post-view-tracker'
+import ReadingProgress from './reading-progress'
 import SiteHeader from '../../components/site-header'
 import SiteFooter from '../../components/site-footer'
 import StructuredData from '../../components/structured-data'
@@ -25,6 +26,23 @@ async function getPost(slug){
     post=data||post
   }
   return post
+}
+
+// 中文按每分钟约 450 字估算阅读时长；超过 3000 字的长文显示顶部阅读进度线。
+const READ_CHARS_PER_MINUTE=450
+const LONG_READ_CHARS=3000
+function readingStats(value){const chars=plainText(value).replace(/\s/g,'').length;return {chars,minutes:Math.max(1,Math.round(chars/READ_CHARS_PER_MINUTE))}}
+
+// 相关文章固定凑满 3 篇：先同栏目，再按标签重合，最后补最新文章。
+const RELATED_FIELDS='id,slug,title,excerpt,domain,published_at'
+async function relatedPosts(db,post,slug){
+  const picked=[]
+  const add=rows=>{for(const row of rows||[])if(picked.length<3&&row.slug!==slug&&!picked.some(item=>item.slug===row.slug))picked.push(row)}
+  const base=()=>db.from('posts').select(RELATED_FIELDS).eq('status','published').neq('slug',slug).order('published_at',{ascending:false})
+  add((await base().eq('domain',post.domain).limit(3)).data)
+  if(picked.length<3&&post.tags?.length)add((await base().overlaps('tags',post.tags).limit(6)).data)
+  if(picked.length<3)add((await base().limit(6)).data)
+  return picked
 }
 
 export async function generateMetadata({params}){
@@ -60,13 +78,13 @@ export default async function LogPage({params}){
     comments=commentData||[]
     books=bookData||[]
     if(post){
-      const {data}=await db.from('posts').select('id,slug,title,excerpt,domain,published_at').eq('status','published').eq('domain',post.domain).neq('slug',slug).order('published_at',{ascending:false}).limit(3)
-      related=data||[]
+      related=await relatedPosts(db,post,slug)
     }
   }
   if(!post)notFound()
   const url=`${SITE_URL}/logs/${encodeURIComponent(slug)}`
   const text=plainText(post.body||post.excerpt)
+  const reading=readingStats(post.body||post.excerpt)
   const description=seoDescription(post.excerpt||post.body)
   const images=[firstPostImage(post.body),ogImage(post.title)].filter(Boolean)
   const jsonLd={'@context':'https://schema.org','@graph':[
@@ -74,8 +92,8 @@ export default async function LogPage({params}){
     {'@type':'BreadcrumbList','@id':`${url}#breadcrumb`,itemListElement:[{'@type':'ListItem',position:1,name:'首页',item:SITE_URL},{'@type':'ListItem',position:2,name:'日志',item:`${SITE_URL}/logs`},{'@type':'ListItem',position:3,name:post.title,item:url}]}
   ]}
   return <><SiteHeader current="logs"/><main className="log-page" id="content">
-    <PostViewTracker slug={slug}/><StructuredData data={jsonLd}/>
-    <article><header><Link className="log-category" href={`/logs?domain=${post.domain}`}>{labels[post.domain]?.split('/ ')[1]||post.domain}</Link><h1>{post.title}</h1><div className="log-byline"><Link href="/about" rel="author">Chris</Link><time dateTime={dated(post.published_at)}>{post.published_at}</time></div></header><div className="log-body"><PostBody body={post.body||post.excerpt}/></div>{post.tools&&<aside><b>输入与工具</b><p>{post.tools}</p></aside>}</article>
+    <PostViewTracker slug={slug}/>{reading.chars>LONG_READ_CHARS&&<ReadingProgress/>}<StructuredData data={jsonLd}/>
+    <article><header><Link className="log-category" href={`/logs?domain=${post.domain}`}>{labels[post.domain]?.split('/ ')[1]||post.domain}</Link><h1>{post.title}</h1><div className="log-byline"><Link href="/about" rel="author">Chris</Link><time dateTime={dated(post.published_at)}>{post.published_at}</time><span className="log-reading">约 {reading.minutes} 分钟 · {reading.chars.toLocaleString('en-US')} 字</span></div></header><div className="log-body"><PostBody body={post.body||post.excerpt}/></div>{post.tools&&<aside><b>输入与工具</b><p>{post.tools}</p></aside>}</article>
     <ShareTools slug={slug} title={post.title}/>
     {books.length>0&&<section className="linked-section"><header><h2>相关书籍</h2></header><div>{books.map(book=><Link key={book.id} href={`/books#book-${book.id}`}><h3>{book.title}</h3><p>{book.author}</p></Link>)}</div></section>}
     {related.length>0&&<section className="linked-section"><header><h2>相关文章</h2></header><div>{related.map(item=><Link key={item.id} href={`/logs/${encodeURIComponent(item.slug)}`}><span>{labels[item.domain]?.split('/ ')[1]}</span><h3>{item.title}</h3><p>{item.excerpt}</p></Link>)}</div></section>}
