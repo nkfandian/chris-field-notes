@@ -634,7 +634,7 @@ function drawSlogan(ctx) {
   ctx.fillText(SLOGAN_EMPHASIS, x + leadWidth, 91)
 }
 
-function drawEndcap(ctx, info, y) {
+function drawEndcap(ctx, info, y, pageLabel = '') {
   const url = `https://${SITE}/logs/${encodeURIComponent(info.slug)}`
   const qrSize = 156
   const qrX = IMAGE_WIDTH - SIDE - qrSize
@@ -651,9 +651,13 @@ function drawEndcap(ctx, info, y) {
   ctx.fillStyle = MUTED
   const pathLines = wrapText(ctx, url.replace('https://www.', ''), 630)
   drawLines(ctx, pathLines, SIDE, y + 96, 24, MUTED)
+  // 日期与页码放在底部（原先在抬头横线下方）。
+  ctx.font = `500 20px ${MONO}`
+  ctx.fillStyle = INK
+  ctx.fillText(pageLabel || info.date, SIDE, y + 146)
   ctx.font = `500 17px ${MONO}`
   ctx.fillStyle = MOSS
-  ctx.fillText('CHRIS / FIELD NOTES  ·  SCAN TO OPEN', SIDE, y + 170)
+  ctx.fillText('CHRIS / FIELD NOTES  ·  SCAN TO OPEN', SIDE, y + 180)
   drawQr(ctx, makeQr(url), qrX, y + 28, qrSize)
 }
 
@@ -755,14 +759,16 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyP
   ctx.font = `400 ${summaryFont}px ${SERIF}`
   const excerptLines = showExcerpt ? wrapText(ctx, info.excerpt, CONTENT_WIDTH) : []
 
-  const titleY = 330
+  // 抬头横线下不再有栏目/日期/页码那一行，标题直接接在横线下方（可见间距约 56px）。
+  const headerRuleY = 158
+  const titleY = headerRuleY + 128
   const excerptY = titleY + titleLines.length * titleLine + 34
   const introBottom = showExcerpt ? excerptY + excerptLines.length * summaryLine : titleY + titleLines.length * titleLine
   // 全文图：分隔线与标题末行、正文首行的可见间距相等（约 56px）。
   const lastTitleBaseline = titleY + (titleLines.length - 1) * titleLine
   const dividerY = mode === 'full'
-    ? (showIntro ? lastTitleBaseline + 76 : 268)
-    : (showIntro ? introBottom + 54 : 268)
+    ? (showIntro ? lastTitleBaseline + 76 : headerRuleY)
+    : (showIntro ? introBottom + 54 : headerRuleY)
   const bodyHeight = mode === 'full' ? bodyPage.reduce((height, block) => height + fragmentHeight(block), 0) : 0
 
   const bodyY = dividerY + BODY_TEXT_ASCENT + 58
@@ -784,17 +790,9 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyP
   ctx.strokeStyle = INK
   ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.moveTo(SIDE, 158)
-  ctx.lineTo(IMAGE_WIDTH - SIDE, 158)
+  ctx.moveTo(SIDE, headerRuleY)
+  ctx.lineTo(IMAGE_WIDTH - SIDE, headerRuleY)
   ctx.stroke()
-  ctx.font = `500 24px ${MONO}`
-  ctx.fillStyle = MOSS
-  ctx.fillText(String(info.domain).toUpperCase(), SIDE, 222)
-  ctx.textAlign = 'right'
-  ctx.fillStyle = MUTED
-  const pageLabel = mode === 'full' ? `${info.date}  ·  ${String(pageNumber).padStart(2, '0')} / ${String(pageCount).padStart(2, '0')}` : info.date
-  ctx.fillText(pageLabel, IMAGE_WIDTH - SIDE, 222)
-  ctx.textAlign = 'left'
   if (showIntro) {
     ctx.font = `700 ${titleFont}px ${SERIF}`
     drawLines(ctx, titleLines, SIDE, titleY, titleLine)
@@ -803,7 +801,8 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyP
       drawLines(ctx, excerptLines, SIDE, excerptY, summaryLine, MUTED)
     }
   }
-  if (mode === 'full') {
+  // 第二页起没有标题，正文直接接在抬头横线下，不再画第二条线。
+  if (mode === 'full' && showIntro) {
     ctx.strokeStyle = LINE
     ctx.lineWidth = 2
     ctx.beginPath()
@@ -815,7 +814,8 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyP
   if (mode === 'full') {
     drawBodyPage(ctx, bodyPage, bodyY)
   }
-  drawEndcap(ctx, info, endcapY)
+  const pageLabel = mode === 'full' ? `${info.date}  ·  ${String(pageNumber).padStart(2, '0')} / ${String(pageCount).padStart(2, '0')}` : info.date
+  drawEndcap(ctx, info, endcapY, pageLabel)
 }
 
 function filePart(value) {
