@@ -10,12 +10,12 @@ import './index.css'
 export const revalidate=60
 const domains=['all','decode','execute','deploy','trek','roots']
 const domainSeo={
-  all:{title:'日志',description:'按时间浏览关于阅读、教育、商业、人工智能、技术实践与个人经验的中文原创日志。'},
-  decode:{title:'解码：语言、教育与社会观察',description:'从语言、教育和社会现象出发，拆解习以为常的叙事，记录判断如何形成。'},
-  execute:{title:'执行：商业、产品与行动',description:'关于商业、产品、组织与现实行动的观察，关注想法如何进入具体世界。'},
-  deploy:{title:'部署：人工智能与技术实践',description:'记录人工智能、软件工具与个人工作流的真实使用经验、方法和反思。'},
-  trek:{title:'跋涉：行走与身体经验',description:'关于行走、户外与身体经验的日志，让现实中的移动重新校准判断。'},
-  roots:{title:'溯源：历史、传统与个人记忆',description:'从家族、地方、历史与个人记忆出发，理解那些仍在影响当下的来路。'}
+  all:{title:'日志',description:'全部原创日志：书评与读书笔记、教育与社会观察、个人记忆，以及 AI 与建站实践，按发布时间排列。'},
+  decode:{title:'解码：书评与社会观察',description:'中英文书评与读书笔记，以及对东亚教育、高考、科研评价的观察。涉及何伟、秦晖、杨振宁、乔布斯、马斯克等人物与作品。'},
+  execute:{title:'执行：AI 工具实测',description:'用 Codex、Muse、Claude Code 等 AI 工具实际完成任务的记录与比较：哪些活适合交给 AI，哪些还得靠专业工具。'},
+  deploy:{title:'部署：用 AI 搭建个人网站',description:'零基础用 Gemini、Codex、Claude Code 搭建和迭代个人网站的全过程，以及自学 Python 的方法。'},
+  trek:{title:'跋涉：身边的普通人',description:'记录身边普通人的生活轨迹：走出村庄的人、小镇上的生意、常去超市里消失的熟悉面孔。'},
+  roots:{title:'溯源：南开往事与家族记忆',description:'南开求学六年的日记与回忆、家族长辈的往事、从谷歌地球找回的老家，以及年度书信。'}
 }
 
 export async function generateMetadata({searchParams}){

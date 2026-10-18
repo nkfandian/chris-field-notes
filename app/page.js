@@ -3,9 +3,9 @@ import {demoPosts} from '@/lib/demo'
 import {createClient,isConfigured} from '@/lib/supabase/server'
 import {getSiteAdmin} from '@/lib/auth'
 import StructuredData from './components/structured-data'
-import {AUTHOR_ID,PUBLISHER_ID,RSS_ALTERNATES,SITE_DESCRIPTION,SITE_LANGUAGE,SITE_NAME,SITE_URL,WEBSITE_ID,firstPostImage,ogImage,seoDescription} from '@/lib/seo'
+import {AUTHOR_ID,HOME_TITLE,PUBLISHER_ID,RSS_ALTERNATES,SITE_DESCRIPTION,SITE_LANGUAGE,SITE_NAME,SITE_URL,WEBSITE_ID,firstPostImage,ogImage,seoDescription} from '@/lib/seo'
 export const dynamic='force-dynamic'
-export const metadata={alternates:{canonical:'/',languages:{'zh-CN':'/','x-default':'/'},types:RSS_ALTERNATES}}
+export const metadata={title:{absolute:HOME_TITLE},openGraph:{title:HOME_TITLE,description:SITE_DESCRIPTION,url:'/',siteName:SITE_NAME,type:'website',images:[{url:ogImage('面对复杂，保持欢喜'),width:1200,height:630,alt:SITE_NAME}]},twitter:{card:'summary_large_image',title:HOME_TITLE,description:SITE_DESCRIPTION,images:[ogImage('面对复杂，保持欢喜')]},alternates:{canonical:'/',languages:{'zh-CN':'/','x-default':'/'},types:RSS_ALTERNATES}}
 export default async function Page(){
  let posts=demoPosts,books=[],bookCount=0,trails=[],content={},showStudio=false
  if(isConfigured()){

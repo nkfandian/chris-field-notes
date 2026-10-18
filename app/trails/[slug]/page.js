@@ -37,7 +37,18 @@ const resolveItem=(item,postIndex,bookIndex)=>{
   return null
 }
 
-export async function generateMetadata({params}){const slug=decodeURIComponent((await params).slug);if(!isConfigured())return {title:'阅读轨迹',robots:{index:false,follow:false}};const db=await createClient();const {data}=await db.from('trails').select('title,summary').eq('slug',slug).eq('status','published').maybeSingle();return data?pageMetadata({title:data.title,description:data.summary,path:`/trails/${encodeURIComponent(slug)}`,keywords:['阅读轨迹','主题阅读']}):{title:'阅读轨迹未找到',robots:{index:false,follow:false}}}
+// 轨迹详情的 SEO 介绍由轨迹实际内容生成（简介 + 节点构成 + 前几个条目），不显示在页面上。
+export async function generateMetadata({params}){
+  const slug=decodeURIComponent((await params).slug)
+  if(!isConfigured())return {title:'阅读轨迹',robots:{index:false,follow:false}}
+  const db=await createClient()
+  const {data}=await db.from('trails').select('id,title,summary').eq('slug',slug).eq('status','published').maybeSingle()
+  if(!data)return {title:'阅读轨迹未找到',robots:{index:false,follow:false}}
+  const {data:items}=await db.from('trail_items').select('item_type,label').eq('trail_id',data.id).order('position')
+  const names=(items||[]).filter(item=>item.item_type!=='note').map(item=>cleanLabel(item.label)).filter(Boolean).slice(0,4)
+  const description=[`阅读轨迹「${data.title}」${data.summary?`（${data.summary}）`:''}：按顺序串联 ${trailComposition(items||[])}`,names.length?`包括${names.map(name=>`《${name}》`).join('')}等`:''].filter(Boolean).join('，')+'。'
+  return pageMetadata({title:`阅读轨迹：${data.title}`,description,path:`/trails/${encodeURIComponent(slug)}`,keywords:['阅读轨迹','主题阅读',data.title]})
+}
 
 export default async function TrailPage({params}){
   if(!isConfigured())notFound()
