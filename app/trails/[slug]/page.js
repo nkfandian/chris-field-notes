@@ -45,7 +45,8 @@ export async function generateMetadata({params}){
   const {data}=await db.from('trails').select('id,title,summary').eq('slug',slug).eq('status','published').maybeSingle()
   if(!data)return {title:'阅读轨迹未找到',robots:{index:false,follow:false}}
   const {data:items}=await db.from('trail_items').select('item_type,label').eq('trail_id',data.id).order('position')
-  const names=(items||[]).filter(item=>item.item_type!=='note').map(item=>cleanLabel(item.label)).filter(Boolean).slice(0,4)
+  // 后台条目名可能带“slug — 标题”前缀，只取标题部分。
+  const names=(items||[]).filter(item=>item.item_type!=='note').map(item=>{const label=cleanLabel(item.label);return label.match(labelledSlug)?.[2]?.trim()||label}).filter(Boolean).slice(0,3)
   const description=[`阅读轨迹「${data.title}」${data.summary?`（${data.summary}）`:''}：按顺序串联 ${trailComposition(items||[])}`,names.length?`包括${names.map(name=>`《${name}》`).join('')}等`:''].filter(Boolean).join('，')+'。'
   return pageMetadata({title:`阅读轨迹：${data.title}`,description,path:`/trails/${encodeURIComponent(slug)}`,keywords:['阅读轨迹','主题阅读',data.title]})
 }
