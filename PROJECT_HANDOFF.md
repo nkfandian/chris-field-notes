@@ -279,8 +279,9 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 
 ### 7.1 入口与公共基础
 
-- `app/layout.js`：全站 metadata、结构化数据、AdSense 验证 meta。
-- `app/components/site-analytics.js`：GA、Vercel Analytics 和 AdSense 脚本；后台和带令牌页面（`/studio`、`/reset-password`、`/subscribe/confirm`、`/unsubscribe`）一律不加载。
+- `app/layout.js`：全站 metadata、结构化数据、字体变量挂载。
+- `lib/fonts.js`：Noto Serif SC 与 IBM Plex Mono 经 `next/font/google` **构建时下载、自托管**（不再请求 fonts.googleapis.com，国内访客首屏不会被字体卡住）。中文字体按 unicode-range 切片，不预加载。不要再在 CSS 里 `@import` Google Fonts。
+- `app/components/site-analytics.js`：GA 和 Vercel Analytics 脚本（2026-10-18 起已移除 AdSense，站点不投放广告）；后台和带令牌页面（`/studio`、`/reset-password`、`/subscribe/confirm`、`/unsubscribe`）一律不加载。
 - `app/page.js`：服务器侧读取首页所有数据。
 - `app/home-client.js`：首页首屏、日志筛选、书单与轨迹区块。
 - `app/components/site-header.js` / `site-footer.js` / `site-chrome.css`：**所有公开页面共用**的顶部导航（含移动端菜单）和深色页脚（订阅、留言、站点链接）。新增公开页面时直接使用这两个组件，并给 `<main>` 加 `id="content"`（跳转链接用）。
@@ -867,6 +868,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-10-18 | 字体改为 `next/font` 自托管（去掉 Google Fonts `@import`），长图导出读取同一字体变量；移除 AdSense（脚本、验证 meta、`ads.txt`、CSP 中的广告域名），隐私政策改为“不投放广告”；CSP 收紧：style/font 只允许本站，`frame-src 'none'`（提交 `8aa718f`） | 国内访问 Google 字体常被卡住导致首屏空白；用户决定不放广告。字体名仍为 “Noto Serif SC”，页面外观不变 |
 | 2026-10-18 | SEO 文案按网站实际内容重写（整站、首页标题、关键词、6 个栏目、书单、轨迹、关于、作者结构化数据）；轨迹详情页介绍改为由轨迹内容自动生成；`/about` 顶部不再显示 SEO 介绍，改为 ABOUT 文本并去掉重复小节 | 用户确认文案。线上审查：canonical、h1、alt、结构化数据、robots、RSS 均正常，站点地图 51 个地址全部 200 |
 | 2026-10-18 | `/logs` 页去掉标题下的栏目说明句（如“按时间浏览关于阅读……”），标题与篇数改为同一基线一行，筛选栏紧接其下；手机端同样保持一行。说明文字仍保留在页面 meta description 中供搜索引擎使用 | 用户要求，去掉后无多余空白 |
 | 2026-10-18 | 长图页码只在超过 1 页时显示，并加单位“页”（如 `02 / 05 页`）；单页只显示日期 | 用户要求，让页码一看就懂。单页、多页第 3 页和摘要图本地实测 |
