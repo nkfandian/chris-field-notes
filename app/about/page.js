@@ -31,7 +31,7 @@ export default async function AboutPage(){
     {'@type':'BreadcrumbList','@id':`${AUTHOR_URL}#breadcrumb`,itemListElement:[{'@type':'ListItem',position:1,name:'首页',item:SITE_URL},{'@type':'ListItem',position:2,name:'关于 Chris',item:AUTHOR_URL}]}
   ]}
   const sections=[
-    ['subjects','这里写什么',<div key="subjects"><p>这里主要记录语言与叙事、教育与商业、人工智能与技术实践、阅读与书评，以及行走和身体经验。它们共同指向同一件事：一个判断是怎样在现实中慢慢形成的。</p><p>日志保留具体问题和个人经验；书单收纳阅读中的短评；轨迹把文章与书重新组织成可以继续探索的主题路径。</p></div>],
+    ['subjects','这里写什么',<div key="subjects"><p>这里写得最多的是书评和读书笔记，中文书、英文书都有，尤其是关于中国的非虚构作品；其次是对教育和社会现象的观察，比如高考、东亚教育，以及 AI 时代的学习。还有一部分是个人记忆：南开读书的六年、家族长辈的往事、身边那些走出村庄的普通人。另外几篇，记录了自己不写一行代码、借助 AI 把这个网站一点点搭起来的过程。</p><p>日志保留具体问题和个人经验；书单收纳阅读中的短评；轨迹把文章与书重新组织成可以继续探索的主题路径。</p></div>],
     ['method','如何写与如何读',<div key="method"><p>文章以作者的观察、阅读和实践为起点。涉及工具与方法时，页面会尽量保留“输入与工具”等说明，让读者知道内容如何形成。</p><p>你可以从<Link href="/logs">全部日志</Link>按时间阅读，也可以从<Link href="/books">书单</Link>或<Link href="/trails">阅读轨迹</Link>进入某个主题。</p></div>],
     ['contact','作者与联系',<div key="contact"><p>本站作者署名为 Chris。新日志可以通过<Link href="/#subscribe">邮件订阅</Link>或 <a href="/feed.xml">RSS</a> 获取；问题、线索和反馈可以从首页留言。</p><p>关于订阅、评论、访问统计和第三方服务的数据处理方式，请查看<Link href="/privacy">隐私政策</Link>。</p></div>]
   ]

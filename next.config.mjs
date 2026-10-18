@@ -34,6 +34,8 @@ const privateApiRoutes=['/api/campaigns','/api/indexnow','/api/interactions','/a
 
 export default {
  poweredByHeader:false,
+ // Vercel 自带的 *.vercel.app 地址一律 308 到正式域名，避免被搜索引擎当成重复站点。
+ async redirects(){return ['chris-field-notes.vercel.app','chris-field-notes-web.vercel.app'].map(value=>({source:'/:path*',has:[{type:'host',value}],destination:'https://www.chrisreading.ink/:path*',permanent:true}))},
  async rewrites(){return [{source:'/:key([a-fA-F0-9-]{8,128}).txt',destination:'/api/indexnow-key/:key'}]},
  async headers(){return [
   {source:'/:path*',headers:securityHeaders},

@@ -18,7 +18,7 @@
 6. 修改前先定位现有实现，不要重复建设已经存在的功能。
 7. 修改后至少运行 `npm run build`。
 8. **在同一个提交中更新本文件**：受影响的章节（代码地图、技术债、规则等）同步修改，并在第 22 节追加一行变更记录。
-9. 如果发布到生产，确认两个 Vercel 状态都为 `success`，再检查真实域名。
+9. 如果发布到生产，确认 `Vercel – chris-field-notes-web` 状态为 `success`，再检查真实域名。
 
 ### 0.1 给下一位 agent 的开场提示词
 
@@ -37,7 +37,7 @@ GitHub：https://github.com/nkfandian/chris-field-notes（main 分支即线上�
 - 修改后运行 npm run build。
 - 所有文章格式变更必须同时验证网页、订阅邮件和长图导出。
 - 在同一个提交里更新 PROJECT_HANDOFF.md 的相关章节，并在第 22 节最上方追加一行变更记录。
-- 推送到 main 会直接发布到线上；推送后确认两个 Vercel 部署（chris-field-notes、chris-field-notes-web）都是 success。
+- 推送到 main 会直接发布到线上；推送后确认 Vercel 部署（chris-field-notes-web）是 success。
 - 不要在线上把测试文章设为"发布"，那样会给真实订阅者群发邮件。
 
 这次的任务是：【在这里写你要改什么】
@@ -68,7 +68,7 @@ GitHub：https://github.com/nkfandian/chris-field-notes（main 分支即线上�
 | Supabase project ref | `kdmhceaxcyimnaxfoswo` |
 | Supabase 项目入口 | <https://supabase.com/dashboard/project/kdmhceaxcyimnaxfoswo> |
 | 部署平台 | Vercel（同一提交会触发两个项目） |
-| Vercel 项目 | `chris-field-notes`、`chris-field-notes-web` |
+| Vercel 项目 | 正式：`chris-field-notes-web`（绑定 chrisreading.ink 与 www）。旧项目 `chris-field-notes` 已于 2026-10-18 断开 GitHub、不再部署，最后一次部署只做跳转（见下） |
 
 生产内容主要存在 Supabase，不在 Git 仓库。Git 中的 `lib/demo.js` 只是未配置 Supabase 时的回退内容。
 
@@ -117,12 +117,11 @@ git switch -c your-task-name origin/main
 
 ### 2.3 发布验证
 
-推送远端 `main` 会触发：
+推送远端 `main` 会触发 `Vercel – chris-field-notes-web`，成功才算发布完成。
 
-- `Vercel – chris-field-notes`
-- `Vercel – chris-field-notes-web`
+旧项目 `chris-field-notes` 已断开 GitHub（2026-10-18），不再产生状态检查。它的 `chris-field-notes.vercel.app` 和正式项目的 `chris-field-notes-web.vercel.app` 都由 `next.config.mjs` 的 `redirects()` 308 跳转到 `www.chrisreading.ink`，避免重复收录。旧项目可在 Vercel 后台手动删除（不可撤销，删除前确认没有绑定域名）。
 
-两者都成功才算发布完成。发布后至少检查：
+git 推送偶尔被网络重置时，可用 GitHub Git Data API 发布同一提交（先建 blob/tree，核对 tree 与本地一致，再建 commit 并 fast-forward `main`）。发布后至少检查：
 
 ```bash
 curl -sSI https://www.chrisreading.ink/
@@ -193,7 +192,7 @@ npm run start
 
 | 变量 | 说明 |
 |---|---|
-| `CRON_SECRET` | **必须在两个 Vercel 项目都设置**。Vercel Cron 每天调用 `GET /api/notifications` 时自动携带；未设置时该接口一律返回 401，定时重试不会运行 |
+| `CRON_SECRET` | **必须在 chris-field-notes-web 设置**（已设置）。Vercel Cron 每天调用 `GET /api/notifications` 时自动携带；未设置时该接口一律返回 401，定时重试不会运行 |
 | `RATE_LIMIT_SALT` | 限流哈希盐；未设置时回退到 service role key |
 | `INDEXNOW_KEY` | 可选；未设置时从服务端高熵密钥派生 |
 | `GOOGLE_SITE_VERIFICATION` | Google 站点验证；代码内已有默认验证码 |
@@ -324,7 +323,7 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 
 ### 7.5 旧文件
 
-仓库根目录的 `index.html`、`script.js`、`styles.css` 是早期静态版本，不是当前 Next.js 生产入口。除非明确处理历史静态版本，否则不要把新功能写在那里。
+早期静态版本 `index.html`、`script.js`、`styles.css` 已于 2026-10-18 从仓库删除（需要时可从 Git 历史找回）。
 
 ---
 
@@ -734,7 +733,7 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 9. **Vercel 有两个部署项目**：只看一个成功可能造成误判。
 10. **发布动作会群发真实订阅者**：生产环境不能随意把测试文章设为 published。
 11. **浏览量是总量计数，不是独立访客分析**：限流只抑制高频重复，不代表严格 UV。
-12. **根目录旧静态站仍在 Git 中**：可能误导新接手者。
+12. ~~根目录旧静态站仍在 Git 中~~：已于 2026-10-18 删除。
 13. ~~CSS 兼容性构建警告~~：已于 2026-10-02 修复，当前构建无警告。
 
 ---
@@ -783,7 +782,7 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 - [ ] RSS alternate 未被子页面 metadata 覆盖
 - [ ] Sitemap 包含新路径并排除私有路径
 - [ ] robots 无误
-- [ ] 两个 Vercel 部署都成功
+- [ ] Vercel 部署（chris-field-notes-web）成功
 - [ ] 真实域名关键页面返回 200
 
 ---
@@ -867,6 +866,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-10-18 | ①`*.vercel.app` 地址 308 跳转到正式域名；②旧 Vercel 项目 `chris-field-notes` 断开 GitHub、停止部署（未删除）；③删除根目录早期静态站文件；④关于页“这里写什么”按实际内容重写 | 用户要求清理。核实：chrisreading.ink 只绑定 chris-field-notes-web；Vercel 环境变量中本就没有 `NEXT_PUBLIC_GA_MEASUREMENT_ID` |
 | 2026-10-18 | 移除 Google Analytics（脚本、默认测量 ID、CSP 中的 googletagmanager / google-analytics，隐私政策同步），只保留 Vercel Web Analytics；评论区空状态：没有评论时不再显示“0 条”和“暂无评论”，改为一段引导语，表单紧随其后 | 用户要求。Vercel 后台的 `NEXT_PUBLIC_GA_MEASUREMENT_ID` 环境变量已无用，可删除 |
 | 2026-10-18 | 文章页：①相关文章固定凑满 3 篇（同栏目 → 标签重合 → 最新文章）；②署名行加“约 N 分钟 · N 字”（按每分钟 450 字计）；③超过 3000 字的长文顶部显示 2px 靛蓝阅读进度线（`reading-progress.js`） | 用户确认的优化顺序第 2、3 项。“执行”等文章少的栏目此前只显示 1 篇相关文章 |
 | 2026-10-18 | 字体改为 `next/font` 自托管（去掉 Google Fonts `@import`），长图导出读取同一字体变量；移除 AdSense（脚本、验证 meta、`ads.txt`、CSP 中的广告域名），隐私政策改为“不投放广告”；CSP 收紧：style/font 只允许本站，`frame-src 'none'`（提交 `8aa718f`） | 国内访问 Google 字体常被卡住导致首屏空白；用户决定不放广告。字体名仍为 “Noto Serif SC”，页面外观不变 |
