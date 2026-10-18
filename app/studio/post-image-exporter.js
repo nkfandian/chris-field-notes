@@ -12,10 +12,19 @@ const INK = '#27231e'
 const MUTED = '#71695f'
 const MOSS = '#3f718c'
 const LINE = '#d2c8b8'
-const MONO = "'IBM Plex Mono', monospace"
+// 自托管字体由 next/font 生成内部字体名，挂在 <html> 的 CSS 变量上；挂载后读取，让长图用同一套字体。
+let MONO = "'IBM Plex Mono', Menlo, monospace"
 // Keep Chinese, Latin letters and lining figures on one font baseline. Putting
 // Georgia first makes Canvas switch fonts inside a single line and drops digits.
-const SERIF = "'Songti SC', 'STSong', 'Noto Serif SC', 'Noto Serif CJK SC', Georgia, serif"
+let SERIF = "'Songti SC', 'STSong', 'Noto Serif SC', 'Noto Serif CJK SC', Georgia, serif"
+function resolveCanvasFonts() {
+  const style = getComputedStyle(document.documentElement)
+  const serifFamily = style.getPropertyValue('--font-serif').trim()
+  const monoFamily = style.getPropertyValue('--font-mono').trim()
+  // 宋体放在最前保证 macOS 上中文、数字同一基线（见交接文档第 10 节）；自托管 Noto Serif SC 作为其他系统的保底。
+  if (serifFamily) SERIF = `'Songti SC', 'STSong', ${serifFamily}, Georgia, serif`
+  if (monoFamily) MONO = `${monoFamily}, Menlo, monospace`
+}
 const SITE = 'www.chrisreading.ink'
 const IMAGE_WIDTH = 1080
 const SIDE = 72
@@ -841,6 +850,7 @@ export default function PostImageExporter({post}) {
   useEffect(() => {
     let cancelled = false
     async function render() {
+      resolveCanvasFonts()
       if (document.fonts?.ready) await document.fonts.ready
       if (cancelled || !canvasRef.current) return
       const body = post.body || post.excerpt || ''
@@ -857,6 +867,7 @@ export default function PostImageExporter({post}) {
     setBusy(targetMode)
     const base = filePart(post.slug || post.title)
     try {
+      resolveCanvasFonts()
       if (document.fonts?.ready) await document.fonts.ready
       const body = post.body || post.excerpt || ''
       const imageMap = targetMode === 'full' ? await loadBodyImages(body) : new Map()

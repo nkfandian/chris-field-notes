@@ -95,7 +95,7 @@
   max-width: 760px;
   margin: 0;
   color: var(--ink);
-  font: italic 400 clamp(1.05rem, 1.5vw, 1.45rem)/1.5 Georgia, 'Noto Serif SC', serif;
+  font: italic 400 clamp(1.05rem, 1.5vw, 1.45rem)/1.5 Georgia, var(--serif);
   letter-spacing: -0.018em;
 }
 

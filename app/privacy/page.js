@@ -7,17 +7,17 @@ import './privacy.css'
 
 export const metadata=pageMetadata({
   title:'隐私政策',
-  description:'了解 CHRIS / FIELD NOTES 如何处理访问统计、订阅、评论、留言、Cookie 与广告相关数据。',
+  description:'了解 CHRIS / FIELD NOTES 如何处理访问统计、订阅、评论、留言与 Cookie 相关数据。',
   path:'/privacy',
   keywords:['隐私政策','Cookie 政策','个人信息保护']
 })
 
-const updated='2026-10-02'
+const updated='2026-10-18'
 const sections=[
   ['scope','适用范围'],
   ['collection','收集的信息'],
   ['purpose','使用目的'],
-  ['cookies','Cookie 与广告'],
+  ['cookies','Cookie 与访问统计'],
   ['sharing','服务提供方'],
   ['retention','保存期限'],
   ['rights','你的选择与权利'],
@@ -32,7 +32,7 @@ export default function PrivacyPage(){
 
     <header className="privacy-hero">
       <h1>隐私政策</h1>
-      <div className="privacy-intro"><p>本政策说明本网站在访问统计、内容订阅、评论、留言及广告服务中如何处理信息。本站只收集提供功能所必需的数据，不出售个人信息，也不公开订阅者和留言者的邮箱。</p><dl><div><dt>适用网站</dt><dd>chrisreading.ink</dd></div><div><dt>最后更新</dt><dd>{updated}</dd></div></dl></div>
+      <div className="privacy-intro"><p>本政策说明本网站在访问统计、内容订阅、评论和留言中如何处理信息。本站只收集提供功能所必需的数据，不出售个人信息，也不公开订阅者和留言者的邮箱。</p><dl><div><dt>适用网站</dt><dd>chrisreading.ink</dd></div><div><dt>最后更新</dt><dd>{updated}</dd></div></dl></div>
     </header>
 
     <div className="privacy-layout">
@@ -54,15 +54,14 @@ export default function PrivacyPage(){
           <p>在适用法律要求的情况下，相关处理会以你的同意、提供所请求的服务、本站的合理运营需要或法律义务为依据。你可以随时撤回此前作出的同意，但撤回不影响此前处理的合法性。</p>
         </PolicySection>
 
-        <PolicySection id="cookies" no="04" title="Cookie、访问统计与广告">
+        <PolicySection id="cookies" no="04" title="Cookie 与访问统计">
           <p>本站使用或可能使用必要 Cookie、类似的本地存储技术和访问统计服务，以维持网站功能、测量访问情况并了解内容表现。</p>
-          <p>本站使用 Google Analytics，并接入 Google AdSense。Google 及其合作方可能通过 Cookie、网络信标、IP 地址或其他标识符收集和处理数据，用于广告投放、个性化、频次控制、效果衡量、安全和防欺诈。第三方也可能因广告展示而在你的浏览器中放置或读取 Cookie。</p>
-          <p>你可以阅读 <a href="https://policies.google.com/technologies/partner-sites?hl=zh-CN" target="_blank" rel="noreferrer">Google 如何使用合作伙伴网站或应用中的信息 ↗</a>，并通过 <a href="https://adssettings.google.com/" target="_blank" rel="noreferrer">Google 广告设置 ↗</a> 管理个性化广告。你也可以通过浏览器设置删除或限制 Cookie；禁用部分技术可能影响网站功能或广告显示。</p>
-          <p>对于依法需要事先同意的地区，本站会通过适用的同意管理机制提供选择。你可以在出现的隐私消息中接受、拒绝或管理相关用途。</p>
+          <p>本站使用 Google Analytics 和 Vercel Web Analytics 了解页面访问情况，例如访问量、来源和所用设备类型。本站不投放广告，也不使用广告类 Cookie。</p>
+          <p>你可以阅读 <a href="https://policies.google.com/technologies/partner-sites?hl=zh-CN" target="_blank" rel="noreferrer">Google 如何使用合作伙伴网站或应用中的信息 ↗</a>，也可以通过浏览器设置删除或限制 Cookie；禁用部分技术可能影响网站功能。</p>
         </PolicySection>
 
         <PolicySection id="sharing" no="05" title="服务提供方与信息共享">
-          <p>为运行网站，本站会使用托管、数据库、邮件发送、访问统计、安全和广告服务提供方。这些服务可能仅在提供相应功能所需的范围内处理数据，并受其服务条款与隐私政策约束。</p>
+          <p>为运行网站，本站会使用托管、数据库、邮件发送、访问统计和安全服务提供方。这些服务可能仅在提供相应功能所需的范围内处理数据，并受其服务条款与隐私政策约束。</p>
           <p>本站不会出售个人信息。除提供服务、保护本站及用户安全、完成业务转移或遵守法律要求外，不会主动向无关第三方披露可识别个人身份的信息。</p>
         </PolicySection>
 
