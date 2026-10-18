@@ -143,7 +143,7 @@ curl -sS https://www.chrisreading.ink/feed.xml
 | Supabase 客户端 | `@supabase/ssr 0.6.1`、`@supabase/supabase-js 2.110.5` |
 | 邮件 | Resend REST API |
 | 二维码 | `qrcode-generator 1.4.4` |
-| 分析 | GA4 + Vercel Web Analytics |
+| 分析 | Vercel Web Analytics（2026-10-18 起移除 GA4） |
 | 部署 | Vercel + GitHub |
 | 样式 | 原生 CSS，按页面拆分；无 Tailwind、无 CSS-in-JS |
 | 内容格式 | 项目自定义的 Markdown 子集 |
@@ -196,7 +196,6 @@ npm run start
 | `CRON_SECRET` | **必须在两个 Vercel 项目都设置**。Vercel Cron 每天调用 `GET /api/notifications` 时自动携带；未设置时该接口一律返回 401，定时重试不会运行 |
 | `RATE_LIMIT_SALT` | 限流哈希盐；未设置时回退到 service role key |
 | `INDEXNOW_KEY` | 可选；未设置时从服务端高熵密钥派生 |
-| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | GA4；代码内目前有默认值 `G-GKQVSFLWM4` |
 | `GOOGLE_SITE_VERIFICATION` | Google 站点验证；代码内已有默认验证码 |
 | `BING_SITE_VERIFICATION` | Bing 站点验证 |
 | `BAIDU_SITE_VERIFICATION` | 百度站点验证 |
@@ -281,7 +280,7 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 
 - `app/layout.js`：全站 metadata、结构化数据、字体变量挂载。
 - `lib/fonts.js`：Noto Serif SC 与 IBM Plex Mono 经 `next/font/google` **构建时下载、自托管**（不再请求 fonts.googleapis.com，国内访客首屏不会被字体卡住）。中文字体按 unicode-range 切片，不预加载。不要再在 CSS 里 `@import` Google Fonts。
-- `app/components/site-analytics.js`：GA 和 Vercel Analytics 脚本（2026-10-18 起已移除 AdSense，站点不投放广告）；后台和带令牌页面（`/studio`、`/reset-password`、`/subscribe/confirm`、`/unsubscribe`）一律不加载。
+- `app/components/site-analytics.js`：只加载 Vercel Web Analytics（2026-10-18 起已移除 AdSense 与 Google Analytics，站点不再加载任何 Google 脚本）；后台和带令牌页面（`/studio`、`/reset-password`、`/subscribe/confirm`、`/unsubscribe`）一律不加载。
 - `app/page.js`：服务器侧读取首页所有数据。
 - `app/home-client.js`：首页首屏、日志筛选、书单与轨迹区块。
 - `app/components/site-header.js` / `site-footer.js` / `site-chrome.css`：**所有公开页面共用**的顶部导航（含移动端菜单）和深色页脚（订阅、留言、站点链接）。新增公开页面时直接使用这两个组件，并给 `<main>` 加 `id="content"`（跳转链接用）。
@@ -868,6 +867,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-10-18 | 移除 Google Analytics（脚本、默认测量 ID、CSP 中的 googletagmanager / google-analytics，隐私政策同步），只保留 Vercel Web Analytics；评论区空状态：没有评论时不再显示“0 条”和“暂无评论”，改为一段引导语，表单紧随其后 | 用户要求。Vercel 后台的 `NEXT_PUBLIC_GA_MEASUREMENT_ID` 环境变量已无用，可删除 |
 | 2026-10-18 | 文章页：①相关文章固定凑满 3 篇（同栏目 → 标签重合 → 最新文章）；②署名行加“约 N 分钟 · N 字”（按每分钟 450 字计）；③超过 3000 字的长文顶部显示 2px 靛蓝阅读进度线（`reading-progress.js`） | 用户确认的优化顺序第 2、3 项。“执行”等文章少的栏目此前只显示 1 篇相关文章 |
 | 2026-10-18 | 字体改为 `next/font` 自托管（去掉 Google Fonts `@import`），长图导出读取同一字体变量；移除 AdSense（脚本、验证 meta、`ads.txt`、CSP 中的广告域名），隐私政策改为“不投放广告”；CSP 收紧：style/font 只允许本站，`frame-src 'none'`（提交 `8aa718f`） | 国内访问 Google 字体常被卡住导致首屏空白；用户决定不放广告。字体名仍为 “Noto Serif SC”，页面外观不变 |
 | 2026-10-18 | SEO 文案按网站实际内容重写（整站、首页标题、关键词、6 个栏目、书单、轨迹、关于、作者结构化数据）；轨迹详情页介绍改为由轨迹内容自动生成；`/about` 顶部不再显示 SEO 介绍，改为 ABOUT 文本并去掉重复小节 | 用户确认文案。线上审查：canonical、h1、alt、结构化数据、robots、RSS 均正常，站点地图 51 个地址全部 200 |

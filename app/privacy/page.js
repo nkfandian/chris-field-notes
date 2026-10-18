@@ -56,8 +56,8 @@ export default function PrivacyPage(){
 
         <PolicySection id="cookies" no="04" title="Cookie 与访问统计">
           <p>本站使用或可能使用必要 Cookie、类似的本地存储技术和访问统计服务，以维持网站功能、测量访问情况并了解内容表现。</p>
-          <p>本站使用 Google Analytics 和 Vercel Web Analytics 了解页面访问情况，例如访问量、来源和所用设备类型。本站不投放广告，也不使用广告类 Cookie。</p>
-          <p>你可以阅读 <a href="https://policies.google.com/technologies/partner-sites?hl=zh-CN" target="_blank" rel="noreferrer">Google 如何使用合作伙伴网站或应用中的信息 ↗</a>，也可以通过浏览器设置删除或限制 Cookie；禁用部分技术可能影响网站功能。</p>
+          <p>本站使用 Vercel Web Analytics 了解页面访问情况，例如访问量、来源和所用设备类型。它不使用 Cookie，也不跨网站追踪访客。本站不投放广告。</p>
+          <p>你可以通过浏览器设置删除或限制 Cookie 与本地存储；禁用部分技术可能影响网站功能。</p>
         </PolicySection>
 
         <PolicySection id="sharing" no="05" title="服务提供方与信息共享">
