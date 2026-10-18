@@ -814,7 +814,8 @@ function drawCanvas(ctx, post, mode, logo, {pageNumber = 1, pageCount = 1, bodyP
   if (mode === 'full') {
     drawBodyPage(ctx, bodyPage, bodyY)
   }
-  const pageLabel = mode === 'full' ? `${info.date}  ·  ${String(pageNumber).padStart(2, '0')} / ${String(pageCount).padStart(2, '0')}` : info.date
+  // 只有多页长图才标页码，并带单位“页”；单页和摘要图只显示日期。
+  const pageLabel = mode === 'full' && pageCount > 1 ? `${info.date}  ·  ${String(pageNumber).padStart(2, '0')} / ${String(pageCount).padStart(2, '0')} 页` : info.date
   drawEndcap(ctx, info, endcapY, pageLabel)
 }
 
