@@ -866,6 +866,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-10-26 | R2 上传 `safename` 修双扩展名：先去掉文件名自带扩展名再按 contentType 追加（`app/api/uploads/sign/route.js`） | 2026-10-18、2026-10-26 两篇文章出现 `xxx.png.png`；已发布旧链接能正常显示，全部不动，只修以后上传 |
 | 2026-10-18 | ①`*.vercel.app` 地址 308 跳转到正式域名；②旧 Vercel 项目 `chris-field-notes` 断开 GitHub、停止部署（未删除）；③删除根目录早期静态站文件；④关于页“这里写什么”按实际内容重写 | 用户要求清理。核实：chrisreading.ink 只绑定 chris-field-notes-web；Vercel 环境变量中本就没有 `NEXT_PUBLIC_GA_MEASUREMENT_ID` |
 | 2026-10-18 | 移除 Google Analytics（脚本、默认测量 ID、CSP 中的 googletagmanager / google-analytics，隐私政策同步），只保留 Vercel Web Analytics；评论区空状态：没有评论时不再显示“0 条”和“暂无评论”，改为一段引导语，表单紧随其后 | 用户要求。Vercel 后台的 `NEXT_PUBLIC_GA_MEASUREMENT_ID` 环境变量已无用，可删除 |
 | 2026-10-18 | 文章页：①相关文章固定凑满 3 篇（同栏目 → 标签重合 → 最新文章）；②署名行加“约 N 分钟 · N 字”（按每分钟 450 字计）；③超过 3000 字的长文顶部显示 2px 靛蓝阅读进度线（`reading-progress.js`） | 用户确认的优化顺序第 2、3 项。“执行”等文章少的栏目此前只显示 1 篇相关文章 |

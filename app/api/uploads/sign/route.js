@@ -43,7 +43,9 @@ export async function POST(request) {
   if (!Number.isFinite(size) || size <= 0 || size > MAX_SIZE) return Response.json({error: '图片大小需在 10MB 以内'}, {status: 400})
   const date = new Date().toISOString().slice(0, 10)
   const uuid = crypto.randomUUID().slice(0, 8)
-  const safeName = String(filename).replace(/[^\w\-.]+/g, '_').slice(0, 60) || 'image'
+  // 文件名自带的扩展名先去掉，避免与按 contentType 追加的扩展名重复（曾产出 .png.png）；
+  // 只剥末尾的图片扩展名（可重复，如 foo.png.png），其它后缀不动
+  const safeName = String(filename).replace(/[^\w\-.]+/g, '_').slice(0, 60).replace(/(\.(jpg|jpeg|png|webp|gif|avif))+$/i, '') || 'image'
   const key = `images/${date}/${uuid}-${safeName}.${ext}`
   const command = new PutObjectCommand({Bucket: config.bucket, Key: key, ContentType: contentType})
   const uploadUrl = await getSignedUrl(config.client, command, {expiresIn: 300})
