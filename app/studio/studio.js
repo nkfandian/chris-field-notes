@@ -12,8 +12,9 @@ import MarkdownEditor from './markdown-editor'
 const blank={title:'',slug:'',domain:'decode',excerpt:'',body:'',tools:'',status:'draft',published_at:new Date().toISOString().slice(0,10)}
 const formatViews=value=>new Intl.NumberFormat('zh-CN').format(Number(value)||0)
 
-export default function Studio({configured,initialUser,initialPosts}) {
-  const [user,setUser]=useState(initialUser),[posts,setPosts]=useState(initialPosts),[edit,setEdit]=useState(blank),[notice,setNotice]=useState(''),[saving,setSaving]=useState(false)
+export default function Studio({configured,initialUser,initialPosts=[]}) {
+  // 未登录（含未配置）不采用服务端文章。真实列表只在管理员会话下由 page.js 查询后传入。
+  const [user,setUser]=useState(initialUser),[posts,setPosts]=useState(initialUser&&Array.isArray(initialPosts)?initialPosts:[]),[edit,setEdit]=useState(blank),[notice,setNotice]=useState(''),[saving,setSaving]=useState(false)
   // 发布过的日志锁定链接，避免旧链接、评论和轨迹引用失效。
   const original=posts.find(post=>post.id===edit.id)
   const slugLocked=Boolean(original&&(original.status==='published'||original.notification_sent_at))

@@ -1,6 +1,6 @@
 # CHRIS / FIELD NOTES 项目交接文档
 
-> 最后核对：2026-10-17（Asia/Shanghai）
+> 最后核对：2026-11-01（Asia/Shanghai）
 >
 > 目标：让新的开发者或大模型无需依赖历史聊天记录，即可安全地继续修改、验证和发布本项目。
 
@@ -168,7 +168,7 @@ NEXT_TELEMETRY_DISABLED=1 npm run build
 npm run start
 ```
 
-如果缺少 Supabase 的两个公开环境变量，站点仍可启动，但只显示 `lib/demo.js` 中的演示日志，书单和轨迹为空，后台无法保存。
+如果缺少 Supabase 的两个公开环境变量，站点仍可启动，但公开页只显示 `lib/demo.js` 中的演示日志，书单和轨迹为空，后台无法保存。`/studio` 在未配置或未登录时 `initialPosts` 为 `[]`，不再下发演示日志；未配置时编辑器是空列表。
 
 ---
 
@@ -245,7 +245,7 @@ npm run start
 | `/studio/comments` | 评论和留言审核 |
 | `/studio/subscribers` | 订阅用户、手动群发和发送记录 |
 
-Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()` 二次确认。并非任何已登录用户都能管理站点。
+Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()` 二次确认。并非任何已登录用户都能管理站点。未登录打开 `/studio` 只得到登录表单，`initialPosts` 为空数组，不会附带 `lib/demo.js`。文章与浏览量只在 `getSiteAdmin()` 确认管理员之后查询。
 
 ### 6.3 API 与机器入口
 
@@ -269,7 +269,7 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 | `GET /opensearch.xml` | 公开 | 浏览器站内搜索描述 |
 | `GET /{key}.txt` | 搜索引擎 | IndexNow 所有权验证；由 `next.config.mjs` 的 rewrite 转到 `app/api/indexnow-key/[key]/route.js`（不要再用根目录动态路由，否则所有一级路径的 404 都会落到它） |
 
-`next.config.mjs` 为所有页面设置 CSP、HSTS、COOP、Permissions-Policy 等安全头；Studio、令牌页和私有 API 带 `X-Robots-Tag: noindex`。
+`next.config.mjs` 为所有页面设置 CSP、HSTS、COOP、Permissions-Policy 等安全头；Studio、令牌页和私有 API 带 `X-Robots-Tag: noindex`。CSP 来源以第 16.2 节为准：图片不再放行任意 `https:`，Supabase 连接只放行项目主机 `https://kdmhceaxcyimnaxfoswo.supabase.co`。
 
 ---
 
@@ -298,6 +298,7 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 - `lib/supabase/server.js`：带 Cookie 的服务器客户端。
 - `lib/supabase/admin.js`：service role 客户端；只能服务器使用。
 - `lib/auth.js`：读取当前 Auth 用户并调用 `is_site_admin()`。
+- `app/studio/page.js`：只有 `getSiteAdmin()` 返回管理员时才查询 `posts` / `post_views` 并写入 `initialPosts`；未登录或未配置为 `[]`。
 - `lib/security.js`：来源检查、请求大小限制、限流键、输入清理。
 - `lib/resend.js`：Resend 发信封装（批量接口、幂等键、节流与 429 重试）。
 - `supabase/schema.sql`：新环境完整初始化脚本，已包含最终安全策略。
@@ -704,7 +705,8 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 - 公共写入必须经服务器 API、origin 检查、长度限制和限流。
 - 订阅确认、退订、密码重置页面必须 `noindex`。
 - 后台和带令牌的页面不能加载任何第三方脚本（广告、统计）。从公开页进入后台必须整页跳转（普通 `<a>`，不要用 `next/link`），否则公开页已加载的脚本会留在后台。
-- CSP 新增第三方域名时，只添加真实需要的最小范围。
+- CSP 新增第三方域名时，只添加真实需要的最小范围。不要把 `img-src` / `media-src` 改回任意 `https:`，不要把 Supabase 连接改回 `*.supabase.co`，不要加回已删除的 Google Fonts、Analytics、AdSense 域名。
+- 未登录或未确认管理员时，`/studio` 的响应不得包含文章列表（包括 `lib/demo.js`）。真实日志只在 `getSiteAdmin()` 成功之后查询。
 - 删除或重命名公开 slug 前，要处理旧链接、轨迹引用、canonical、Sitemap 和 IndexNow。
 
 ### 16.2 当前防护
@@ -715,7 +717,10 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 - 订阅、评论、退订、浏览量有数据库限流。
 - 公共表单含 honeypot 字段。
 - 邮箱存在性使用通用响应。
-- 安全响应头在 `next.config.mjs` 统一配置。
+- 安全响应头在 `next.config.mjs` 统一配置。当前 CSP 要点：
+  - `script-src 'self' 'unsafe-inline'`，`script-src-attr 'none'`。`'unsafe-inline'` 暂时保留，原因见第 17 节，不要为了去掉它去加新的脚本域名。
+  - `img-src` 与 `media-src` 同为 `'self' data: blob:`，再加上 `https://img.chrisreading.ink`（R2 公网图）、`https://m.media-amazon.com`（书单封面，Goodreads 图经此主机）、以及四篇旧日志各一张配图：`https://images.squarespace-cdn.com`、`https://www.macfound.org`、`https://static.themoscowtimes.com`、`https://ticket-2-ride.com`。这些外链不在仓库代码里，是 2026-11-01 对照线上页面得到的。之后新加外链图，要先改这里，否则浏览器不显示。
+  - `connect-src` 为 `'self'`、`https://kdmhceaxcyimnaxfoswo.supabase.co`、`https://*.r2.cloudflarestorage.com`、`https://*.vercel-insights.com`。浏览器客户端的 Auth（`/auth/v1`）和 PostgREST（`/rest/v1`）都在项目主机的路径上，业务代码没有 `.channel()`，所以不放行 `*.supabase.co`。Realtime 若将来启用，WebSocket 也是同一主机的 `wss://kdmhceaxcyimnaxfoswo.supabase.co/realtime/v1`（只在 `subscribe()` 时连接）；CSP3 下该 `https://` 主机同时匹配 `wss://`。编辑器上传仍要 R2 通配，因为签名 URL 的账户子域不进仓库。Vercel 统计脚本实际 POST 到同源 `/_vercel/insights`，`*.vercel-insights.com` 是既有放行，不要再加别的统计域。
 - HTML 邮件对用户内容转义，链接协议经过白名单。
 
 ---
@@ -735,6 +740,7 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 11. **浏览量是总量计数，不是独立访客分析**：限流只抑制高频重复，不代表严格 UV。
 12. ~~根目录旧静态站仍在 Git 中~~：已于 2026-10-18 删除。
 13. ~~CSS 兼容性构建警告~~：已于 2026-10-02 修复，当前构建无警告。
+14. **`script-src` 仍允许 `'unsafe-inline'`**：Next.js 15 App Router 在没有 nonce 时把 RSC flight 写进内联 `<script>`（`next` 的 `app-render/use-flight-response.js`）。`app/components/site-analytics.js` 还有一段内联 `window.va` 队列。CSP 是 `next.config.mjs` 里的静态头，仓库没有 middleware，无法按请求发 nonce；哈希也盖不住每次不同的 flight。若要去掉，应新增按请求 nonce 的 middleware，把 CSP 从静态头挪过去（两套 CSP 取交集，静态头里留下 `'unsafe-inline'` 等于没去掉），并确认公开页与 `/studio` 能水合。不要为此引入新的第三方脚本域名。
 
 ---
 
@@ -866,6 +872,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-11-01 | ①`/studio` 未登录不再下发文章：`app/studio/page.js` 只在 `getSiteAdmin()` 确认管理员后查询 `posts` / `post_views`，否则 `initialPosts=[]`（去掉 `demoPosts`）。`studio.js` 在没有 `initialUser` 时也不采用传入列表。登录表单不需要文章；未配置时编辑器是空列表，公开页的演示回退不变。②CSP：`img-src` / `media-src` 去掉任意 `https:`，改为 `'self' data: blob:` + `https://img.chrisreading.ink`，并补上线上已有图片主机 `https://m.media-amazon.com`（书单封面）和四篇旧日志配图 `https://images.squarespace-cdn.com`、`https://www.macfound.org`、`https://static.themoscowtimes.com`、`https://ticket-2-ride.com`。`connect-src` 的 Supabase 从 `*.supabase.co` 收到 `https://kdmhceaxcyimnaxfoswo.supabase.co`。保留 `https://*.r2.cloudflarestorage.com` 与 `https://*.vercel-insights.com`。`script-src` 仍是 `'self' 'unsafe-inline'` | 未登录 RSC 会带上演示文章标题、摘要和 slug。任意 `https:` 图片源、以及整域 `*.supabase.co` 都宽于实际需要。接手注意：新的外链图片必须先写入 CSP，否则公开页不显示。Auth 与 REST 都在项目主机路径上；代码没有 `.channel()`，不要加回 `*.supabase.co`。R2 直传仍依赖该通配（签名 URL 的账户子域不在仓库里）。`'unsafe-inline'` 是债，见第 17 节：Next.js 15 的内联 flight 和统计队列脚本都靠它；不要为去掉 inline 加第三方脚本域名，也不要恢复 Google Fonts / Analytics / AdSense。统计脚本实际请求同源 `/_vercel/insights` |
 | 2026-10-26 | R2 上传 `safename` 修双扩展名：先去掉文件名自带扩展名再按 contentType 追加（`app/api/uploads/sign/route.js`） | 2026-10-18、2026-10-26 两篇文章出现 `xxx.png.png`；已发布旧链接能正常显示，全部不动，只修以后上传 |
 | 2026-10-18 | ①`*.vercel.app` 地址 308 跳转到正式域名；②旧 Vercel 项目 `chris-field-notes` 断开 GitHub、停止部署（未删除）；③删除根目录早期静态站文件；④关于页“这里写什么”按实际内容重写 | 用户要求清理。核实：chrisreading.ink 只绑定 chris-field-notes-web；Vercel 环境变量中本就没有 `NEXT_PUBLIC_GA_MEASUREMENT_ID` |
 | 2026-10-18 | 移除 Google Analytics（脚本、默认测量 ID、CSP 中的 googletagmanager / google-analytics，隐私政策同步），只保留 Vercel Web Analytics；评论区空状态：没有评论时不再显示“0 条”和“暂无评论”，改为一段引导语，表单紧随其后 | 用户要求。Vercel 后台的 `NEXT_PUBLIC_GA_MEASUREMENT_ID` 环境变量已无用，可删除 |
