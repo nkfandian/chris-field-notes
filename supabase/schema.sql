@@ -136,7 +136,8 @@ insert into public.site_admins(user_id) select id from auth.users order by creat
 create or replace function public.is_site_admin() returns boolean language sql stable security definer set search_path=public,auth as $$select exists(select 1 from public.site_admins where user_id=auth.uid())$$;
 revoke all on function public.is_site_admin() from public,anon;
 grant execute on function public.is_site_admin() to authenticated,service_role;
-create or replace function public.get_public_comments(p_post_slug text) returns table(id uuid,parent_id uuid,name text,body text,created_at timestamptz) language sql stable security definer set search_path=public as $$select c.id,c.parent_id,c.name,c.body,c.created_at from public.comments c where c.status='approved' and c.post_slug=p_post_slug and char_length(p_post_slug) between 1 and 180 order by c.created_at desc$$;
+drop function if exists public.get_public_comments(text);
+create function public.get_public_comments(p_post_slug text) returns table(id uuid,parent_id uuid,name text,body text,created_at timestamptz) language sql stable security definer set search_path=public as $$select c.id,c.parent_id,c.name,c.body,c.created_at from public.comments c where c.status='approved' and c.post_slug=p_post_slug and char_length(p_post_slug) between 1 and 180 order by c.created_at desc$$;
 revoke all on function public.get_public_comments(text) from public;
 grant execute on function public.get_public_comments(text) to anon,authenticated,service_role;
 create table if not exists public.post_views (post_id uuid primary key references public.posts(id) on delete cascade,view_count bigint not null default 0 check(view_count>=0),last_viewed_at timestamptz);
