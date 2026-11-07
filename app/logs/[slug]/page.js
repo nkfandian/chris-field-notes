@@ -68,7 +68,7 @@ export async function generateMetadata({params}){
 
 export default async function LogPage({params}){
   const slug=decode((await params).slug)
-  let post=await getPost(slug),comments=[],books=[],related=[]
+  let post=await getPost(slug),comments=[],books=[],related=[],topComments=[],commentReplies={}
   if(isConfigured()){
     const db=await createClient()
     const [{data:commentData},{data:bookData}]=await Promise.all([
@@ -76,8 +76,8 @@ export default async function LogPage({params}){
       db.from('books').select('id,title,author,review,cover_url').eq('linked_post_slug',slug)
     ])
     comments=commentData||[]
-    const topComments=comments.filter(c=>!c.parent_id)
-    const commentReplies={}
+    topComments=comments.filter(c=>!c.parent_id)
+    commentReplies={}
     for(const c of comments)if(c.parent_id)(commentReplies[c.parent_id]||=[]).push(c)
     for(const list of Object.values(commentReplies))list.reverse()
     books=bookData||[]
