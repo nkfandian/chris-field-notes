@@ -17,6 +17,11 @@ export async function POST(request){
    const {data:post}=await db.from('posts').select('id').eq('slug',payload.post_slug).eq('status','published').maybeSingle()
    if(!post)return Response.json({error:'日志不存在或尚未发布。'},{status:404})
   }
+  const since=new Date(Date.now()-10*60*1000).toISOString()
+  let dupQuery=db.from('comments').select('id').eq('kind',payload.kind).eq('email',payload.email).eq('body',payload.body).gte('created_at',since).limit(1)
+  dupQuery=payload.post_slug?dupQuery.eq('post_slug',payload.post_slug):dupQuery.is('post_slug',null)
+  const {data:dup}=await dupQuery.maybeSingle()
+  if(dup)return Response.json({ok:true,duplicate:true})
   const {error}=await db.from('comments').insert(payload);if(error)throw error
   return Response.json({ok:true})
  }catch(error){console.error('interaction failed',error);return Response.json({error:'暂时无法提交，请稍后再试。'},{status:500})}

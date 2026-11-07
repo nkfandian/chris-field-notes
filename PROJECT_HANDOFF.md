@@ -183,6 +183,7 @@ npm run start
 | `SUPABASE_SERVICE_ROLE_KEY` | 仅服务器 | **否** | 公共表单、浏览量、邮件、限流等服务端操作 |
 | `RESEND_API_KEY` | 仅服务器 | **否** | 新日志自动推送、手动群发 |
 | `NOTIFICATION_FROM` | 仅服务器 | 通常否 | Resend 已验证发件人，例如 `名称 <mail@domain>` |
+| `COMMENTS_FROM` | 仅服务器 | 通常否 | 评论回复通知发件人；未设置时默认 `Chris <comments@chrisreading.ink>`（Resend 已验证域名） |
 | `R2_ACCOUNT_ID` | 仅服务器 | **否** | Cloudflare 账户 ID（R2 S3 接口 endpoint 用） |
 | `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | 仅服务器 | **否** | R2 的 S3 API 令牌（需 Object 写权限） |
 | `R2_BUCKET` | 仅服务器 | 是 | R2 图床桶名，例如 `chris-field-notes-images` |
@@ -242,7 +243,7 @@ npm run start
 | `/studio/trails` | 轨迹编辑 |
 | `/studio/site` | 首页标题、强调句、英文引语 |
 | `/studio/about` | ABOUT 文本 |
-| `/studio/comments` | 评论和留言审核 |
+| `/studio/comments` | 评论和留言审核；可回复主评论并邮件通知对方，文章显示标题并链接到原文 |
 | `/studio/subscribers` | 订阅用户、手动群发和发送记录 |
 
 Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()` 二次确认。并非任何已登录用户都能管理站点。未登录打开 `/studio` 只得到登录表单，`initialPosts` 为空数组，不会附带 `lib/demo.js`。文章与浏览量只在 `getSiteAdmin()` 确认管理员之后查询。
@@ -253,7 +254,8 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 |---|---|---|
 | `POST /api/posts` | 管理员 | 创建/更新日志、触发邮件、刷新缓存、通知 IndexNow |
 | `POST /api/uploads/sign` | 管理员 | 为编辑器“⤒ 上传图片”签发 5 分钟有效的 R2 直传地址；浏览器再 PUT 到 `*.r2.cloudflarestorage.com`（CSP `connect-src` 已放行这一个域）。带来源检查和 2KB 请求体限制 |
-| `POST /api/interactions` | 公开 | 提交评论或网站留言，默认 `pending` |
+| `POST /api/interactions` | 公开 | 提交评论或网站留言，默认 `pending`；10 分钟内完全相同的内容（kind / post_slug / email / body）只保存一次，重复提交返回 ok 不再入库 |
+| `POST /api/studio/comments` | 管理员 | 通过 / 拒绝 / 删除 / 回复评论；回复保存为 `parent_id` 指向原评论的子行并经 Resend 从 `comments@chrisreading.ink` 发邮件提醒 |
 | `POST /api/subscribe` | 公开 | 提交邮箱即生效（`active` + `verified_at`），不发确认邮件 |
 | `POST /api/subscribe/confirm` | 公开令牌页 | 兼容旧确认链接；订阅已生效时也返回成功 |
 | `POST /api/unsubscribe` | 公开令牌页 | 退订并旋转管理令牌 |
@@ -382,7 +384,8 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 - `name`、`email`、`body`
 - `status`：`pending | approved | rejected`
 - `reviewed_at`
-- 公开读取必须走 `get_public_comments()`，该 RPC 不返回邮箱。
+- `parent_id uuid`：站长回复，指向原评论；删原评论时级联删除。回复行 `kind` / `post_slug` 与原评论一致，`name` 为 Chris，`email` 为 `comments@chrisreading.ink`，`status` 直接为 `approved`。
+- 公开读取必须走 `get_public_comments()`，该 RPC 不返回邮箱；现同时返回 `parent_id`，前台按此把回复嵌套在原评论下显示。
 
 #### `books`
 
@@ -872,7 +875,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
-| 2026-11-01 | ①`/studio` 未登录不再下发文章：`app/studio/page.js` 只在 `getSiteAdmin()` 确认管理员后查询 `posts` / `post_views`，否则 `initialPosts=[]`（去掉 `demoPosts`）。`studio.js` 在没有 `initialUser` 时也不采用传入列表。登录表单不需要文章；未配置时编辑器是空列表，公开页的演示回退不变。②CSP：`img-src` / `media-src` 去掉任意 `https:`，改为 `'self' data: blob:` + `https://img.chrisreading.ink`，并补上线上已有图片主机 `https://m.media-amazon.com`（书单封面）和四篇旧日志配图 `https://images.squarespace-cdn.com`、`https://www.macfound.org`、`https://static.themoscowtimes.com`、`https://ticket-2-ride.com`。`connect-src` 的 Supabase 从 `*.supabase.co` 收到 `https://kdmhceaxcyimnaxfoswo.supabase.co`。保留 `https://*.r2.cloudflarestorage.com` 与 `https://*.vercel-insights.com`。`script-src` 仍是 `'self' 'unsafe-inline'` | 未登录 RSC 会带上演示文章标题、摘要和 slug。任意 `https:` 图片源、以及整域 `*.supabase.co` 都宽于实际需要。接手注意：新的外链图片必须先写入 CSP，否则公开页不显示。Auth 与 REST 都在项目主机路径上；代码没有 `.channel()`，不要加回 `*.supabase.co`。R2 直传仍依赖该通配（签名 URL 的账户子域不在仓库里）。`'unsafe-inline'` 是债，见第 17 节：Next.js 15 的内联 flight 和统计队列脚本都靠它；不要为去掉 inline 加第三方脚本域名，也不要恢复 Google Fonts / Analytics / AdSense。统计脚本实际请求同源 `/_vercel/insights` |
+| 2026-11-07 | 评论审核与回复：①根因：审核按钮本身只是 UPDATE，不会产生重复行；公开页只显示 `approved` 行。重复出现是因为同一条评论在库里有两行——提交表单的 busy 锁只在 React 重渲染后生效，两次快速点击会发出两次 POST，接口限流 4 次/小时也放行。现 `/api/interactions` 入库前查 10 分钟内完全相同的内容（kind / post_slug / email / body），命中直接返回 ok 不再入库。②审核改走服务端 `POST /api/studio/comments`（service role + `getSiteAdmin` 校验），不再依赖浏览器会话与 RLS；通过 / 拒绝只做单向状态迁移，重复点是 no-op。③后台列表：文章显示标题并链接到 `/logs/{slug}`（新窗口）；内容与文章相同的行打“疑似重复”标记，可删多余的一条。④站长回复：后台每条主评论下可写回复，保存为 `parent_id` 指向原评论的子行（`comments` 新增 `parent_id` 列 + `get_public_comments` 返回 `parent_id`，见迁移），`status` 直接 approved，前台嵌套在原评论下显示“站长回复”；同时经 Resend 从 `comments@chrisreading.ink`（`COMMENTS_FROM` 可改）给评论者邮箱发提醒，邮件带原文引用、回复内容和文章链接（`#comments` 锚点）。回复待审核的评论时先将其公开。 | ①**需要手动操作**：在 Supabase SQL 编辑器执行 `supabase/migrations/20261107_comment_replies.sql`（加 `parent_id` 列、索引、更新 RPC），否则回复接口会报列不存在；审核修复、防重、文章链接不依赖迁移，部署后即生效。②当前库里那条重复评论：待审核区多余的一行直接点删除（或拒绝），不要再点通过。③回复邮件用站内 `RESEND_API_KEY`（与订阅推送同一把），发件域已验证；`COMMENTS_FROM` 未设置时默认 `Chris <comments@chrisreading.ink>`。④`get_public_comments` 改动后，旧部署的公开页仍能工作（缺 `parent_id` 时全部按主评论显示）。 |
 | 2026-10-26 | R2 上传 `safename` 修双扩展名：先去掉文件名自带扩展名再按 contentType 追加（`app/api/uploads/sign/route.js`） | 2026-10-18、2026-10-26 两篇文章出现 `xxx.png.png`；已发布旧链接能正常显示，全部不动，只修以后上传 |
 | 2026-10-18 | ①`*.vercel.app` 地址 308 跳转到正式域名；②旧 Vercel 项目 `chris-field-notes` 断开 GitHub、停止部署（未删除）；③删除根目录早期静态站文件；④关于页“这里写什么”按实际内容重写 | 用户要求清理。核实：chrisreading.ink 只绑定 chris-field-notes-web；Vercel 环境变量中本就没有 `NEXT_PUBLIC_GA_MEASUREMENT_ID` |
 | 2026-10-18 | 移除 Google Analytics（脚本、默认测量 ID、CSP 中的 googletagmanager / google-analytics，隐私政策同步），只保留 Vercel Web Analytics；评论区空状态：没有评论时不再显示“0 条”和“暂无评论”，改为一段引导语，表单紧随其后 | 用户要求。Vercel 后台的 `NEXT_PUBLIC_GA_MEASUREMENT_ID` 环境变量已无用，可删除 |

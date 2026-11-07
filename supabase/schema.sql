@@ -14,7 +14,7 @@ create policy "authenticated author can insert" on public.posts for insert to au
 create policy "authenticated author can update" on public.posts for update to authenticated using (true) with check (true);
 create policy "authenticated author can delete" on public.posts for delete to authenticated using (true);
 insert into public.posts (slug,title,domain,excerpt,thesis,tools,status,published_at) values ('formidable','从 formidable 的词根，看“恐惧”如何变成“强大”','decode','一个词的含义从来不是定义，而是一段被压缩过的社会经验。','语言像化石，保存着人类曾经害怕什么。','词源词典 × 3 / Gemini 辅助对照 / 42 min','published','2026-07-08'),('cola-cost','一罐可乐的成本，不在铝罐里','execute','把一个熟悉的消费品拆回供应链，重新理解品牌、渠道与规模。','利润不是售价减成本，而是系统里每个选择的残影。','公开财报 / 零售访谈 / 手工计算','published','2026-07-05'),('two-ai','我怎样让两个 AI 为同一个网站争论','deploy','一个负责主导，一个负责反驳；人的价值不在发言最多，而在最终取舍。','真正好用的 AI 工作流，最后看起来不像 AI。','Codex + Gemini / 17 次迭代 / 本地验证','published','2026-06-29') on conflict (slug) do nothing;
-create table if not exists public.comments (id uuid primary key default gen_random_uuid(),kind text not null default 'comment' check (kind in ('comment','message')),post_slug text,name text not null check (char_length(name) between 1 and 60),email text not null check (char_length(email) between 3 and 160),body text not null check (char_length(body) between 2 and 2000),status text not null default 'pending' check (status in ('pending','approved','rejected')),created_at timestamptz not null default now(),reviewed_at timestamptz);
+create table if not exists public.comments (id uuid primary key default gen_random_uuid(),kind text not null default 'comment' check (kind in ('comment','message')),post_slug text,name text not null check (char_length(name) between 1 and 60),email text not null check (char_length(email) between 3 and 160),body text not null check (char_length(body) between 2 and 2000),status text not null default 'pending' check (status in ('pending','approved','rejected')),created_at timestamptz not null default now(),reviewed_at timestamptz,parent_id uuid references public.comments(id) on delete cascade);
 alter table public.comments enable row level security;
 drop policy if exists "approved comments are public" on public.comments;
 drop policy if exists "visitors can submit comments" on public.comments;
@@ -25,6 +25,7 @@ create policy "visitors can submit comments" on public.comments for insert to an
 create policy "authenticated author can review comments" on public.comments for update to authenticated using (true) with check (true);
 create policy "authenticated author can delete comments" on public.comments for delete to authenticated using (true);
 create index if not exists comments_post_slug_status_idx on public.comments(post_slug,status,created_at desc);
+create index if not exists comments_parent_id_idx on public.comments(parent_id);
 alter table public.posts add column if not exists firebase_id text unique;
 alter table public.posts add column if not exists tags text[] not null default '{}';
 alter table public.comments add column if not exists firebase_id text unique;
@@ -135,7 +136,7 @@ insert into public.site_admins(user_id) select id from auth.users order by creat
 create or replace function public.is_site_admin() returns boolean language sql stable security definer set search_path=public,auth as $$select exists(select 1 from public.site_admins where user_id=auth.uid())$$;
 revoke all on function public.is_site_admin() from public,anon;
 grant execute on function public.is_site_admin() to authenticated,service_role;
-create or replace function public.get_public_comments(p_post_slug text) returns table(id uuid,name text,body text,created_at timestamptz) language sql stable security definer set search_path=public as $$select c.id,c.name,c.body,c.created_at from public.comments c where c.status='approved' and c.post_slug=p_post_slug and char_length(p_post_slug) between 1 and 180 order by c.created_at desc$$;
+create or replace function public.get_public_comments(p_post_slug text) returns table(id uuid,parent_id uuid,name text,body text,created_at timestamptz) language sql stable security definer set search_path=public as $$select c.id,c.parent_id,c.name,c.body,c.created_at from public.comments c where c.status='approved' and c.post_slug=p_post_slug and char_length(p_post_slug) between 1 and 180 order by c.created_at desc$$;
 revoke all on function public.get_public_comments(text) from public;
 grant execute on function public.get_public_comments(text) to anon,authenticated,service_role;
 create table if not exists public.post_views (post_id uuid primary key references public.posts(id) on delete cascade,view_count bigint not null default 0 check(view_count>=0),last_viewed_at timestamptz);

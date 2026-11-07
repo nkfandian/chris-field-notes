@@ -76,6 +76,10 @@ export default async function LogPage({params}){
       db.from('books').select('id,title,author,review,cover_url').eq('linked_post_slug',slug)
     ])
     comments=commentData||[]
+    const topComments=comments.filter(c=>!c.parent_id)
+    const commentReplies={}
+    for(const c of comments)if(c.parent_id)(commentReplies[c.parent_id]||=[]).push(c)
+    for(const list of Object.values(commentReplies))list.reverse()
     books=bookData||[]
     if(post){
       related=await relatedPosts(db,post,slug)
@@ -88,7 +92,7 @@ export default async function LogPage({params}){
   const description=seoDescription(post.excerpt||post.body)
   const images=[firstPostImage(post.body),ogImage(post.title)].filter(Boolean)
   const jsonLd={'@context':'https://schema.org','@graph':[
-    {'@type':'BlogPosting','@id':`${url}#article`,url,headline:post.title,description,image:images,datePublished:dated(post.published_at),dateModified:dated(post.updated_at||post.published_at),author:{'@type':'Person','@id':AUTHOR_ID,name:'Chris',url:AUTHOR_URL},publisher:{'@id':PUBLISHER_ID},isPartOf:{'@id':WEBSITE_ID},mainEntityOfPage:{'@type':'WebPage','@id':url},inLanguage:SITE_LANGUAGE,isAccessibleForFree:true,genre:'个人日志',articleSection:labels[post.domain]||post.domain,keywords:[labels[post.domain],...(post.tags||[])].filter(Boolean).join(', '),wordCount:text.length,commentCount:comments.length,about:books.map(book=>({'@type':'Book',name:book.title,author:book.author?{'@type':'Person',name:book.author}:undefined,url:`${SITE_URL}/books#book-${book.id}`}))},
+    {'@type':'BlogPosting','@id':`${url}#article`,url,headline:post.title,description,image:images,datePublished:dated(post.published_at),dateModified:dated(post.updated_at||post.published_at),author:{'@type':'Person','@id':AUTHOR_ID,name:'Chris',url:AUTHOR_URL},publisher:{'@id':PUBLISHER_ID},isPartOf:{'@id':WEBSITE_ID},mainEntityOfPage:{'@type':'WebPage','@id':url},inLanguage:SITE_LANGUAGE,isAccessibleForFree:true,genre:'个人日志',articleSection:labels[post.domain]||post.domain,keywords:[labels[post.domain],...(post.tags||[])].filter(Boolean).join(', '),wordCount:text.length,commentCount:topComments.length,about:books.map(book=>({'@type':'Book',name:book.title,author:book.author?{'@type':'Person',name:book.author}:undefined,url:`${SITE_URL}/books#book-${book.id}`}))},
     {'@type':'BreadcrumbList','@id':`${url}#breadcrumb`,itemListElement:[{'@type':'ListItem',position:1,name:'首页',item:SITE_URL},{'@type':'ListItem',position:2,name:'日志',item:`${SITE_URL}/logs`},{'@type':'ListItem',position:3,name:post.title,item:url}]}
   ]}
   return <><SiteHeader current="logs"/><main className="log-page" id="content">
@@ -97,6 +101,6 @@ export default async function LogPage({params}){
     <ShareTools slug={slug} title={post.title}/>
     {books.length>0&&<section className="linked-section"><header><h2>相关书籍</h2></header><div>{books.map(book=><Link key={book.id} href={`/books#book-${book.id}`}><h3>{book.title}</h3><p>{book.author}</p></Link>)}</div></section>}
     {related.length>0&&<section className="linked-section"><header><h2>相关文章</h2></header><div>{related.map(item=><Link key={item.id} href={`/logs/${encodeURIComponent(item.slug)}`}><span>{labels[item.domain]?.split('/ ')[1]}</span><h3>{item.title}</h3><p>{item.excerpt}</p></Link>)}</div></section>}
-    <section className="comment-section"><header><h2>评论</h2>{comments.length>0&&<span>{comments.length} 条</span>}</header><div className="comment-layout">{comments.length>0?<div className="comment-list">{comments.map(comment=><article className="comment" key={comment.id}><header><b>{comment.name}</b><time dateTime={comment.created_at}>{new Date(comment.created_at).toLocaleDateString('zh-CN')}</time></header><p>{comment.body}</p></article>)}</div>:<p className="comment-empty">还没有人留下评论。读完有想法，或者有相关的经历想补充，可以写在下面。</p>}<InteractionForm kind="comment" postSlug={slug}/></div></section>
+    <section className="comment-section" id="comments"><header><h2>评论</h2>{topComments.length>0&&<span>{topComments.length} 条</span>}</header><div className="comment-layout">{topComments.length>0?<div className="comment-list">{topComments.map(comment=><article className="comment" key={comment.id}><header><b>{comment.name}</b><time dateTime={comment.created_at}>{new Date(comment.created_at).toLocaleDateString('zh-CN')}</time></header><p>{comment.body}</p>{commentReplies[comment.id]?.length>0&&<div className="comment-replies">{commentReplies[comment.id].map(reply=><article className="comment-reply" key={reply.id}><header><b>Chris · 站长回复</b><time dateTime={reply.created_at}>{new Date(reply.created_at).toLocaleDateString('zh-CN')}</time></header><p>{reply.body}</p></article>)}</div>}</article>)}</div>:<p className="comment-empty">还没有人留下评论。读完有想法，或者有相关的经历想补充，可以写在下面。</p>}<InteractionForm kind="comment" postSlug={slug}/></div></section>
   </main><SiteFooter/></>
 }
