@@ -13,9 +13,14 @@ const items=[
  ['/studio/subscribers','订阅用户']
 ]
 
-export default function StudioNav({hideOnRoot=false}){
+export default function StudioNav({hideOnRoot=false,counts={}}){
  const pathname=usePathname()
  async function signOut(){await createClient().auth.signOut();location.href='/'}
  if(hideOnRoot&&pathname==='/studio')return null
- return <nav className="studio-console-nav" aria-label="Studio 控制台导航"><Link className="studio-console-mark" href="/studio">C/ STUDIO</Link><div>{items.map(([href,label])=><Link className={pathname===href?'active':''} aria-current={pathname===href?'page':undefined} href={href} key={href}>{label}</Link>)}</div><button type="button" onClick={signOut}>退出</button></nav>
+ const badgeFor=href=>{
+  const n=href==='/studio/comments'?counts.comments:href==='/studio/subscribers'?counts.subscribers:0
+  if(!n||pathname===href)return null
+  return <span className="studio-nav-badge" aria-label={`${n} 条新内容`}>{n>99?'99+':n}</span>
+ }
+ return <nav className="studio-console-nav" aria-label="Studio 控制台导航"><Link className="studio-console-mark" href="/studio">C/ STUDIO</Link><div>{items.map(([href,label])=><Link className={pathname===href?'active':''} aria-current={pathname===href?'page':undefined} href={href} key={href}>{label}{badgeFor(href)}</Link>)}</div><button type="button" onClick={signOut}>退出</button></nav>
 }

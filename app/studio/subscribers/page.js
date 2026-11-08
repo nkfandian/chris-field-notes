@@ -2,6 +2,7 @@ import {redirect} from 'next/navigation'
 import {createClient,isConfigured} from '@/lib/supabase/server'
 import SubscriberManager from './subscriber-manager'
 import {getSiteAdmin} from '@/lib/auth'
+import {markStudioSeen} from '@/lib/studio-badges'
 import '../studio.css'
 import './subscribers.css'
 
@@ -35,5 +36,7 @@ export default async function SubscribersPage(){
   ])
   const manual=(campaigns||[]).map(x=>({id:`campaign-${x.id}`,type:'manual',title:x.subject,total:x.recipient_count,status:x.status,created_at:x.sent_at||x.created_at}))
   const history=[...automaticHistory(deliveries,posts),...manual].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5)
+  // 进页面即视为已看：导航栏的订阅用户气泡清零。
+  await markStudioSeen(db,'subscribers')
   return <SubscriberManager initial={subscribers||[]} history={history}/>
 }
