@@ -21,7 +21,9 @@ export default function CommentModeration({initial,posts={}}){
  // 回复行只嵌套在原评论下显示，不单独成卡。
  const roots=items.filter(x=>!x.parent_id)
  const repliesOf=id=>items.filter(x=>x.parent_id===id).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at))
- const shown=filter==='all'?roots:roots.filter(x=>x.status===filter)
+ const filtered=filter==='all'?roots:roots.filter(x=>x.status===filter)
+ const shownComments=filtered.filter(x=>x.kind==='comment')
+ const shownMessages=filtered.filter(x=>x.kind!=='comment')
  // 同一篇文章下内容完全相同的行打上疑似重复标记：通常是提交时点了两次。
  const dupCounts={}
  for(const x of roots){const key=`${x.post_slug||''}\n${x.body}`;dupCounts[key]=(dupCounts[key]||0)+1}
@@ -65,12 +67,9 @@ export default function CommentModeration({initial,posts={}}){
   setBusyId(null)
  }
 
- return <main className="studio moderation">
-  <header><div><h1>互动审核</h1></div><div><Link href="/studio">文章编辑</Link>　<Link href="/studio/site">网站内容</Link>　<Link href="/">查看网站 ↗</Link></div></header>
-  <div className="moderation-filters">{[['pending','待审核'],['approved','已公开'],['rejected','已拒绝'],['all','全部']].map(([k,v])=><button className={filter===k?'active':''} onClick={()=>setFilter(k)} key={k}>{v} {k==='all'?roots.length:roots.filter(x=>x.status===k).length}</button>)}</div>
-  <p className="moderation-notice">{notice}</p>
-  <div className="moderation-list">{shown.map(x=><article key={x.id}>
-   <header><div><b>{x.kind==='comment'?'日志评论':'网站留言'}</b><span>{statusLabel[x.status]}</span>{isDup(x)&&<span className="moderation-dup">疑似重复</span>}</div><time>{new Date(x.created_at).toLocaleString('zh-CN')}</time></header>
+ function renderCard(x){
+  return <article key={x.id}>
+   <header><div><span>{statusLabel[x.status]}</span>{isDup(x)&&<span className="moderation-dup">疑似重复</span>}</div><time>{new Date(x.created_at).toLocaleString('zh-CN')}</time></header>
    <h3>{x.name}</h3>
    <a href={`mailto:${x.email}`}>{x.email}</a>
    {x.post_slug&&<p className="moderation-target">文章：<a href={`/logs/${encodeURIComponent(x.post_slug)}`} target="_blank" rel="noreferrer">{posts[x.post_slug]||x.post_slug} ↗</a></p>}
@@ -89,7 +88,24 @@ export default function CommentModeration({initial,posts={}}){
     {x.status!=='rejected'&&<button disabled={busyId===x.id} onClick={()=>change(x.id,'rejected')}>拒绝</button>}
     <button className="danger" disabled={busyId===x.id} onClick={()=>remove(x.id)}>删除</button>
    </footer>
-  </article>)}
-  {!shown.length&&<p>当前没有此状态的内容。</p>}</div>
+  </article>
+ }
+
+ return <main className="studio moderation">
+  <header><div><h1>互动审核</h1></div><div><Link href="/studio">文章编辑</Link>　<Link href="/studio/site">网站内容</Link>　<Link href="/">查看网站 ↗</Link></div></header>
+  <div className="moderation-filters">{[['pending','待审核'],['approved','已公开'],['rejected','已拒绝'],['all','全部']].map(([k,v])=><button className={filter===k?'active':''} onClick={()=>setFilter(k)} key={k}>{v} {k==='all'?roots.length:roots.filter(x=>x.status===k).length}</button>)}</div>
+  <p className="moderation-notice">{notice}</p>
+  <div className="moderation-panels">
+   <section className="moderation-panel">
+    <header><h2>日志评论</h2><span>{shownComments.length} 条</span></header>
+    <div className="moderation-list">{shownComments.map(renderCard)}</div>
+    {!shownComments.length&&<p>当前没有此状态的日志评论。</p>}
+   </section>
+   <section className="moderation-panel">
+    <header><h2>网站留言</h2><span>{shownMessages.length} 条</span></header>
+    <div className="moderation-list">{shownMessages.map(renderCard)}</div>
+    {!shownMessages.length&&<p>当前没有此状态的网站留言。</p>}
+   </section>
+  </div>
  </main>
 }
