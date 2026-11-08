@@ -6,4 +6,6 @@
 .comment-reply header{display:flex;justify-content:space-between;gap:1rem;font:12px var(--mono);margin-bottom:.5rem}
 .comment-reply header b{color:var(--moss)}
 .comment-reply p{line-height:1.8;white-space:pre-wrap}
+/* .log-page article 的 margin-top:clamp(3rem,8vh,5.5rem) 会漏到评论的 <article> 上（实测 60.64px），把「评论」标题与首条评论、卡片顶与回复标题都撑出约 60px 空白；这里清掉，正文 <article> 不受影响。 */
+.log-page .comment,.log-page .comment-reply{margin-top:0}
 @media(max-width:600px){.bandwidth-card{min-height:132px;padding:1.25rem 5vw;border-right:0;border-bottom:1px solid var(--line)}.domain-card{min-height:210px;padding:1.5rem 0;border-right:0;border-bottom:1px solid}.domain-card h3{margin:2.5rem 0 .5rem}.message-grid{margin-left:0}.comment-layout{gap:2rem}.interaction-two{grid-template-columns:1fr;gap:0}.interaction-form input,.interaction-form textarea{font-size:16px}.comment-section{margin:3.5rem 0 0}.comment-replies{margin:1.1rem 0 0 .2rem;padding:0 0 0 1.1rem;background:transparent;border:0;border-left:2px solid var(--accent-soft,#86a7b6)}.comment-reply header{margin-bottom:0}}
