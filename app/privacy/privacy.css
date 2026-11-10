@@ -22,3 +22,10 @@
 .privacy-footer>a{text-decoration:none}.privacy-footer>a:last-child{text-align:right}.privacy-footer p{margin:0;color:#a9afa2;letter-spacing:.1em}
 @media(max-width:760px){.privacy-page{padding:0 5vw}.privacy-nav{height:64px;grid-template-columns:1fr auto}.privacy-nav>span{display:none}.privacy-hero{padding:4rem 0}.privacy-hero h1{margin:0 0 2rem;font-size:2.1rem}.privacy-intro{grid-template-columns:1fr;gap:3rem}.privacy-layout{grid-template-columns:1fr;padding:7vh 0 10vh}.privacy-layout>aside{position:relative;top:0}.privacy-layout>aside ol{display:grid;grid-template-columns:1fr 1fr}.privacy-layout>aside li:nth-child(odd){border-right:1px solid var(--line);padding-right:.8rem}.privacy-layout>aside li:nth-child(even){padding-left:.8rem}.privacy-copy>section{padding-bottom:6vh;margin-bottom:6vh}.privacy-copy>section>header{grid-template-columns:36px 1fr;margin-bottom:2rem}.privacy-copy>section>div{margin-left:0;font-size:1rem}}
 @media(max-width:430px){.privacy-layout>aside ol{grid-template-columns:1fr}.privacy-layout>aside li:nth-child(odd){border-right:0;padding-right:0}.privacy-layout>aside li:nth-child(even){padding-left:0}.privacy-footer .brand-lockup b{font-size:10px}}
+.privacy-simple{max-width:860px;margin:0 auto;padding:4.5rem 0 6rem}
+.privacy-simple>section{padding-bottom:2rem;margin-bottom:2rem}
+.privacy-simple>section>header{margin-bottom:1.1rem}
+.privacy-simple>section>header h2{font-size:clamp(1.4rem,2.6vw,1.9rem)}
+.privacy-simple>section>div{font-size:1rem;line-height:1.85}
+.privacy-simple p:last-child{margin-bottom:0}
+@media(max-width:760px){.privacy-hero{padding:3rem 0 2.5rem}.privacy-hero h1{margin-bottom:1rem}.privacy-intro{gap:1.5rem}.privacy-simple{padding:3rem 0 4rem}.privacy-simple>section{padding-bottom:1.5rem;margin-bottom:1.5rem}.privacy-simple>section>header{margin-bottom:.9rem}}

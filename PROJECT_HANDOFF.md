@@ -1,6 +1,6 @@
 # CHRIS / FIELD NOTES 项目交接文档
 
-> 最后核对：2026-11-01（Asia/Shanghai）
+> 最后核对：2026-11-10（Asia/Shanghai）
 >
 > 目标：让新的开发者或大模型无需依赖历史聊天记录，即可安全地继续修改、验证和发布本项目。
 
@@ -876,6 +876,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-11-10 | 隐私政策由九个章节精简为四段，按实际访问统计、订阅、评论、服务商和退订方式说明；页脚“给我留言”增加 `id="message"`，修复隐私页 `/#message` 联系入口；更新页面日期和 SEO 描述。 | 用户要求简洁并反馈留言链接失效。锚点落在全站页脚的留言折叠区，点击“给我留言”即可展开表单；政策仍保留信息种类、用途、保存与联系人等必要说明。 |
 | 2026-11-09 | Studio 手机端适配：重排功能导航、日志/书单/轨迹记录列表、编辑表单、审核与订阅页面；日志和书单点选记录后直接滚动到表单；格式工具改为横向滚动且按钮达到 44px，输入框使用 16px 字号；长图预览适应屏宽，保存按钮在表单内保持可见。 | 解决手机端导航拥挤、列表挡住表单、触控目标过小和预览横向溢出。基于 `3e433a0` 修改；构建通过。生产登录态的手机实机交互仍需上线后核对。 |
 | 2026-11-08 | 后台导航未读气泡：顶部导航栏的「互动审核」「订阅用户」旁加数字气泡——自上次查看后新增的留言（日志评论 + 网站留言，顶层，站长自己的回复不算）或新增的有效订阅（status='active'），有几条就显示几（>99 显示 99+）；点进对应页面后气泡清零。实现：新增 `lib/studio-badges.js`（读数 + 标记已看）；`app/studio/layout.js` 登录后读数传给 `StudioNav`；`app/studio/studio-nav.js` 渲染气泡（当前页面不显示）；`app/studio/studio.css` 加 `.studio-nav-badge`（砖红底白字小圆 pill）；`app/studio/comments/page.js` 与 `app/studio/subscribers/page.js` 进页面后把查看时间记为现在。查看时间存在 `site_content` 的 `studio_seen_comments` / `studio_seen_subscribers` 两条记录（value 为 `{"seen_at": "..."}`），复用现有 key-value 表、不新增表、不改 migration；首次没有记录时计数为 0（不把历史存量当成新的）。 | ①计数只在登录后做，读数失败时按 0 处理、导航栏不受影响。②气泡只在导航栏可见时出现——`/studio` 首页不显示导航栏（hideOnRoot），气泡在各子页面的导航栏上可见。③本地构建通过、临时测试页实测气泡渲染正确（互动审核 2、订阅用户 1）；生产实测用 Supabase SQL 编辑器把查看时间临时拨回过去、确认气泡出现且进页面后清零（见正文）。 |
 | 2026-11-08 | 评论区多余上边距修复：`app/interaction.css` 加 `.log-page .comment,.log-page .comment-reply{margin-top:0}`。根因是 `app/logs/[slug]/log.css:3` 的 `.log-page article{margin:clamp(3rem,8vh,5.5rem) auto 0}` 漏到了评论的两个 `<article>` 上（DevTools 实测各 60.64px），导致「评论」标题与首条评论之间、卡片顶与回复标题之间各多出约 60px 空白（随视口高度变化，旧版式截图里约 105px 的间距也是它造成的）。清掉后标题到首条评论约 26px、卡片内边距恢复正常 17.6px。 | 只清评论两个 `<article>` 的上边距，正文 `<article>` 的间距不受影响；列表内多条评论的间距仍由 `.comment-list` 的 `gap:1rem` 提供。②卡片本身（纸色深底、边框、苔藓绿左边框）已上线，见上一条。 |

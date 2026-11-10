@@ -11,7 +11,7 @@ export default function SiteFooter(){
       <div className="sc-contact-intro"><small>KEEP IN TOUCH</small><h2 id="sc-contact-title">偶尔更新，<br/>随时联系。</h2></div>
       <div className="sc-contact-actions">
         <div className="sc-subscribe"><div className="sc-copy"><b>订阅新日志</b><span>只在新内容发布时发送。</span></div><SubscribeForm/></div>
-        <details className="sc-message"><summary><span className="sc-copy"><b>给我留言</b><span>问题、线索，或只是打个招呼。</span></span><i aria-hidden="true">＋</i></summary><InteractionForm kind="message"/></details>
+        <details id="message" className="sc-message"><summary><span className="sc-copy"><b>给我留言</b><span>问题、线索，或只是打个招呼。</span></span><i aria-hidden="true">＋</i></summary><InteractionForm kind="message"/></details>
       </div>
     </section>
     <div className="sc-footer-bar">
