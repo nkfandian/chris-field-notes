@@ -1,6 +1,6 @@
 # CHRIS / FIELD NOTES 项目交接文档
 
-> 最后核对：2026-11-10（Asia/Shanghai）
+> 最后核对：2026-11-11（Asia/Shanghai）
 >
 > 目标：让新的开发者或大模型无需依赖历史聊天记录，即可安全地继续修改、验证和发布本项目。
 
@@ -252,10 +252,10 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 
 | 路径 | 调用方 | 功能 |
 |---|---|---|
-| `POST /api/posts` | 管理员 | 创建/更新日志、触发邮件、刷新缓存、通知 IndexNow |
-| `POST /api/uploads/sign` | 管理员 | 为编辑器“⤒ 上传图片”签发 5 分钟有效的 R2 直传地址；浏览器再 PUT 到 `*.r2.cloudflarestorage.com`（CSP `connect-src` 已放行这一个域）。带来源检查和 2KB 请求体限制 |
+| `POST / DELETE /api/posts` | 管理员 | 创建/更新/删除日志、触发邮件、刷新缓存、通知 IndexNow |
+| `POST /api/uploads/sign` | 管理员 | 为编辑器“⤒ 上传图片”签发 5 分钟有效的 R2 直传地址（含 `ContentLength` 锁定）；浏览器再 PUT 到 `*.r2.cloudflarestorage.com`（CSP `connect-src` 已放行这一个域）。带来源检查和 2KB 请求体限制 |
 | `POST /api/interactions` | 公开 | 提交评论或网站留言，默认 `pending`；10 分钟内完全相同的内容（kind / post_slug / email / body）只保存一次，重复提交返回 ok 不再入库 |
-| `POST /api/studio/comments` | 管理员 | 通过 / 拒绝 / 删除 / 回复评论；回复保存为 `parent_id` 指向原评论的子行并经 Resend 从 `comments@chrisreading.ink` 发邮件提醒 |
+| `POST /api/studio/comments` | 管理员 | 通过 / 拒绝 / 删除 / 回复评论（同步触发对应文章 `revalidatePath`）；回复保存为 `parent_id` 指向原评论的子行并经 Resend 从 `comments@chrisreading.ink` 发邮件提醒 |
 | `POST /api/subscribe` | 公开 | 提交邮箱即生效（`active` + `verified_at`），不发确认邮件 |
 | `POST /api/subscribe/confirm` | 公开令牌页 | 兼容旧确认链接；订阅已生效时也返回成功 |
 | `POST /api/unsubscribe` | 公开令牌页 | 退订并旋转管理令牌 |
@@ -297,10 +297,10 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 ### 7.2 数据与安全
 
 - `lib/supabase/client.js`：浏览器 Supabase 客户端。
-- `lib/supabase/server.js`：带 Cookie 的服务器客户端。
+- `lib/supabase/server.js`：带 Cookie 的服务器客户端 `createClient()`（用于鉴权页面与接口）与不读 Cookie 的只读客户端 `createPublicClient()`（用于公开缓存页面）。
 - `lib/supabase/admin.js`：service role 客户端；只能服务器使用。
 - `lib/auth.js`：读取当前 Auth 用户并调用 `is_site_admin()`。
-- `app/studio/page.js`：只有 `getSiteAdmin()` 返回管理员时才查询 `posts` / `post_views` 并写入 `initialPosts`；未登录或未配置为 `[]`。
+- `app/studio/page.js`：只有 `getSiteAdmin()` 返回管理员时才查询 `posts` / `post_views` / 未读气泡数并传入 `Studio`；未登录或未配置为 `[]`。
 - `lib/security.js`：来源检查、请求大小限制、限流键、输入清理。
 - `lib/resend.js`：Resend 发信封装（批量接口、幂等键、节流与 429 重试）。
 - `supabase/schema.sql`：新环境完整初始化脚本，已包含最终安全策略。
@@ -737,9 +737,9 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 4. ~~邮件仍保留旧绿色视觉值~~：已于 2026-10-17 统一为纸靛蓝，见 `lib/email-template.js`。
 5. **样式文件包含历史覆盖层**：尤其 `app/home.css` 和 `app/globals.css`，不要只读文件前半段。
 6. ~~格式解析有两套入口~~：已于 2026-10-02 统一到 `post-format.js`。
-7. **正文图片只支持远程 URL**：没有站内上传或 Supabase Storage UI。
-8. **长图暂不绘制正文图片**：图片块会被跳过。
-9. **Vercel 有两个部署项目**：只看一个成功可能造成误判。
+7. ~~正文图片只支持远程 URL~~：已于 2026-10-17 接入 Cloudflare R2 签名直传。
+8. ~~长图暂不绘制正文图片~~：已于 2026-10-17 支持在全文长图中装裱绘制配图。
+9. ~~Vercel 有两个部署项目~~：旧项目 `chris-field-notes` 已于 2026-10-18 断开 GitHub。
 10. **发布动作会群发真实订阅者**：生产环境不能随意把测试文章设为 published。
 11. **浏览量是总量计数，不是独立访客分析**：限流只抑制高频重复，不代表严格 UV。
 12. ~~根目录旧静态站仍在 Git 中~~：已于 2026-10-18 删除。
@@ -876,6 +876,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-11-11 | 前后端安全加固、Bug 修复与体验优化：①修复 `interaction-form.js`、`subscribe-form.js`、`subscriber-manager.js` 在 `await fetch` 后调用 `e.currentTarget.reset()` 抛空指针导致表单不清空、评论提交成功提示不显示的问题，补齐同步 `busy` 防重锁；②修复 `/studio` 首页顶部导航栏缺失未读数字气泡（`StudioPage` 补查 `getStudioBadgeCounts` 传入 `Studio`），并在 `StudioNav` 客户端记录已访问板块即时消退气泡；③区分“网站留言”与“日志评论”的审核文案（标记已读/已归档 vs 通过并公开/已公开）及回复邮件按钮（`lib/comment-reply.js` 留言回复不再显示“在网站查看回复”）；④安全加固：收紧 `site_content` RLS 公开 SELECT 仅限 `home` / `about`（见 `supabase/migrations/20261111_site_content_rls.sql`），防止匿名读取 `studio_seen_*` 站长活动时间；`lib/security.js` 优先取 `cf-connecting-ip` / `x-vercel-forwarded-for` 防伪造 IP 绕过限流，收紧无 `Origin` 头的 `originGuard`；`next.config.mjs` 为 `/api/studio/*` 和 `/api/uploads/*` 补齐 `noindex` 头；R2 预签名锁定 `ContentLength`；⑤缓存与后台体验：`lib/supabase/server.js` 新增不读 Cookie 的 `createPublicClient()` 恢复 `/logs/[slug]`、`/books`、`/trails`、`/about`、`/feed.xml`、`/sitemap.xml` 的 ISR 缓存；后台删文改走 `DELETE /api/posts`，评论审核补齐 `revalidatePath`；日志编辑器增加未保存离开提醒，轨迹编辑器补齐键盘无障碍与移动端滚动定位，页脚 `#message` 锚点自动展开，分享弹窗支持 `Esc` 关闭，文章页相关书籍补齐短评展示。 | 代码审查发现的线上报错、逻辑错位与安全隐患一次性收敛。**注意**：上线后可在 Supabase SQL 编辑器执行 `supabase/migrations/20261111_site_content_rls.sql` 收紧线上 `site_content` 表的匿名读取权限。 |
 | 2026-11-10 | 隐私政策第 02、03 段改为按数据用途和服务类型说明，去掉 Vercel Web Analytics、Google Analytics、Supabase、Resend、Cloudflare 的品牌列举。 | 用户担心公开技术栈信息成为攻击者线索；文案继续说明第三方托管/存储/邮件处理、保存与退订方式，实际服务配置未变。 |
 | 2026-11-10 | 隐私政策由九个章节精简为四段，按实际访问统计、订阅、评论、服务商和退订方式说明；页脚“给我留言”增加 `id="message"`，修复隐私页 `/#message` 联系入口；更新页面日期和 SEO 描述。 | 用户要求简洁并反馈留言链接失效。锚点落在全站页脚的留言折叠区，点击“给我留言”即可展开表单；政策仍保留信息种类、用途、保存与联系人等必要说明。 |
 | 2026-11-09 | Studio 手机端适配：重排功能导航、日志/书单/轨迹记录列表、编辑表单、审核与订阅页面；日志和书单点选记录后直接滚动到表单；格式工具改为横向滚动且按钮达到 44px，输入框使用 16px 字号；长图预览适应屏宽，保存按钮在表单内保持可见。 | 解决手机端导航拥挤、列表挡住表单、触控目标过小和预览横向溢出。基于 `3e433a0` 修改；构建通过。生产登录态的手机实机交互仍需上线后核对。 |

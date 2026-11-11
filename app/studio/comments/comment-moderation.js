@@ -3,6 +3,7 @@ import {useState} from 'react'
 import Link from 'next/link'
 
 const statusLabel={pending:'待审核',approved:'已公开',rejected:'已拒绝'}
+const messageStatusLabel={pending:'待处理',approved:'已归档',rejected:'已忽略'}
 
 async function moderate(action,id,body){
  const response=await fetch('/api/studio/comments',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action,id,body})})
@@ -30,11 +31,13 @@ export default function CommentModeration({initial,posts={}}){
  const isDup=x=>dupCounts[`${x.post_slug||''}\n${x.body}`]>1
 
  async function change(id,status){
+  const target=items.find(x=>x.id===id)
+  const isMsg=target?.kind==='message'
   setBusyId(id)
   try{
    const data=await moderate(status==='approved'?'approve':'reject',id)
    setItems(prev=>prev.map(x=>x.id===id?{...x,status:data.status||status}:x))
-   setNotice(data.already?'已经是这个状态了':status==='approved'?'已公开':'已拒绝')
+   setNotice(data.already?'已经是这个状态了':status==='approved'?(isMsg?'已归档':'已公开'):(isMsg?'已忽略':'已拒绝'))
   }catch(error){setNotice(error.message)}
   setBusyId(null)
  }
@@ -53,7 +56,9 @@ export default function CommentModeration({initial,posts={}}){
  async function reply(id){
   const body=(drafts[id]||'').trim()
   if(body.length<2)return setNotice('回复内容至少 2 个字。')
-  const wasPending=items.find(x=>x.id===id)?.status==='pending'
+  const target=items.find(x=>x.id===id)
+  const wasPending=target?.status==='pending'
+  const approvedNote=wasPending?(target?.kind==='message'?'，留言已归档':'，原评论已公开'):''
   setBusyId(id)
   try{
    const data=await moderate('reply',id,body)
@@ -62,14 +67,16 @@ export default function CommentModeration({initial,posts={}}){
     return data.reply?[...next,data.reply]:next
    })
    setDrafts(prev=>({...prev,[id]:''}))
-   setNotice(data.emailSent?`已回复${wasPending?'，原评论已公开':''}，邮件已发送`:`已回复${wasPending?'，原评论已公开':''}，但邮件发送失败：${data.emailError||'未知原因'}`)
+   setNotice(data.emailSent?`已回复${approvedNote}，邮件已发送`:`已回复${approvedNote}，但邮件发送失败：${data.emailError||'未知原因'}`)
   }catch(error){setNotice(error.message)}
   setBusyId(null)
  }
 
  function renderCard(x){
+  const isMsg=x.kind==='message'
+  const labels=isMsg?messageStatusLabel:statusLabel
   return <article key={x.id}>
-   <header><div><span>{statusLabel[x.status]}</span>{isDup(x)&&<span className="moderation-dup">疑似重复</span>}</div><time>{new Date(x.created_at).toLocaleString('zh-CN')}</time></header>
+   <header><div><span>{labels[x.status]}</span>{isDup(x)&&<span className="moderation-dup">疑似重复</span>}</div><time>{new Date(x.created_at).toLocaleString('zh-CN')}</time></header>
    <h3>{x.name}</h3>
    <a href={`mailto:${x.email}`}>{x.email}</a>
    {x.post_slug&&<p className="moderation-target">文章：<a href={`/logs/${encodeURIComponent(x.post_slug)}`} target="_blank" rel="noreferrer">{posts[x.post_slug]||x.post_slug} ↗</a></p>}
@@ -84,8 +91,8 @@ export default function CommentModeration({initial,posts={}}){
     <button disabled={busyId===x.id} onClick={()=>reply(x.id)}>{busyId===x.id?'发送中…':'回复并邮件通知'}</button>
    </div>}
    <footer>
-    {x.status!=='approved'&&<button disabled={busyId===x.id} onClick={()=>change(x.id,'approved')}>通过并公开</button>}
-    {x.status!=='rejected'&&<button disabled={busyId===x.id} onClick={()=>change(x.id,'rejected')}>拒绝</button>}
+    {x.status!=='approved'&&<button disabled={busyId===x.id} onClick={()=>change(x.id,'approved')}>{isMsg?'标记已读':'通过并公开'}</button>}
+    {x.status!=='rejected'&&<button disabled={busyId===x.id} onClick={()=>change(x.id,'rejected')}>{isMsg?'忽略':'拒绝'}</button>}
     <button className="danger" disabled={busyId===x.id} onClick={()=>remove(x.id)}>删除</button>
    </footer>
   </article>

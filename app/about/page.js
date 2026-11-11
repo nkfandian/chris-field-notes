@@ -2,7 +2,7 @@ import Link from 'next/link'
 import SiteHeader from '../components/site-header'
 import SiteFooter from '../components/site-footer'
 import StructuredData from '../components/structured-data'
-import {createClient,isConfigured} from '@/lib/supabase/server'
+import {createPublicClient,isConfigured} from '@/lib/supabase/server'
 import {DEFAULT_ABOUT_TEXT,resolveAboutText} from '@/lib/about'
 import {AUTHOR_ID,AUTHOR_URL,SITE_LANGUAGE,SITE_NAME,SITE_URL,WEBSITE_ID,pageMetadata} from '@/lib/seo'
 import '../privacy/privacy.css'
@@ -18,7 +18,7 @@ export const metadata=pageMetadata({
 export default async function AboutPage(){
   let aboutText=DEFAULT_ABOUT_TEXT,updated
   if(isConfigured()){
-    const db=await createClient()
+    const db=createPublicClient()
     const [{data:about},{data:home}]=await Promise.all([
       db.from('site_content').select('value,updated_at').eq('key','about').maybeSingle(),
       db.from('site_content').select('value').eq('key','home').maybeSingle()

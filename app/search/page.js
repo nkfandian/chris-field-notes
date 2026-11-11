@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import SiteHeader from '../components/site-header'
 import SiteFooter from '../components/site-footer'
-import {createClient,isConfigured} from '@/lib/supabase/server'
+import {createPublicClient,isConfigured} from '@/lib/supabase/server'
 import {labels} from '@/lib/demo'
 import {pageMetadata} from '@/lib/seo'
 import './search.css'
@@ -21,11 +21,11 @@ export default async function SearchPage({searchParams}){
   const q=String((await searchParams)?.q||'').trim().slice(0,80),needle=text(q)
   let posts=[],books=[],trails=[]
   if(q&&isConfigured()){
-    const db=await createClient()
+    const db=createPublicClient()
     const [{data:p},{data:b},{data:t}]=await Promise.all([
-      db.from('posts').select('id,slug,title,excerpt,body,tools,domain,tags,published_at').eq('status','published').order('published_at',{ascending:false}),
-      db.from('books').select('id,title,author,review,custom_lists,linked_post_slug').order('sort_order'),
-      db.from('trails').select('id,slug,title,summary,status').eq('status','published').order('updated_at',{ascending:false})
+      db.from('posts').select('id,slug,title,excerpt,body,tools,domain,tags,published_at').eq('status','published').order('published_at',{ascending:false}).limit(200),
+      db.from('books').select('id,title,author,review,custom_lists,linked_post_slug').order('sort_order').limit(500),
+      db.from('trails').select('id,slug,title,summary,status').eq('status','published').order('updated_at',{ascending:false}).limit(100)
     ])
     posts=(p||[]).filter(x=>text([x.title,x.excerpt,x.body,x.tools,x.domain,...(x.tags||[])].join(' ')).includes(needle)).map(x=>({...x,searchSnippet:contextualSnippet(x,needle)}))
     books=(b||[]).filter(x=>text([x.title,x.author,x.review,...(x.custom_lists||[])].join(' ')).includes(needle))

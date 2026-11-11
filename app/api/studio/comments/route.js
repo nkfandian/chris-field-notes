@@ -4,10 +4,12 @@ import {getSiteAdmin} from '@/lib/auth'
 import {cleanText,jsonMutationGuard,parseJsonBody} from '@/lib/security'
 import {idempotencyKey,sendEmail} from '@/lib/resend'
 import {buildReplyEmail} from '@/lib/comment-reply'
+import {revalidatePath} from 'next/cache'
 
 // 后台评论审核统一走服务端：service role 不受浏览器会话与 RLS 影响，
 // 通过 / 拒绝只做单向状态迁移，重复点击是 no-op，不会再产生重复公开。
 const REPLY_FROM=process.env.COMMENTS_FROM||'Chris <comments@chrisreading.ink>'
+const revalidatePost=slug=>{if(slug)try{revalidatePath(`/logs/${slug}`)}catch{}}
 
 export async function POST(request){
  try{
@@ -28,17 +30,20 @@ export async function POST(request){
    if(row.status==='approved')return Response.json({ok:true,already:true,status:'approved'})
    const {error}=await admin.from('comments').update({status:'approved',reviewed_at:now}).eq('id',id).in('status',['pending','rejected'])
    if(error)throw error
+   revalidatePost(row.post_slug)
    return Response.json({ok:true,status:'approved'})
   }
   if(action==='reject'){
    if(row.status==='rejected')return Response.json({ok:true,already:true,status:'rejected'})
    const {error}=await admin.from('comments').update({status:'rejected',reviewed_at:now}).eq('id',id).in('status',['pending','approved'])
    if(error)throw error
+   revalidatePost(row.post_slug)
    return Response.json({ok:true,status:'rejected'})
   }
   if(action==='delete'){
    const {error}=await admin.from('comments').delete().eq('id',id)
    if(error)throw error
+   revalidatePost(row.post_slug)
    return Response.json({ok:true,deleted:true})
   }
   if(action==='reply'){
@@ -59,6 +64,7 @@ export async function POST(request){
    }
    const {data:reply,error:insertError}=await admin.from('comments').insert({kind:row.kind,post_slug:row.post_slug,parent_id:row.id,name:'Chris',email:'comments@chrisreading.ink',body,status:'approved'}).select('*').single()
    if(insertError)throw insertError
+   revalidatePost(row.post_slug)
    const email=buildReplyEmail({name:row.name,postTitle,postSlug:row.post_slug,original:row.body,reply:body})
    const sent=await sendEmail({from:REPLY_FROM,to:[row.email],subject:email.subject,text:email.text,html:email.html},idempotencyKey('comment-reply',reply.id))
    return Response.json({ok:true,reply,parentApproved,emailSent:sent.ok,emailError:sent.ok?'':sent.error})

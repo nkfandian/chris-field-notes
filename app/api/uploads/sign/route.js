@@ -47,7 +47,7 @@ export async function POST(request) {
   // 只剥末尾的图片扩展名（可重复，如 foo.png.png），其它后缀不动
   const safeName = String(filename).replace(/[^\w\-.]+/g, '_').slice(0, 60).replace(/(\.(jpg|jpeg|png|webp|gif|avif))+$/i, '') || 'image'
   const key = `images/${date}/${uuid}-${safeName}.${ext}`
-  const command = new PutObjectCommand({Bucket: config.bucket, Key: key, ContentType: contentType})
+  const command = new PutObjectCommand({Bucket: config.bucket, Key: key, ContentType: contentType, ContentLength: Math.trunc(size)})
   const uploadUrl = await getSignedUrl(config.client, command, {expiresIn: 300})
   return Response.json({uploadUrl, publicUrl: `${config.publicUrl}/${key}`, key})
 }

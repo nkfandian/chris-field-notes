@@ -3,7 +3,7 @@ import {notFound} from 'next/navigation'
 import SiteHeader from '../../components/site-header'
 import SiteFooter from '../../components/site-footer'
 import {trailComposition} from '@/lib/trails'
-import {createClient,isConfigured} from '@/lib/supabase/server'
+import {createPublicClient,isConfigured} from '@/lib/supabase/server'
 import StructuredData from '../../components/structured-data'
 import {SITE_LANGUAGE,SITE_URL,pageMetadata} from '@/lib/seo'
 import '../trails.css'
@@ -41,7 +41,7 @@ const resolveItem=(item,postIndex,bookIndex)=>{
 export async function generateMetadata({params}){
   const slug=decodeURIComponent((await params).slug)
   if(!isConfigured())return {title:'阅读轨迹',robots:{index:false,follow:false}}
-  const db=await createClient()
+  const db=createPublicClient()
   const {data}=await db.from('trails').select('id,title,summary').eq('slug',slug).eq('status','published').maybeSingle()
   if(!data)return {title:'阅读轨迹未找到',robots:{index:false,follow:false}}
   const {data:items}=await db.from('trail_items').select('item_type,label').eq('trail_id',data.id).order('position')
@@ -53,7 +53,7 @@ export async function generateMetadata({params}){
 
 export default async function TrailPage({params}){
   if(!isConfigured())notFound()
-  const slug=decodeURIComponent((await params).slug),db=await createClient()
+  const slug=decodeURIComponent((await params).slug),db=createPublicClient()
   const {data:trail}=await db.from('trails').select('*').eq('slug',slug).eq('status','published').maybeSingle()
   if(!trail)notFound()
   const {data:items}=await db.from('trail_items').select('*').eq('trail_id',trail.id).order('position')

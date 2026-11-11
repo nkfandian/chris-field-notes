@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import {notFound} from 'next/navigation'
-import {createClient,isConfigured} from '@/lib/supabase/server'
+import {createPublicClient,isConfigured} from '@/lib/supabase/server'
 import {demoPosts,labels} from '@/lib/demo'
 import InteractionForm from '@/app/components/interaction-form'
 import PostBody from './post-body'
@@ -21,7 +21,7 @@ const dated=value=>/^\d{4}-\d{2}-\d{2}$/.test(value||'')?`${value}T00:00:00+08:0
 async function getPost(slug){
   let post=demoPosts.find(item=>item.slug===slug)
   if(isConfigured()){
-    const db=await createClient()
+    const db=createPublicClient()
     const {data}=await db.from('posts').select('*').eq('slug',slug).eq('status','published').maybeSingle()
     post=data||post
   }
@@ -70,7 +70,7 @@ export default async function LogPage({params}){
   const slug=decode((await params).slug)
   let post=await getPost(slug),comments=[],books=[],related=[],topComments=[],commentReplies={}
   if(isConfigured()){
-    const db=await createClient()
+    const db=createPublicClient()
     const [{data:commentData},{data:bookData}]=await Promise.all([
       db.rpc('get_public_comments',{p_post_slug:slug}),
       db.from('books').select('id,title,author,review,cover_url').eq('linked_post_slug',slug)
@@ -99,7 +99,7 @@ export default async function LogPage({params}){
     <PostViewTracker slug={slug}/>{reading.chars>LONG_READ_CHARS&&<ReadingProgress/>}<StructuredData data={jsonLd}/>
     <article><header><Link className="log-category" href={`/logs?domain=${post.domain}`}>{labels[post.domain]?.split('/ ')[1]||post.domain}</Link><h1>{post.title}</h1><div className="log-byline"><Link href="/about" rel="author">Chris</Link><time dateTime={dated(post.published_at)}>{post.published_at}</time><span className="log-reading">约 {reading.minutes} 分钟 · {reading.chars.toLocaleString('en-US')} 字</span></div></header><div className="log-body"><PostBody body={post.body||post.excerpt}/></div>{post.tools&&<aside><b>输入与工具</b><p>{post.tools}</p></aside>}</article>
     <ShareTools slug={slug} title={post.title}/>
-    {books.length>0&&<section className="linked-section"><header><h2>相关书籍</h2></header><div>{books.map(book=><Link key={book.id} href={`/books#book-${book.id}`}><h3>{book.title}</h3><p>{book.author}</p></Link>)}</div></section>}
+    {books.length>0&&<section className="linked-section"><header><h2>相关书籍</h2></header><div>{books.map(book=><Link key={book.id} href={`/books#book-${book.id}`}>{book.author&&<span>{book.author}</span>}<h3>{book.title}</h3>{book.review&&<p>{book.review}</p>}</Link>)}</div></section>}
     {related.length>0&&<section className="linked-section"><header><h2>相关文章</h2></header><div>{related.map(item=><Link key={item.id} href={`/logs/${encodeURIComponent(item.slug)}`}><span>{labels[item.domain]?.split('/ ')[1]}</span><h3>{item.title}</h3><p>{item.excerpt}</p></Link>)}</div></section>}
     <section className="comment-section" id="comments"><header><h2>评论</h2>{topComments.length>0&&<span>{topComments.length} 条</span>}</header><div className="comment-layout">{topComments.length>0?<div className="comment-list">{topComments.map(comment=><article className="comment" key={comment.id}><header><b>{comment.name}</b><time dateTime={comment.created_at}>{new Date(comment.created_at).toLocaleDateString('zh-CN')}</time></header><p>{comment.body}</p>{commentReplies[comment.id]?.length>0&&<div className="comment-replies">{commentReplies[comment.id].map(reply=><article className="comment-reply" key={reply.id}><header><b>Chris · 站长回复</b><time dateTime={reply.created_at}>{new Date(reply.created_at).toLocaleDateString('zh-CN')}</time></header><p>{reply.body}</p></article>)}</div>}</article>)}</div>:<p className="comment-empty">还没有人留下评论。读完有想法，或者有相关的经历想补充，可以写在下面。</p>}<InteractionForm kind="comment" postSlug={slug}/></div></section>
   </main><SiteFooter/></>

@@ -1,7 +1,8 @@
-import {createClient,isConfigured} from '@/lib/supabase/server'
+import {createPublicClient,isConfigured} from '@/lib/supabase/server'
 import {demoPosts} from '@/lib/demo'
 import {SITE_URL,firstPostImage} from '@/lib/seo'
 
+export const revalidate=300
 const latest=values=>values.filter(Boolean).sort((a,b)=>new Date(b)-new Date(a))[0]
 const domains=['decode','execute','deploy','trek','roots']
 const categoryEntries=posts=>domains.map(domain=>{
@@ -23,11 +24,11 @@ export default async function sitemap(){
       {url:`${SITE_URL}/books`,changeFrequency:'weekly',priority:.8},
       {url:`${SITE_URL}/trails`,changeFrequency:'weekly',priority:.8},
       {url:`${SITE_URL}/about`,changeFrequency:'monthly',priority:.65},
-      {url:`${SITE_URL}/privacy`,lastModified:'2026-10-18',changeFrequency:'yearly',priority:.3},
+      {url:`${SITE_URL}/privacy`,lastModified:'2026-11-10',changeFrequency:'yearly',priority:.3},
       ...demoPosts.map(postEntry)
     ]
   }
-  const db=await createClient()
+  const db=createPublicClient()
   const [{data:posts},{data:trails},{data:books},{data:home},{data:about}]=await Promise.all([
     db.from('posts').select('slug,domain,body,published_at,updated_at').eq('status','published').order('updated_at',{ascending:false}),
     db.from('trails').select('slug,updated_at').eq('status','published').order('updated_at',{ascending:false}),
@@ -46,7 +47,7 @@ export default async function sitemap(){
     {url:`${SITE_URL}/books`,lastModified:bookDate,changeFrequency:'weekly',priority:.8},
     {url:`${SITE_URL}/trails`,lastModified:trailDate,changeFrequency:'weekly',priority:.8},
     {url:`${SITE_URL}/about`,lastModified:about?.updated_at,changeFrequency:'monthly',priority:.65},
-    {url:`${SITE_URL}/privacy`,lastModified:'2026-10-18',changeFrequency:'yearly',priority:.3},
+    {url:`${SITE_URL}/privacy`,lastModified:'2026-11-10',changeFrequency:'yearly',priority:.3},
     ...(posts||[]).map(postEntry),
     ...(trails||[]).map(trail=>({url:`${SITE_URL}/trails/${encodeURIComponent(trail.slug)}`,lastModified:trail.updated_at,changeFrequency:'monthly',priority:.7}))
   ]

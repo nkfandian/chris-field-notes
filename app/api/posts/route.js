@@ -40,3 +40,28 @@ export async function POST(request){
  }
  return Response.json({post,notification,indexing})
 }
+
+export async function DELETE(request){
+ const blocked=jsonMutationGuard(request,2048)
+ if(blocked)return blocked
+ const db=await createClient()
+ const user=await getSiteAdmin(db)
+ if(!user)return Response.json({error:'unauthorized'},{status:401})
+ const parsed=await parseJsonBody(request,2048)
+ if(parsed.response)return parsed.response
+ const id=parsed.data?.id
+ if(!validUuid(id))return Response.json({error:'无效的日志 ID'},{status:400})
+ const {data:existing}=await db.from('posts').select('slug,domain').eq('id',id).maybeSingle()
+ const {error}=await db.from('posts').delete().eq('id',id)
+ if(error)return Response.json({error:error.message},{status:400})
+ const paths=['/logs','/']
+ if(existing?.slug){
+  revalidatePath(`/logs/${existing.slug}`)
+  paths.unshift(`/logs/${encodeURIComponent(existing.slug)}`)
+ }
+ revalidatePath('/logs')
+ revalidatePath('/')
+ let indexing=null
+ try{indexing=await notifyIndexNow(paths)}catch(error){indexing={accepted:false,error:error.message}}
+ return Response.json({ok:true,indexing})
+}
