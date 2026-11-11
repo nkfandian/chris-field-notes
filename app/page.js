@@ -14,8 +14,7 @@ export default async function Page(){
    db.from('posts').select('slug,title,excerpt,domain,body,published_at,updated_at').eq('status','published').order('published_at',{ascending:false}).limit(10),
    db.from('books').select('id,title,author,cover_url,status,rating,language',{count:'exact'}).order('sort_order',{ascending:true}).order('created_at',{ascending:false}).limit(4),
    db.from('trails').select('id,slug,title,summary,updated_at,trail_items(id,item_type)').eq('status','published').order('updated_at',{ascending:false}).limit(3),
-   db.from('site_content').select('value').eq('key','home').maybeSingle(),
-   getSiteAdmin(db)
+   db.from('site_content').select('value').eq('key','home').maybeSingle()
   ])
   if(postResult.data?.length)posts=postResult.data
   if(schemaResult.data?.length)schemaPosts=schemaResult.data
