@@ -136,7 +136,7 @@ curl -sS https://www.chrisreading.ink/feed.xml
 
 | 层 | 技术 |
 |---|---|
-| Web 框架 | Next.js `15.5.20`，App Router |
+| Web 框架 | Next.js `15.5.28`，App Router；`sharp` 锁定 `0.35.5`、`postcss` 锁定 `8.5.23` 以修复生产依赖告警 |
 | UI | React `19.2.7` / React DOM `19.2.7` |
 | 数据与认证 | Supabase（Postgres、Auth、RLS、RPC） |
 | Supabase 客户端 | `@supabase/ssr 0.6.1`、`@supabase/supabase-js 2.110.5` |
@@ -256,11 +256,11 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 | `POST /api/uploads/sign` | 管理员 | 为编辑器“⤒ 上传图片”签发 5 分钟有效的 R2 直传地址（含 `ContentLength` 锁定）；浏览器再 PUT 到 `*.r2.cloudflarestorage.com`（CSP `connect-src` 已放行这一个域）。带来源检查和 2KB 请求体限制 |
 | `POST /api/interactions` | 公开 | 提交评论或网站留言，默认 `pending`；10 分钟内完全相同的内容（kind / post_slug / email / body）只保存一次，重复提交返回 ok 不再入库 |
 | `POST /api/studio/comments` | 管理员 | 通过 / 拒绝 / 删除 / 回复评论（同步触发对应文章 `revalidatePath`）；回复保存为 `parent_id` 指向原评论的子行并经 Resend 从 `comments@chrisreading.ink` 发邮件提醒 |
-| `POST /api/subscribe` | 公开 | 提交邮箱即生效（`active` + `verified_at`），不发确认邮件 |
-| `POST /api/subscribe/confirm` | 公开令牌页 | 兼容旧确认链接；订阅已生效时也返回成功 |
+| `POST /api/subscribe` | 公开 | 新邮箱提交即生效；已退订邮箱只发送 24 小时有效的恢复确认邮件，不能直接激活 |
+| `POST /api/subscribe/confirm` | 公开令牌页 | 兼容旧确认链接，并处理已退订邮箱的限时恢复确认 |
 | `POST /api/unsubscribe` | 公开令牌页 | 退订并旋转管理令牌 |
 | `POST /api/views` | 文章页 | 记录浏览量，带限流 |
-| `POST /api/campaigns` | 管理员 | 向有效订阅者手动群发 |
+| `POST /api/campaigns` | 管理员 | 向有效订阅者手动群发；客户端传固定 `campaignId`，逐人记录投递状态，中断后按同一 ID 重试 |
 | `POST /api/notifications` | 管理员 | 重试未完成的新日志通知 |
 | `GET /api/notifications` | Vercel Cron（`vercel.json`，每天 01:00 UTC） | Bearer `CRON_SECRET` 触发推送重试，并清理两天前的 `rate_limits` |
 | `POST /api/indexnow` | 管理员 | 刷新路径并提交 IndexNow |
@@ -282,9 +282,9 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 - `app/layout.js`：全站 metadata、结构化数据、字体变量挂载。
 - `lib/fonts.js`：Noto Serif SC 与 IBM Plex Mono 经 `next/font/google` **构建时下载、自托管**（不再请求 fonts.googleapis.com，国内访客首屏不会被字体卡住）。中文字体按 unicode-range 切片，不预加载。不要再在 CSS 里 `@import` Google Fonts。
 - `app/components/site-analytics.js`：只加载 Vercel Web Analytics（2026-10-18 起已移除 AdSense 与 Google Analytics，站点不再加载任何 Google 脚本）；后台和带令牌页面（`/studio`、`/reset-password`、`/subscribe/confirm`、`/unsubscribe`）一律不加载。
-- `app/page.js`：服务器侧读取首页所有数据。
+- `app/page.js`：用不读 Cookie 的公开客户端每 5 分钟重建首页；列表不取正文，只有结构化数据前 10 篇取正文。后台入口由 `site-header.js` 在有登录态时单独识别。
 - `app/home-client.js`：首页首屏、日志筛选、书单与轨迹区块。
-- `app/components/site-header.js` / `site-footer.js` / `site-chrome.css`：**所有公开页面共用**的顶部导航（含移动端菜单）和深色页脚（订阅、留言、站点链接）。新增公开页面时直接使用这两个组件，并给 `<main>` 加 `id="content"`（跳转链接用）。
+- `app/components/site-header.js` / `site-footer.js` / `site-chrome.css`：**所有公开页面共用**的顶部导航（含移动端菜单）和深色页脚（订阅、留言、站点链接）。页眉有 `id="top"` 供页脚返回顶部。新增公开页面时直接使用这两个组件，并给 `<main>` 加 `id="content"`（跳转链接用）。
 - `app/components/about-modal.js`：导航和页脚里的“关于”打开弹窗，只显示后台“ABOUT 文本”那一段文字（读取前先显示 `lib/about.js` 的默认文字）；无 JS 时链接仍进入 `/about`。
 - `app/not-found.js`：带共用页眉页脚的 404 页面。
 - `lib/trails.js`：把轨迹节点汇总成“3 篇日志 · 10 本书”这类文字。
@@ -380,12 +380,12 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 
 - 同时保存文章评论和首页留言。
 - `kind`：`comment | message`
-- `post_slug`：留言可为空。
+- `post_slug`：评论绑定文章；网站留言必须为空。公开提交接口会丢弃留言携带的伪造文章链接，数据库约束和公开 RPC 也会隔离留言。
 - `name`、`email`、`body`
 - `status`：`pending | approved | rejected`
 - `reviewed_at`
 - `parent_id uuid`：站长回复，指向原评论；删原评论时级联删除。回复行 `kind` / `post_slug` 与原评论一致，`name` 为 Chris，`email` 为 `comments@chrisreading.ink`，`status` 直接为 `approved`。
-- 公开读取必须走 `get_public_comments()`，该 RPC 不返回邮箱；现同时返回 `parent_id`，前台按此把回复嵌套在原评论下显示。
+- 公开读取必须走 `get_public_comments()`，该 RPC 只返回 `kind='comment'` 且已通过的行，不返回邮箱；现同时返回 `parent_id`，前台按此把回复嵌套在原评论下显示。
 
 #### `books`
 
@@ -419,7 +419,8 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 
 #### 邮件与运维表
 
-- `email_campaigns`：手动群发历史。
+- `email_campaigns`：手动群发历史；新增 `preparing` 状态用于投递快照准备。
+- `email_campaign_deliveries`：手动群发逐人投递状态，唯一键 `(campaign_id, subscriber_id)`；旧版历史不伪造逐人记录，不能按新逻辑安全重试。
 - `email_deliveries`：每篇日志对每个订阅者的投递状态，唯一键 `(post_id, subscriber_id)`。
 - `rate_limits`：服务端限流桶；每日定时任务删除两天前的记录。
 - `post_views`：每篇文章总浏览量和最后访问时间。
@@ -427,9 +428,9 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 
 ### 8.2 权限模型
 
-- 匿名用户只可读取已发布日志、公开书籍、已发布轨迹、站点内容。
+- 匿名用户只可读取已发布日志、公开书籍、已发布轨迹、`site_content` 的 `home`/`about`；需执行 `20261111_security_and_campaigns.sql` 才能保证线上数据库也收紧。
 - 匿名用户不能直接读取 `comments`、`subscribers`、邮件、限流、管理员和浏览量表。
-- 公开评论通过 `get_public_comments()` RPC 获取，避免泄露邮箱和审核状态。
+- 公开评论通过 `get_public_comments()` RPC 获取，且按 `kind='comment'` 限制，避免泄露邮箱、审核状态及私下留言。
 - 浏览量写入通过 service role 调用 `record_post_view()`。
 - 后台 CRUD 要求已登录且 `is_site_admin()` 为真。
 - 初始化迁移会把最早创建的 Auth 用户写入 `site_admins`。新增管理员应显式插入其 `auth.users.id`，不要放宽 RLS 为“所有 authenticated”。
@@ -555,21 +556,21 @@ URL 只允许 `http(s)`，正文链接额外允许 `mailto:`；不要放宽到 `
 - 纯文本版本为“标题 + 正文纯文字 + 链接”。最长的现有日志（约 1.1 万字）生成的邮件约 68KB，低于 Gmail 102KB 截断线；特别长的文章发布前可留意。
 - 邮件带隐藏 preheader 和退订链接。
 - `email_deliveries` 使重试具备幂等性：已经成功的订阅者不会重复发送。
-- 手动群发（`/api/campaigns`）同样按 100 封一批发送；它不记录每个收件人的结果，只记录成功/失败总数。
+- 手动群发（`/api/campaigns`）先每 100 人一组建立 `email_campaign_deliveries` 逐人状态，每次请求最多逐封处理 10 人并返回进度，浏览器继续请求直到没有可处理者；每封都使用固定 `campaignId` + 收件人 ID 的 Resend 幂等键。`pending`、显式重试范围内的 `failed` 与超过 15 分钟的 `sending` 行可重新领取；重试范围用同一个时间截点，避免本轮失败又立即无限重试。断网后用同一 ID 继续，历史没有逐人记录的旧活动不允许安全重试。发送前再次核对订阅状态，已退订者标为 `skipped`。此功能依赖 `20261111_security_and_campaigns.sql`。
 
 ### 11.3 订阅生命周期
 
 **单次确认（用户 2026-10-02 明确要求）**：输入邮箱即生效，不发确认邮件。
 
 1. 用户提交邮箱。
-2. 服务端新建或恢复记录为 `active`，写入 `verified_at`。
+2. 服务端为新邮箱新建 `active` 记录；历史 `pending` 记录也会激活。若该邮箱此前已退订，保持 `unsubscribed`，只向该邮箱寄送 24 小时有效的恢复确认链接；点击确认后才激活。
 3. 下一篇新日志发布时开始收到邮件；每封邮件底部有退订链接。
 4. 退订通过 `manage_token`，完成后旋转令牌。
 5. 后台只能“停用”订阅，不能把已退订的人恢复；退订者只能本人在网站重新订阅。
 
-所有情况返回同一句“订阅成功”，不暴露某邮箱此前是否已订阅。
+所有情况返回同一句通用提示，不暴露某邮箱此前是否已订阅或退订。
 
-已知取舍：任何人都能替别人的邮箱订阅，只靠每 IP 每小时 3 次、每邮箱每天 2 次的限流抑制滥用。如果出现大量冒名订阅或投诉，再考虑恢复双重确认。
+已知取舍：新邮箱仍为单次订阅，任何人都能替别人的新邮箱订阅；每 IP 每小时 3 次、每邮箱每天 2 次限流。已退订邮箱现在必须由收件人确认恢复，防止他人绕过退订意愿。
 
 ---
 
@@ -657,6 +658,7 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 ### 14.4 已确认的移动端要求
 
 - 移动端首屏不显示“最新日志”纸张卡片；当前在 `max-width: 600px` 隐藏 `.hero-latest`。
+- 601–960px 的平板首屏把最新日志卡片压成紧凑横向条，不再占据约 420px 高度；手机分类与书单的横向列表有滑动提示。
 - 首屏不加入冗长说明句。
 - 日志分类不单独占据首页一整屏。
 - 书单与轨迹位于日志之后，并各自具有不同的信息结构。
@@ -745,6 +747,7 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 12. ~~根目录旧静态站仍在 Git 中~~：已于 2026-10-18 删除。
 13. ~~CSS 兼容性构建警告~~：已于 2026-10-02 修复，当前构建无警告。
 14. **`script-src` 仍允许 `'unsafe-inline'`**：Next.js 15 App Router 在没有 nonce 时把 RSC flight 写进内联 `<script>`（`next` 的 `app-render/use-flight-response.js`）。`app/components/site-analytics.js` 还有一段内联 `window.va` 队列。CSP 是 `next.config.mjs` 里的静态头，仓库没有 middleware，无法按请求发 nonce；哈希也盖不住每次不同的 flight。若要去掉，应新增按请求 nonce 的 middleware，把 CSP 从静态头挪过去（两套 CSP 取交集，静态头里留下 `'unsafe-inline'` 等于没去掉），并确认公开页与 `/studio` 能水合。不要为此引入新的第三方脚本域名。
+15. **生产数据库需执行 `supabase/migrations/20261111_security_and_campaigns.sql`**：同一事务修复私下留言的公开读取边界、收紧 `site_content` 读取并创建手动群发逐人记录表。代码发布前应先执行迁移；若未执行，新版 `/api/campaigns` 会返回 503，禁止在缺少逐人记录时继续不安全的群发。此 SQL 包含此前待执行的 `20261111_site_content_rls.sql`，无需重复运行后者。
 
 ---
 
@@ -849,13 +852,13 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 ## 21. 当前结论
 
-截至 2026-10-02：
+截至 2026-11-11（本次 SQL 迁移上线前）：
 
 - 线上站点已运行。
 - 远端 `main` 是唯一的生产基线；本地 `deploy-sync` 只是历史开发线（见第 2.1 节）。
 - 公共前端、Studio 和日志长图已经统一为纸张米白、深墨和纸靛蓝体系。
 - SEO 作者页、栏目页、RSS、Sitemap、结构化数据和 IndexNow 已部署。
-- 浏览量、单次确认订阅、评论审核、邮件投递状态（原子领取 + 批量发送）和管理员白名单已启用。
+- 浏览量、新邮箱单次订阅、已退订邮箱邮件确认恢复、评论审核、逐人邮件投递状态和管理员白名单已在代码中实现；`20261111_security_and_campaigns.sql` 尚须在线上执行后才算完整启用。
 - 最新 900×500 微信引流图存在于独立工作目录，尚未并入网站仓库。
 
 下一位接手者可以直接从本文的第 2、4、5、7、8、9、10、18、22 节开始工作，无需读取此前对话。
@@ -876,6 +879,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-11-11 | 审查整改：升级 Next.js 15.5.28、锁定 sharp 0.35.5/PostCSS 8.5.23；留言提交强制清空文章链接并新增 `kind='comment'` 公开 RPC 边界；已退订邮箱改用 24 小时邮件确认恢复；手动群发增加逐人记录、固定任务 ID、断点重试与退订检查；首页恢复 5 分钟 ISR 并减少正文查询、管理员入口客户端单独识别；平板首屏卡片压缩、手机横向列表加提示、页脚返回顶部补锚点。 | `npm audit --omit=dev` 为 0 告警。**上线前须在 Supabase SQL 编辑器执行 `supabase/migrations/20261111_security_and_campaigns.sql`**；它也包含前次待执行的 `site_content` RLS 修正。真实邮箱发送和登录态后台仍需在受控环境验证，不能用测试文章触发生产群发。 |
 | 2026-11-11 | 前后端安全加固、Bug 修复与体验优化：①修复 `interaction-form.js`、`subscribe-form.js`、`subscriber-manager.js` 在 `await fetch` 后调用 `e.currentTarget.reset()` 抛空指针导致表单不清空、评论提交成功提示不显示的问题，补齐同步 `busy` 防重锁；②修复 `/studio` 首页顶部导航栏缺失未读数字气泡（`StudioPage` 补查 `getStudioBadgeCounts` 传入 `Studio`），并在 `StudioNav` 客户端记录已访问板块即时消退气泡；③区分“网站留言”与“日志评论”的审核文案（标记已读/已归档 vs 通过并公开/已公开）及回复邮件按钮（`lib/comment-reply.js` 留言回复不再显示“在网站查看回复”）；④安全加固：收紧 `site_content` RLS 公开 SELECT 仅限 `home` / `about`（见 `supabase/migrations/20261111_site_content_rls.sql`），防止匿名读取 `studio_seen_*` 站长活动时间；`lib/security.js` 优先取 `cf-connecting-ip` / `x-vercel-forwarded-for` 防伪造 IP 绕过限流，收紧无 `Origin` 头的 `originGuard`；`next.config.mjs` 为 `/api/studio/*` 和 `/api/uploads/*` 补齐 `noindex` 头；R2 预签名锁定 `ContentLength`；⑤缓存与后台体验：`lib/supabase/server.js` 新增不读 Cookie 的 `createPublicClient()` 恢复 `/logs/[slug]`、`/books`、`/trails`、`/about`、`/feed.xml`、`/sitemap.xml` 的 ISR 缓存；后台删文改走 `DELETE /api/posts`，评论审核补齐 `revalidatePath`；日志编辑器增加未保存离开提醒，轨迹编辑器补齐键盘无障碍与移动端滚动定位，页脚 `#message` 锚点自动展开，分享弹窗支持 `Esc` 关闭，文章页相关书籍补齐短评展示。 | 代码审查发现的线上报错、逻辑错位与安全隐患一次性收敛。**注意**：上线后可在 Supabase SQL 编辑器执行 `supabase/migrations/20261111_site_content_rls.sql` 收紧线上 `site_content` 表的匿名读取权限。 |
 | 2026-11-10 | 隐私政策第 02、03 段改为按数据用途和服务类型说明，去掉 Vercel Web Analytics、Google Analytics、Supabase、Resend、Cloudflare 的品牌列举。 | 用户担心公开技术栈信息成为攻击者线索；文案继续说明第三方托管/存储/邮件处理、保存与退订方式，实际服务配置未变。 |
 | 2026-11-10 | 隐私政策由九个章节精简为四段，按实际访问统计、订阅、评论、服务商和退订方式说明；页脚“给我留言”增加 `id="message"`，修复隐私页 `/#message` 联系入口；更新页面日期和 SEO 描述。 | 用户要求简洁并反馈留言链接失效。锚点落在全站页脚的留言折叠区，点击“给我留言”即可展开表单；政策仍保留信息种类、用途、保存与联系人等必要说明。 |

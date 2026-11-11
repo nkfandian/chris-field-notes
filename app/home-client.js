@@ -50,6 +50,7 @@ export default function HomeClient({posts,books=[],bookCount=0,trails=[],content
       </section>
       <section id="log" className="section home-logs" aria-labelledby="home-logs-title">
         <div className="home-section-heading"><h2 id="home-logs-title">最新日志</h2><Link className="all-logs-link" href={filter==='all'?'/logs':`/logs?domain=${filter}`}>查看全部 <span aria-hidden="true">↗</span></Link></div>
+        <p className="mobile-swipe-hint">左右滑动查看分类 <span aria-hidden="true">→</span></p>
         <div className="filters" role="group" aria-label="筛选日志分类">{['all',...domains].map(key=><button type="button" key={key} className={filter===key?'active':''} aria-pressed={filter===key} onClick={()=>setFilter(key)}>{key==='all'?'全部':domainName(key)}</button>)}</div>
         <div className="home-entry-list">{shown.map((post,index)=><article className="entry" key={post.id}>
           <span className="entry-number" aria-hidden="true">{String(index+1).padStart(2,'0')}</span>
@@ -65,6 +66,7 @@ export default function HomeClient({posts,books=[],bookCount=0,trails=[],content
         <div className="reading-grid">
           <section className="reading-books" aria-labelledby="home-books-title">
             <header className="reading-panel-head"><div><small>THE SHELF / {bookCount} VOLUMES</small><h2 id="home-books-title">书单</h2></div></header>
+            <p className="mobile-swipe-hint">左右滑动查看书单 <span aria-hidden="true">→</span></p>
             <div className="reading-book-list">{books.map((book,index)=><Link className="reading-book" href={`/books#book-${book.id}`} key={book.id}>
               <span className="reading-book-no">{String(index+1).padStart(2,'0')}</span>
               <span className="reading-book-cover">{book.cover_url?<img src={book.cover_url} alt={`${book.title} 封面`} loading="lazy"/>:<span aria-hidden="true">无封面</span>}</span>

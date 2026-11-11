@@ -60,6 +60,9 @@ alter table public.posts add column if not exists notification_sent_at timestamp
 create table if not exists public.email_deliveries (id uuid primary key default gen_random_uuid(),post_id uuid not null references public.posts(id) on delete cascade,subscriber_id uuid not null references public.subscribers(id) on delete cascade,email text not null,status text not null default 'sending' check (status in ('sending','sent','failed')),provider_id text,error text default '',created_at timestamptz not null default now(),updated_at timestamptz not null default now(),unique(post_id,subscriber_id));
 create index if not exists email_deliveries_post_status_idx on public.email_deliveries(post_id,status);
 alter table public.email_deliveries enable row level security;
+create table if not exists public.email_campaign_deliveries (id uuid primary key default gen_random_uuid(),campaign_id uuid not null references public.email_campaigns(id) on delete cascade,subscriber_id uuid not null references public.subscribers(id) on delete cascade,email text not null,status text not null default 'pending' check(status in ('pending','sending','sent','failed','skipped')),provider_id text,error text not null default '',created_at timestamptz not null default now(),updated_at timestamptz not null default now(),unique(campaign_id,subscriber_id));
+create index if not exists email_campaign_deliveries_status_idx on public.email_campaign_deliveries(campaign_id,status);
+alter table public.email_campaign_deliveries enable row level security;
 drop policy if exists "authenticated author reads deliveries" on public.email_deliveries;
 create policy "authenticated author reads deliveries" on public.email_deliveries for select to authenticated using (true);
 
@@ -137,9 +140,10 @@ create or replace function public.is_site_admin() returns boolean language sql s
 revoke all on function public.is_site_admin() from public,anon;
 grant execute on function public.is_site_admin() to authenticated,service_role;
 drop function if exists public.get_public_comments(text);
-create function public.get_public_comments(p_post_slug text) returns table(id uuid,parent_id uuid,name text,body text,created_at timestamptz) language sql stable security definer set search_path=public as $$select c.id,c.parent_id,c.name,c.body,c.created_at from public.comments c where c.status='approved' and c.post_slug=p_post_slug and char_length(p_post_slug) between 1 and 180 order by c.created_at desc$$;
+create function public.get_public_comments(p_post_slug text) returns table(id uuid,parent_id uuid,name text,body text,created_at timestamptz) language sql stable security definer set search_path=public as $$select c.id,c.parent_id,c.name,c.body,c.created_at from public.comments c where c.kind='comment' and c.status='approved' and c.post_slug=p_post_slug and char_length(p_post_slug) between 1 and 180 order by c.created_at desc$$;
 revoke all on function public.get_public_comments(text) from public;
 grant execute on function public.get_public_comments(text) to anon,authenticated,service_role;
+alter table public.comments add constraint comments_message_has_no_post_slug check(kind<>'message' or post_slug is null);
 create table if not exists public.post_views (post_id uuid primary key references public.posts(id) on delete cascade,view_count bigint not null default 0 check(view_count>=0),last_viewed_at timestamptz);
 alter table public.post_views enable row level security;
 drop policy if exists "admin reads post views" on public.post_views;
@@ -178,6 +182,9 @@ drop policy if exists "authenticated author reads campaigns" on public.email_cam
 create policy "admin manages campaigns" on public.email_campaigns for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
 drop policy if exists "authenticated author reads deliveries" on public.email_deliveries;
 create policy "admin manages deliveries" on public.email_deliveries for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
+alter table public.email_campaigns drop constraint if exists email_campaigns_status_check;
+alter table public.email_campaigns add constraint email_campaigns_status_check check(status in ('preparing','sending','sent','partial','failed'));
+create policy "admin manages campaign deliveries" on public.email_campaign_deliveries for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
 drop policy if exists "published trails are public" on public.trails;
 drop policy if exists "authenticated author manages trails" on public.trails;
 create policy "published trails are public" on public.trails for select using(status='published');
@@ -188,9 +195,10 @@ create policy "published trail items are public" on public.trail_items for selec
 create policy "admin manages trail items" on public.trail_items for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
 alter table public.subscribers add column if not exists confirmation_sent_at timestamptz;
 
-revoke all on table public.comments,public.subscribers,public.email_campaigns,public.email_deliveries,public.rate_limits,public.site_admins,public.post_views from anon;
+revoke all on table public.comments,public.subscribers,public.email_campaigns,public.email_deliveries,public.email_campaign_deliveries,public.rate_limits,public.site_admins,public.post_views from anon;
 revoke all on table public.rate_limits,public.site_admins from authenticated;
 grant select on table public.posts,public.site_content,public.books,public.trails,public.trail_items to anon,authenticated;
 grant select on table public.post_views to authenticated;
+grant select on table public.email_campaign_deliveries to authenticated;
 alter default privileges for role postgres in schema public revoke all on tables from anon;
 commit;

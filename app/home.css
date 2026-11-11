@@ -255,6 +255,8 @@
   background: var(--paper);
 }
 
+.home-page .mobile-swipe-hint { display: none; }
+
 .home-page :is(a, button, input, textarea):focus-visible {
   outline-color: var(--accent);
 }
@@ -604,6 +606,26 @@
   }
 }
 
+@media (min-width: 601px) and (max-width: 960px) {
+  .home-page .field-hero { padding-bottom: 28px; }
+  .home-page .hero-intro { padding-bottom: 34px; }
+  .home-page .hero-latest {
+    justify-self: stretch;
+    width: 100%;
+    min-height: 0;
+    margin: 0 0 30px;
+    padding: 20px 28px;
+    transform: none;
+    box-shadow: 8px 10px 0 rgba(39,35,30,.09);
+  }
+  .home-page .hero-latest:hover { transform: none; box-shadow: 8px 10px 0 rgba(39,35,30,.09); }
+  .home-page .hero-paperclip,.home-page .hero-latest::after { display: none; }
+  .home-page .hero-latest-copy { min-height: 0; padding: 14px 0; }
+  .home-page .hero-latest h2 { margin: 6px 0; font-size: clamp(22px,3vw,28px); line-height: 1.35; }
+  .home-page .hero-latest-copy p { display: none; }
+  .home-page .hero-latest footer { padding-top: 10px; }
+}
+
 @media (max-width: 800px) {
   .home-page .site-header.nav-open nav {
     background: var(--paper);
@@ -617,6 +639,9 @@
 }
 
 @media (max-width: 600px) {
+  .home-page .mobile-swipe-hint { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 0 0 8px; color: var(--muted); font: 12px/1.5 var(--mono); }
+  .home-page .mobile-swipe-hint span { color: var(--accent); font-size: 16px; }
+  .home-page .reading-books .mobile-swipe-hint { margin: 18px 0 -12px; }
   .home-page .wordmark,
   .home-page .hero-next,
   .home-page .all-logs-link,

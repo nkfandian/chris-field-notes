@@ -34,7 +34,10 @@ export default async function SubscribersPage(){
     db.from('email_deliveries').select('id,post_id,status,created_at').order('created_at',{ascending:false}).limit(500),
     db.from('posts').select('id,title,slug,notification_sent_at').order('updated_at',{ascending:false}).limit(200)
   ])
-  const manual=(campaigns||[]).map(x=>({id:`campaign-${x.id}`,type:'manual',title:x.subject,total:x.recipient_count,status:x.status,created_at:x.sent_at||x.created_at}))
+  const campaignIds=(campaigns||[]).map(x=>x.id)
+  const {data:trackedRows}=campaignIds.length?await db.from('email_campaign_deliveries').select('campaign_id').in('campaign_id',campaignIds).order('created_at',{ascending:false}).limit(1000):{data:[]}
+  const tracked=new Set((trackedRows||[]).map(row=>row.campaign_id))
+  const manual=(campaigns||[]).map(x=>({id:`campaign-${x.id}`,campaignId:x.id,type:'manual',title:x.subject,total:x.recipient_count,status:x.status,tracked:tracked.has(x.id),created_at:x.sent_at||x.created_at}))
   const history=[...automaticHistory(deliveries,posts),...manual].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,5)
   // 进页面即视为已看：导航栏的订阅用户气泡清零。
   await markStudioSeen(db,'subscribers')

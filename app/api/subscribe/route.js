@@ -1,5 +1,7 @@
 import {createAdminClient} from '@/lib/supabase/admin'
 import {cleanText,clientKey,enforceRateLimit,jsonMutationGuard,parseJsonBody,subjectKey,validEmail} from '@/lib/security'
+import {idempotencyKey,sendEmail} from '@/lib/resend'
+import {SITE_URL} from '@/lib/email-template'
 
 // 单次确认：提交邮箱即生效，不发送确认邮件。退订入口在每封邮件底部。
 export async function POST(request){
@@ -7,7 +9,7 @@ export async function POST(request){
   const blocked=jsonMutationGuard(request,2048);if(blocked)return blocked
   const parsed=await parseJsonBody(request,2048);if(parsed.response)return parsed.response
   const body=parsed.data;if(!body||typeof body!=='object'||Array.isArray(body))return Response.json({error:'请求格式无效。'},{status:400})
-  const ok={ok:true,message:'订阅成功。新日志发布时会发送到这个邮箱。'}
+  const ok={ok:true,message:'请求已收到。新订阅已生效；若此前退订，请到邮箱确认恢复。'}
   if(body.website)return Response.json(ok)
   const email=cleanText(body.email,160).toLowerCase();if(!validEmail(email))return Response.json({error:'请输入有效邮箱。'},{status:400})
   const db=createAdminClient()
@@ -19,6 +21,18 @@ export async function POST(request){
   if(!existing){
    const {error}=await db.from('subscribers').insert({email,source:'website',status:'active',verified_at:now})
    if(error&&error.code!=='23505')throw error
+  }else if(existing.status==='unsubscribed'){
+   // A public form cannot prove that the requester owns this address.
+   const token=crypto.randomUUID()
+   const link=`${SITE_URL}/subscribe/confirm?token=${token}`
+   const {error}=await db.from('subscribers').update({confirmation_token:token,confirmation_sent_at:now,updated_at:now}).eq('id',existing.id).eq('status','unsubscribed')
+   if(error)throw error
+   const sent=await sendEmail({
+    from:process.env.NOTIFICATION_FROM,to:[email],subject:'确认恢复订阅｜CHRIS / FIELD NOTES',
+    text:`有人请求恢复此邮箱对 CHRIS / FIELD NOTES 的订阅。若是你本人，请在 24 小时内打开：${link}\n\n若不是你，请忽略这封邮件。`,
+    html:`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="margin:0;background:#f4f0e7;color:#27231e;font-family:serif"><div style="max-width:560px;margin:auto;padding:36px 24px"><div style="border-bottom:1px solid #d2c8b8;padding-bottom:16px;font:13px monospace;letter-spacing:.12em">CHRIS / FIELD NOTES</div><h1 style="margin:32px 0 16px;font-size:26px">确认恢复订阅</h1><p style="font-size:16px;line-height:1.8">有人请求恢复此邮箱的订阅。若是你本人，请在 24 小时内点击下方链接。</p><p style="margin:28px 0"><a href="${link}" style="display:inline-block;padding:12px 18px;background:#27231e;color:#f4f0e7;text-decoration:none;font:14px monospace">确认恢复订阅 →</a></p><p style="font-size:14px;line-height:1.8;color:#71695f">若不是你，请忽略这封邮件。</p></div></body></html>`
+   },idempotencyKey('subscription-reactivation',existing.id,token))
+   if(!sent.ok)console.error('reactivation email failed',sent.error)
   }else if(existing.status!=='active'||!existing.verified_at){
    const {error}=await db.from('subscribers').update({status:'active',verified_at:now,updated_at:now}).eq('id',existing.id)
    if(error)throw error
