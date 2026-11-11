@@ -17,10 +17,12 @@ create or replace function public.get_public_comments(p_post_slug text)
 revoke all on function public.get_public_comments(text) from public;
 grant execute on function public.get_public_comments(text) to anon,authenticated,service_role;
 
--- Include the earlier site_content fix so one SQL run closes both read paths.
+-- The admin-only policy below already grants authenticated admins access to
+-- all keys. Keep the public policy free of is_site_admin(): anon cannot EXECUTE
+-- that function, and PostgreSQL may evaluate it even for key='home'.
 drop policy if exists "site content is public" on public.site_content;
 create policy "site content is public" on public.site_content
-  for select using (key in ('home','about') or public.is_site_admin());
+  for select to anon,authenticated using (key in ('home','about'));
 
 -- Durable per-recipient state for manual campaigns. Old campaign rows remain
 -- historical and are intentionally not backfilled as if they were sent.

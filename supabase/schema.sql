@@ -155,7 +155,7 @@ grant execute on function public.record_post_view(text) to service_role;
 drop policy if exists "site content is public" on public.site_content;
 drop policy if exists "authenticated author inserts site content" on public.site_content;
 drop policy if exists "authenticated author updates site content" on public.site_content;
-create policy "site content is public" on public.site_content for select using(key in ('home','about') or public.is_site_admin());
+create policy "site content is public" on public.site_content for select to anon,authenticated using(key in ('home','about'));
 create policy "admin manages site content" on public.site_content for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
 drop policy if exists "published posts are public" on public.posts;
 drop policy if exists "authenticated author can insert" on public.posts;

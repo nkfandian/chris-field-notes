@@ -428,7 +428,7 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 
 ### 8.2 权限模型
 
-- 匿名用户只可读取已发布日志、公开书籍、已发布轨迹、`site_content` 的 `home`/`about`；需执行 `20261111_security_and_campaigns.sql` 才能保证线上数据库也收紧。
+- 匿名用户只可读取已发布日志、公开书籍、已发布轨迹、`site_content` 的 `home`/`about`；需执行 `20261111_security_and_campaigns.sql` 才能保证线上数据库也正确开放公开行。旧版 `site_content` RLS 在匿名策略中调用了匿名无权执行的 `is_site_admin()`，只读实测 `home` 行返回 401；新版策略不再这样调用，管理员通过单独的 `admin manages site content` 策略访问后台 key。
 - 匿名用户不能直接读取 `comments`、`subscribers`、邮件、限流、管理员和浏览量表。
 - 公开评论通过 `get_public_comments()` RPC 获取，且按 `kind='comment'` 限制，避免泄露邮箱、审核状态及私下留言。
 - 浏览量写入通过 service role 调用 `record_post_view()`。
@@ -747,7 +747,7 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 12. ~~根目录旧静态站仍在 Git 中~~：已于 2026-10-18 删除。
 13. ~~CSS 兼容性构建警告~~：已于 2026-10-02 修复，当前构建无警告。
 14. **`script-src` 仍允许 `'unsafe-inline'`**：Next.js 15 App Router 在没有 nonce 时把 RSC flight 写进内联 `<script>`（`next` 的 `app-render/use-flight-response.js`）。`app/components/site-analytics.js` 还有一段内联 `window.va` 队列。CSP 是 `next.config.mjs` 里的静态头，仓库没有 middleware，无法按请求发 nonce；哈希也盖不住每次不同的 flight。若要去掉，应新增按请求 nonce 的 middleware，把 CSP 从静态头挪过去（两套 CSP 取交集，静态头里留下 `'unsafe-inline'` 等于没去掉），并确认公开页与 `/studio` 能水合。不要为此引入新的第三方脚本域名。
-15. **生产数据库需执行 `supabase/migrations/20261111_security_and_campaigns.sql`**：同一事务修复私下留言的公开读取边界、收紧 `site_content` 读取并创建手动群发逐人记录表。代码发布前应先执行迁移；若未执行，新版 `/api/campaigns` 会返回 503，禁止在缺少逐人记录时继续不安全的群发。此 SQL 包含此前待执行的 `20261111_site_content_rls.sql`，无需重复运行后者。
+15. **生产数据库需执行 `supabase/migrations/20261111_security_and_campaigns.sql`**：同一事务修复私下留言的公开读取边界、修复 `site_content` 匿名 401 并限制后台 key、创建手动群发逐人记录表。代码发布前应先执行迁移；若未执行，新版 `/api/campaigns` 会返回 503，禁止在缺少逐人记录时继续不安全的群发。此 SQL 包含并修正此前的 `20261111_site_content_rls.sql`，无需重复运行后者。2026-11-11 只读实测：用网站公开 key 查询 `site_content?key=eq.home` 返回 `42501 permission denied for function is_site_admin`，原因是旧策略在 anon 分支调用了无 EXECUTE 授权的函数。
 
 ---
 
@@ -879,7 +879,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
-| 2026-11-11 | 审查整改：升级 Next.js 15.5.28、锁定 sharp 0.35.5/PostCSS 8.5.23；留言提交强制清空文章链接并新增 `kind='comment'` 公开 RPC 边界；已退订邮箱改用 24 小时邮件确认恢复；手动群发增加逐人记录、固定任务 ID、断点重试与退订检查；首页恢复 5 分钟 ISR 并减少正文查询、管理员入口客户端单独识别；平板首屏卡片压缩、手机横向列表加提示、页脚返回顶部补锚点。 | `npm audit --omit=dev` 为 0 告警。**上线前须在 Supabase SQL 编辑器执行 `supabase/migrations/20261111_security_and_campaigns.sql`**；它也包含前次待执行的 `site_content` RLS 修正。真实邮箱发送和登录态后台仍需在受控环境验证，不能用测试文章触发生产群发。 |
+| 2026-11-11 | 审查整改：升级 Next.js 15.5.28、锁定 sharp 0.35.5/PostCSS 8.5.23；留言提交强制清空文章链接并新增 `kind='comment'` 公开 RPC 边界；已退订邮箱改用 24 小时邮件确认恢复；手动群发增加逐人记录、固定任务 ID、断点重试与退订检查；首页恢复 5 分钟 ISR 并减少正文查询、管理员入口客户端单独识别；平板首屏卡片压缩、手机横向列表加提示、页脚返回顶部补锚点。 | `npm audit --omit=dev` 为 0 告警。**上线前须在 Supabase SQL 编辑器执行 `supabase/migrations/20261111_security_and_campaigns.sql`**；只读实测旧 `site_content` 匿名查询因函数权限返回 401，新 SQL 改为公开行单独策略，并包含前次 RLS 修正。真实邮箱发送和登录态后台仍需在受控环境验证，不能用测试文章触发生产群发。 |
 | 2026-11-11 | 前后端安全加固、Bug 修复与体验优化：①修复 `interaction-form.js`、`subscribe-form.js`、`subscriber-manager.js` 在 `await fetch` 后调用 `e.currentTarget.reset()` 抛空指针导致表单不清空、评论提交成功提示不显示的问题，补齐同步 `busy` 防重锁；②修复 `/studio` 首页顶部导航栏缺失未读数字气泡（`StudioPage` 补查 `getStudioBadgeCounts` 传入 `Studio`），并在 `StudioNav` 客户端记录已访问板块即时消退气泡；③区分“网站留言”与“日志评论”的审核文案（标记已读/已归档 vs 通过并公开/已公开）及回复邮件按钮（`lib/comment-reply.js` 留言回复不再显示“在网站查看回复”）；④安全加固：收紧 `site_content` RLS 公开 SELECT 仅限 `home` / `about`（见 `supabase/migrations/20261111_site_content_rls.sql`），防止匿名读取 `studio_seen_*` 站长活动时间；`lib/security.js` 优先取 `cf-connecting-ip` / `x-vercel-forwarded-for` 防伪造 IP 绕过限流，收紧无 `Origin` 头的 `originGuard`；`next.config.mjs` 为 `/api/studio/*` 和 `/api/uploads/*` 补齐 `noindex` 头；R2 预签名锁定 `ContentLength`；⑤缓存与后台体验：`lib/supabase/server.js` 新增不读 Cookie 的 `createPublicClient()` 恢复 `/logs/[slug]`、`/books`、`/trails`、`/about`、`/feed.xml`、`/sitemap.xml` 的 ISR 缓存；后台删文改走 `DELETE /api/posts`，评论审核补齐 `revalidatePath`；日志编辑器增加未保存离开提醒，轨迹编辑器补齐键盘无障碍与移动端滚动定位，页脚 `#message` 锚点自动展开，分享弹窗支持 `Esc` 关闭，文章页相关书籍补齐短评展示。 | 代码审查发现的线上报错、逻辑错位与安全隐患一次性收敛。**注意**：上线后可在 Supabase SQL 编辑器执行 `supabase/migrations/20261111_site_content_rls.sql` 收紧线上 `site_content` 表的匿名读取权限。 |
 | 2026-11-10 | 隐私政策第 02、03 段改为按数据用途和服务类型说明，去掉 Vercel Web Analytics、Google Analytics、Supabase、Resend、Cloudflare 的品牌列举。 | 用户担心公开技术栈信息成为攻击者线索；文案继续说明第三方托管/存储/邮件处理、保存与退订方式，实际服务配置未变。 |
 | 2026-11-10 | 隐私政策由九个章节精简为四段，按实际访问统计、订阅、评论、服务商和退订方式说明；页脚“给我留言”增加 `id="message"`，修复隐私页 `/#message` 联系入口；更新页面日期和 SEO 描述。 | 用户要求简洁并反馈留言链接失效。锚点落在全站页脚的留言折叠区，点击“给我留言”即可展开表单；政策仍保留信息种类、用途、保存与联系人等必要说明。 |
