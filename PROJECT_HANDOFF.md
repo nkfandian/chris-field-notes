@@ -136,7 +136,7 @@ curl -sS https://www.chrisreading.ink/feed.xml
 
 | 层 | 技术 |
 |---|---|
-| Web 框架 | Next.js `15.5.28`，App Router；`sharp` 锁定 `0.35.5`、`postcss` 锁定 `8.5.23` 以修复生产依赖告警 |
+| Web 框架 | Next.js `15.5.29`，App Router；`sharp` 锁定 `0.35.5`、`postcss` 锁定 `8.5.23` 以修复生产依赖告警 |
 | UI | React `19.2.7` / React DOM `19.2.7` |
 | 数据与认证 | Supabase（Postgres、Auth、RLS、RPC） |
 | Supabase 客户端 | `@supabase/ssr 0.6.1`、`@supabase/supabase-js 2.110.5` |
@@ -279,8 +279,7 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 
 ### 7.1 入口与公共基础
 
-- `app/layout.js`：全站 metadata、结构化数据、字体变量挂载。
-- `lib/fonts.js`：Noto Serif SC 与 IBM Plex Mono 经 `next/font/google` **构建时下载、自托管**（不再请求 fonts.googleapis.com，国内访客首屏不会被字体卡住）。中文字体按 unicode-range 切片，不预加载。不要再在 CSS 里 `@import` Google Fonts。
+- `app/layout.js`、`app/fonts.css`：全站 metadata、结构化数据和字体变量。字体改由锁定版本的 Fontsource 包在构建时打包自托管，避免 Vercel 构建时调用 Google Fonts 失败；`Noto Serif SC Variable` 按 unicode-range 切片，`IBM Plex Mono` 只载入拉丁字重 400/500。访客不请求 Google Fonts，也不要在 CSS 里 `@import` 远程字体。
 - `app/components/site-analytics.js`：只加载 Vercel Web Analytics（2026-10-18 起已移除 AdSense 与 Google Analytics，站点不再加载任何 Google 脚本）；后台和带令牌页面（`/studio`、`/reset-password`、`/subscribe/confirm`、`/unsubscribe`）一律不加载。
 - `app/page.js`：用不读 Cookie 的公开客户端每 5 分钟重建首页；列表不取正文，只有结构化数据前 10 篇取正文。后台入口由 `site-header.js` 在有登录态时单独识别。
 - `app/home-client.js`：首页首屏、日志筛选、书单与轨迹区块。
@@ -636,7 +635,7 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 
 ### 14.2 字体
 
-- 中文正文/标题：`Noto Serif SC`，长图优先 `Songti SC`。
+- 中文正文/标题：Fontsource 的 `Noto Serif SC Variable`，长图优先 `Songti SC`。
 - 英文/数据/后台标签：`IBM Plex Mono`。
 - 英文引语可使用 Georgia 作为衬线补充。
 
@@ -879,6 +878,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-11-11 | Next.js 升至 15.5.29；字体由 `next/font/google` 构建下载改为锁定的 Fontsource 自托管资源，保留中文 unicode-range 切片与原字体变量。 | 安全修复分支在 Vercel 预览构建时，`next/font/google` 解析字体 URL 报错；新方式不依赖构建期间访问 Google Fonts。生产 SQL 迁移仍需先执行，且须确认预览构建成功后再发布 main。 |
 | 2026-11-11 | 审查整改：升级 Next.js 15.5.28、锁定 sharp 0.35.5/PostCSS 8.5.23；留言提交强制清空文章链接并新增 `kind='comment'` 公开 RPC 边界；已退订邮箱改用 24 小时邮件确认恢复；手动群发增加逐人记录、固定任务 ID、断点重试与退订检查；首页恢复 5 分钟 ISR 并减少正文查询、管理员入口客户端单独识别；平板首屏卡片压缩、手机横向列表加提示、页脚返回顶部补锚点。 | `npm audit --omit=dev` 为 0 告警。**上线前须在 Supabase SQL 编辑器执行 `supabase/migrations/20261111_security_and_campaigns.sql`**；只读实测旧 `site_content` 匿名查询因函数权限返回 401，新 SQL 改为公开行单独策略，并包含前次 RLS 修正。真实邮箱发送和登录态后台仍需在受控环境验证，不能用测试文章触发生产群发。 |
 | 2026-11-11 | 前后端安全加固、Bug 修复与体验优化：①修复 `interaction-form.js`、`subscribe-form.js`、`subscriber-manager.js` 在 `await fetch` 后调用 `e.currentTarget.reset()` 抛空指针导致表单不清空、评论提交成功提示不显示的问题，补齐同步 `busy` 防重锁；②修复 `/studio` 首页顶部导航栏缺失未读数字气泡（`StudioPage` 补查 `getStudioBadgeCounts` 传入 `Studio`），并在 `StudioNav` 客户端记录已访问板块即时消退气泡；③区分“网站留言”与“日志评论”的审核文案（标记已读/已归档 vs 通过并公开/已公开）及回复邮件按钮（`lib/comment-reply.js` 留言回复不再显示“在网站查看回复”）；④安全加固：收紧 `site_content` RLS 公开 SELECT 仅限 `home` / `about`（见 `supabase/migrations/20261111_site_content_rls.sql`），防止匿名读取 `studio_seen_*` 站长活动时间；`lib/security.js` 优先取 `cf-connecting-ip` / `x-vercel-forwarded-for` 防伪造 IP 绕过限流，收紧无 `Origin` 头的 `originGuard`；`next.config.mjs` 为 `/api/studio/*` 和 `/api/uploads/*` 补齐 `noindex` 头；R2 预签名锁定 `ContentLength`；⑤缓存与后台体验：`lib/supabase/server.js` 新增不读 Cookie 的 `createPublicClient()` 恢复 `/logs/[slug]`、`/books`、`/trails`、`/about`、`/feed.xml`、`/sitemap.xml` 的 ISR 缓存；后台删文改走 `DELETE /api/posts`，评论审核补齐 `revalidatePath`；日志编辑器增加未保存离开提醒，轨迹编辑器补齐键盘无障碍与移动端滚动定位，页脚 `#message` 锚点自动展开，分享弹窗支持 `Esc` 关闭，文章页相关书籍补齐短评展示。 | 代码审查发现的线上报错、逻辑错位与安全隐患一次性收敛。**注意**：上线后可在 Supabase SQL 编辑器执行 `supabase/migrations/20261111_site_content_rls.sql` 收紧线上 `site_content` 表的匿名读取权限。 |
 | 2026-11-10 | 隐私政策第 02、03 段改为按数据用途和服务类型说明，去掉 Vercel Web Analytics、Google Analytics、Supabase、Resend、Cloudflare 的品牌列举。 | 用户担心公开技术栈信息成为攻击者线索；文案继续说明第三方托管/存储/邮件处理、保存与退订方式，实际服务配置未变。 |

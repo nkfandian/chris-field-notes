@@ -1,4 +1,8 @@
 import './globals.css'
+import '@fontsource-variable/noto-serif-sc/wght.css'
+import '@fontsource/ibm-plex-mono/latin-400.css'
+import '@fontsource/ibm-plex-mono/latin-500.css'
+import './fonts.css'
 import './public-theme.css'
 import './mobile.css'
 import './interaction.css'
@@ -9,7 +13,6 @@ import './utilities.css'
 import './footer.css'
 import './minimal.css'
 import SiteAnalytics from './components/site-analytics'
-import {mono,serif} from '@/lib/fonts'
 import StructuredData from './components/structured-data'
 import {AUTHOR_ID,AUTHOR_URL,PUBLISHER_ID,RSS_ALTERNATES,SITE_DESCRIPTION,SITE_KEYWORDS,SITE_LANGUAGE,SITE_LOCALE,SITE_NAME,SITE_URL,WEBSITE_ID,ogImage} from '@/lib/seo'
 
@@ -56,4 +59,4 @@ const siteSchema={'@context':'https://schema.org','@graph':[
   {'@type':'WebSite','@id':WEBSITE_ID,url:SITE_URL,name:SITE_NAME,alternateName:'FIELD NOTES',description:SITE_DESCRIPTION,inLanguage:SITE_LANGUAGE,author:{'@id':AUTHOR_ID},publisher:{'@id':PUBLISHER_ID},potentialAction:{'@type':'SearchAction',target:{'@type':'EntryPoint',urlTemplate:`${SITE_URL}/search?q={search_term_string}`} ,'query-input':'required name=search_term_string'}}
 ]}
 
-export default function RootLayout({children}){return <html lang={SITE_LANGUAGE} className={`${serif.variable} ${mono.variable}`}><head><link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title={SITE_NAME}/></head><body><StructuredData data={siteSchema}/><div className="grain"/>{children}<SiteAnalytics/></body></html>}
+export default function RootLayout({children}){return <html lang={SITE_LANGUAGE}><head><link rel="search" type="application/opensearchdescription+xml" href="/opensearch.xml" title={SITE_NAME}/></head><body><StructuredData data={siteSchema}/><div className="grain"/>{children}<SiteAnalytics/></body></html>}
