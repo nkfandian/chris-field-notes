@@ -11,8 +11,8 @@ const TABLE='email_campaign_deliveries'
 const STALE_SENDING_MS=15*60*1000
 const SENDS_PER_REQUEST=10
 
-function html(subject,body,token){
- const date=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Shanghai'})
+function html(subject,body,token,createdAt){
+ const date=new Date(createdAt).toLocaleDateString('sv-SE',{timeZone:'Asia/Shanghai'})
  const inner=articleHeader({title:subject,date})+postBodyHtml(body)+ctaButton(SITE_URL,'访问网站 →')
  return emailShell({preheader:emailPreview(body),inner,unsubscribeUrl:unsubscribeLink(token)})
 }
@@ -106,7 +106,7 @@ export async function POST(request){
    const claimed=await claimDeliveries(db,campaign.id,candidates.map(row=>row.subscriber_id),retryCutoff)
    const targets=candidates.filter(row=>claimed.has(row.subscriber_id))
    if(targets.length){
-   const {data:active,error:activeError}=await db.from('subscribers').select('id,manage_token').in('id',targets.map(row=>row.subscriber_id)).eq('status','active').not('verified_at','is',null)
+   const {data:active,error:activeError}=await db.from('subscribers').select('id,manage_token').in('id',targets.map(row=>row.subscriber_id)).eq('status','active').not('verified_at','is',null).lte('verified_at',campaign.created_at)
    if(activeError)throw activeError
    const activeById=new Map((active||[]).map(row=>[row.id,row]))
    const skipped=targets.filter(row=>!activeById.has(row.subscriber_id))
@@ -116,7 +116,7 @@ export async function POST(request){
    }
    const recipients=targets.filter(row=>activeById.has(row.subscriber_id))
    for(const recipient of recipients){
-    const result=await sendEmail({from:process.env.NOTIFICATION_FROM,to:[recipient.email],subject:campaign.subject,text:campaign.body,html:html(campaign.subject,campaign.body,activeById.get(recipient.subscriber_id).manage_token)},idempotencyKey('campaign',campaign.id,recipient.subscriber_id))
+    const result=await sendEmail({from:process.env.NOTIFICATION_FROM,to:[recipient.email],subject:campaign.subject,text:campaign.body,html:html(campaign.subject,campaign.body,activeById.get(recipient.subscriber_id).manage_token,campaign.created_at)},idempotencyKey('campaign',campaign.id,recipient.subscriber_id))
     const {error}=await db.from(TABLE).update({status:result.ok?'sent':'failed',provider_id:result.id,error:result.error||'',updated_at:new Date().toISOString()}).eq('campaign_id',campaign.id).eq('subscriber_id',recipient.subscriber_id).eq('status','sending')
     if(error)throw error
    }

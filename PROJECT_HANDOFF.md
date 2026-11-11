@@ -556,7 +556,7 @@ URL 只允许 `http(s)`，正文链接额外允许 `mailto:`；不要放宽到 `
 - 纯文本版本为“标题 + 正文纯文字 + 链接”。最长的现有日志（约 1.1 万字）生成的邮件约 68KB，低于 Gmail 102KB 截断线；特别长的文章发布前可留意。
 - 邮件带隐藏 preheader 和退订链接。
 - `email_deliveries` 使重试具备幂等性：已经成功的订阅者不会重复发送。
-- 手动群发（`/api/campaigns`）先每 100 人一组建立 `email_campaign_deliveries` 逐人状态，每次请求最多逐封处理 10 人并返回进度，浏览器继续请求直到没有可处理者；每封都使用固定 `campaignId` + 收件人 ID 的 Resend 幂等键。`pending`、显式重试范围内的 `failed` 与超过 15 分钟的 `sending` 行可重新领取；重试范围用同一个时间截点，避免本轮失败又立即无限重试。断网后用同一 ID 继续，历史没有逐人记录的旧活动不允许安全重试。发送前再次核对订阅状态，已退订者标为 `skipped`。此功能依赖 `20261111_security_and_campaigns.sql`。
+- 手动群发（`/api/campaigns`）先每 100 人一组建立 `email_campaign_deliveries` 逐人状态，每次请求最多逐封处理 10 人并返回进度，浏览器继续请求直到没有可处理者；每封都使用固定 `campaignId` + 收件人 ID 的 Resend 幂等键，邮件日期固定为活动创建日。`pending`、显式重试范围内的 `failed` 与超过 15 分钟的 `sending` 行可重新领取；重试范围用同一个时间截点，避免本轮失败又立即无限重试。断网后用同一 ID 继续，历史没有逐人记录的旧活动不允许安全重试。发送前再次核对订阅状态和 `verified_at`，已退订或活动创建后重新订阅者标为 `skipped`。此功能依赖 `20261111_security_and_campaigns.sql`。
 
 ### 11.3 订阅生命周期
 
