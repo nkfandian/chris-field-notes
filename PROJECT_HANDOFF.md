@@ -1,6 +1,6 @@
 # CHRIS / FIELD NOTES 项目交接文档
 
-> 最后核对：2026-11-11（Asia/Shanghai）
+> 最后核对：2026-11-12（Asia/Shanghai）
 >
 > 目标：让新的开发者或大模型无需依赖历史聊天记录，即可安全地继续修改、验证和发布本项目。
 
@@ -427,11 +427,12 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 
 ### 8.2 权限模型
 
-- 匿名用户只可读取已发布日志、公开书籍、已发布轨迹、`site_content` 的 `home`/`about`；需执行 `20261111_security_and_campaigns.sql` 才能保证线上数据库也正确开放公开行。旧版 `site_content` RLS 在匿名策略中调用了匿名无权执行的 `is_site_admin()`，只读实测 `home` 行返回 401；新版策略不再这样调用，管理员通过单独的 `admin manages site content` 策略访问后台 key。
+- 匿名用户只可读取已发布日志、公开书籍、已发布轨迹、`site_content` 的 `home`/`about`。`20261111_security_and_campaigns.sql` 已于 2026-11-12 在生产库执行，修复旧版 `site_content` RLS 调用匿名无权执行的 `is_site_admin()` 导致公开行返回 401；管理员通过单独的 `admin manages site content` 策略访问后台 key。
 - 匿名用户不能直接读取 `comments`、`subscribers`、邮件、限流、管理员和浏览量表。
 - 公开评论通过 `get_public_comments()` RPC 获取，且按 `kind='comment'` 限制，避免泄露邮箱、审核状态及私下留言。
 - 浏览量写入通过 service role 调用 `record_post_view()`。
 - 后台 CRUD 要求已登录且 `is_site_admin()` 为真。
+- `rls_auto_enable()` 是 `ensure_rls` 事件触发器的 `SECURITY DEFINER` 函数；`20261112_restrict_rls_event_trigger.sql` 已于 2026-11-12 执行（迁移版本 `20261112000941`），撤销 API 角色的直接执行授权，保留数据库所有者执行权限。安全顾问仍会提示两个有意保留的可调用 definer 函数：公开评论 RPC 仅返回 `kind='comment'` 的已审核公开字段，管理员检查函数仅返回布尔值；`rate_limits` / `site_admins` 无 RLS 策略是有意拒绝直接访问。
 - 初始化迁移会把最早创建的 Auth 用户写入 `site_admins`。新增管理员应显式插入其 `auth.users.id`，不要放宽 RLS 为“所有 authenticated”。
 
 ---
@@ -746,7 +747,7 @@ SEO 不能保证即时流量。代码只负责可抓取、语义、内部链接�
 12. ~~根目录旧静态站仍在 Git 中~~：已于 2026-10-18 删除。
 13. ~~CSS 兼容性构建警告~~：已于 2026-10-02 修复，当前构建无警告。
 14. **`script-src` 仍允许 `'unsafe-inline'`**：Next.js 15 App Router 在没有 nonce 时把 RSC flight 写进内联 `<script>`（`next` 的 `app-render/use-flight-response.js`）。`app/components/site-analytics.js` 还有一段内联 `window.va` 队列。CSP 是 `next.config.mjs` 里的静态头，仓库没有 middleware，无法按请求发 nonce；哈希也盖不住每次不同的 flight。若要去掉，应新增按请求 nonce 的 middleware，把 CSP 从静态头挪过去（两套 CSP 取交集，静态头里留下 `'unsafe-inline'` 等于没去掉），并确认公开页与 `/studio` 能水合。不要为此引入新的第三方脚本域名。
-15. **生产数据库需执行 `supabase/migrations/20261111_security_and_campaigns.sql`**：同一事务修复私下留言的公开读取边界、修复 `site_content` 匿名 401 并限制后台 key、创建手动群发逐人记录表。代码发布前应先执行迁移；若未执行，新版 `/api/campaigns` 会返回 503，禁止在缺少逐人记录时继续不安全的群发。此 SQL 包含并修正此前的 `20261111_site_content_rls.sql`，无需重复运行后者。2026-11-11 只读实测：用网站公开 key 查询 `site_content?key=eq.home` 返回 `42501 permission denied for function is_site_admin`，原因是旧策略在 anon 分支调用了无 EXECUTE 授权的函数。
+15. **生产迁移已执行**：2026-11-12 通过 Supabase 连接执行 `supabase/migrations/20261111_security_and_campaigns.sql`（迁移版本 `20261112000728`）。同一事务修复私下留言的公开读取边界、修复 `site_content` 匿名 401 并限制后台 key、创建手动群发逐人记录表。已验证公开 `home` 为 200、后台活动 key 为 `[]`、匿名读取投递表为 401、公开评论 RPC 为 200。此 SQL 包含并修正此前的 `20261111_site_content_rls.sql`，无需重复运行后者。
 
 ---
 
@@ -851,13 +852,14 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 ## 21. 当前结论
 
-截至 2026-11-11（本次 SQL 迁移上线前）：
+截至 2026-11-12（数据库迁移已执行）：
 
 - 线上站点已运行。
 - 远端 `main` 是唯一的生产基线；本地 `deploy-sync` 只是历史开发线（见第 2.1 节）。
 - 公共前端、Studio 和日志长图已经统一为纸张米白、深墨和纸靛蓝体系。
 - SEO 作者页、栏目页、RSS、Sitemap、结构化数据和 IndexNow 已部署。
-- 浏览量、新邮箱单次订阅、已退订邮箱邮件确认恢复、评论审核、逐人邮件投递状态和管理员白名单已在代码中实现；`20261111_security_and_campaigns.sql` 尚须在线上执行后才算完整启用。
+- 浏览量、新邮箱单次订阅、已退订邮箱邮件确认恢复、评论审核、逐人邮件投递状态和管理员白名单已在代码中实现；`20261111_security_and_campaigns.sql` 已执行并验证。逐人投递功能依赖代码与迁移同时在线，发布 main 后须核对 Vercel 部署成功。
+- `20261112_restrict_rls_event_trigger.sql` 已执行并验证：`anon` / `authenticated` 无权直接执行，数据库所有者保有权限且事件触发器仍启用。Supabase 安全顾问另有既存提示：`pg_net` 扩展位于 public、Auth 泄露密码保护未开启；这两项尚未改动，调整前应检查平台依赖和后台 Auth 配置。
 - 最新 900×500 微信引流图存在于独立工作目录，尚未并入网站仓库。
 
 下一位接手者可以直接从本文的第 2、4、5、7、8、9、10、18、22 节开始工作，无需读取此前对话。
@@ -878,6 +880,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-11-12 | 生产库执行 `20261111_security_and_campaigns.sql`（版本 `20261112000728`）并验证匿名 REST/RPC；执行 `20261112_restrict_rls_event_trigger.sql`（版本 `20261112000941`），撤销 API 角色对 RLS 事件触发器函数的直接执行权限。 | 修复公开 `site_content` 401 与私下留言公开 RPC 边界、创建逐人邮件投递表；安全顾问指出事件触发器函数不应直接暴露给匿名/普通登录角色。Vercel 修复分支预览 `839ea49` 已 success，发布 main 后须核对正式部署。 |
 | 2026-11-11 | 删除首页 ISR 请求中遗留的 `getSiteAdmin(db)` 调用。 | Vercel 带 Supabase 环境变量预渲染首页时调用了已移除的函数，导致预览部署失败；本地无数据库变量时的构建无法覆盖该路径。 |
 | 2026-11-11 | Next.js 升至 15.5.29；字体由 `next/font/google` 构建下载改为锁定的 Fontsource 自托管资源，保留中文 unicode-range 切片与原字体变量。 | 安全修复分支在 Vercel 预览构建时，`next/font/google` 解析字体 URL 报错；新方式不依赖构建期间访问 Google Fonts。生产 SQL 迁移仍需先执行，且须确认预览构建成功后再发布 main。 |
 | 2026-11-11 | 审查整改：升级 Next.js 15.5.28、锁定 sharp 0.35.5/PostCSS 8.5.23；留言提交强制清空文章链接并新增 `kind='comment'` 公开 RPC 边界；已退订邮箱改用 24 小时邮件确认恢复；手动群发增加逐人记录、固定任务 ID、断点重试与退订检查；首页恢复 5 分钟 ISR 并减少正文查询、管理员入口客户端单独识别；平板首屏卡片压缩、手机横向列表加提示、页脚返回顶部补锚点。 | `npm audit --omit=dev` 为 0 告警。**上线前须在 Supabase SQL 编辑器执行 `supabase/migrations/20261111_security_and_campaigns.sql`**；只读实测旧 `site_content` 匿名查询因函数权限返回 401，新 SQL 改为公开行单独策略，并包含前次 RLS 修正。真实邮箱发送和登录态后台仍需在受控环境验证，不能用测试文章触发生产群发。 |
