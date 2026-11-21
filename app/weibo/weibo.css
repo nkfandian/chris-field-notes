@@ -38,10 +38,12 @@
 .weibo-body .photo::after{content:'';position:absolute;inset:0;background:#faf5ec;mix-blend-mode:multiply;pointer-events:none}
 .weibo-body figcaption{margin-top:.6rem;font:12px/1.5 var(--mono);color:var(--muted)}
 
-.weibo-comments{margin-top:1.4rem;padding-top:1.2rem;border-top:1px solid var(--line);max-width:680px}
-.weibo-comments .comment-list{margin-bottom:1.4rem}
+.weibo-comments{margin-top:1.4rem;padding:1.1rem 1.2rem 1.3rem;background:var(--paper-deep,#e9e1d4);border:1px solid var(--line);max-width:680px}
+.weibo-comments .comment-list{margin-bottom:1.2rem}
 .weibo-comments .comment:first-child{border-top:0;padding-top:0}
 .weibo-comments .comment{margin-top:0;padding:.9rem 0}
+.weibo-comments .comment p{font-size:.92rem;line-height:1.75}
+.weibo-comments .comment-replies{background:var(--paper)}
 .weibo-comments .comment-reply{margin-top:0}
 .weibo-comments .comment-empty{margin-bottom:1.2rem}
 .weibo-comments .interaction-form textarea{min-height:84px}
