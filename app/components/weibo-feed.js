@@ -57,32 +57,47 @@ export default function WeiboFeed({items=[],compact=false}){
   }catch{}
  },[])
 
- // 浏览量：条目进入视口一半时记一次，每条每页只记一次，30 分钟内不重复记。
+ // 浏览量：记一次的去重（每条每页一次、30 分钟内不重复）。
+ function recordView(slug){
+  if(!slug)return
+  if(recordedRef.current.has(slug))return
+  recordedRef.current.add(slug)
+  const key=`${VIEW_STORAGE_PREFIX}${slug}`
+  const now=Date.now()
+  let previous=0
+  try{previous=Number(localStorage.getItem(key)||0)}catch{}
+  if(previous&&now-previous<VIEW_WINDOW)return
+  try{localStorage.setItem(key,String(now))}catch{}
+  fetch('/api/views',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({slug}),keepalive:true}).catch(()=>{
+   try{if(Number(localStorage.getItem(key))===now)localStorage.removeItem(key)}catch{}
+  })
+ }
+
+ // 浏览量口径：①折叠的条目（首页紧凑模式）只在用户点「展开」时记一次，滑过不记；②不折叠的条目（/weibo 内页全文展示，用户是点「更多」进来读的）进入视口一半时记一次。
  useEffect(()=>{
   const root=listRef.current
   if(!root||!items.length)return
+  const foldableSlugs=new Set()
+  if(compact){
+   items.forEach(item=>{
+    const {text,hasImage,lineCount}=collapsedSummary(item.body)
+    if(text.length>46||lineCount>2||hasImage)foldableSlugs.add(item.slug)
+   })
+  }
   const observer=new IntersectionObserver(entries=>{
    for(const entry of entries){
     if(!entry.isIntersecting)continue
     const slug=entry.target.id
     if(!slug)continue
     observer.unobserve(entry.target)
-    if(recordedRef.current.has(slug))continue
-    recordedRef.current.add(slug)
-    const key=`${VIEW_STORAGE_PREFIX}${slug}`
-    const now=Date.now()
-    let previous=0
-    try{previous=Number(localStorage.getItem(key)||0)}catch{}
-    if(previous&&now-previous<VIEW_WINDOW)continue
-    try{localStorage.setItem(key,String(now))}catch{}
-    fetch('/api/views',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({slug}),keepalive:true}).catch(()=>{
-     try{if(Number(localStorage.getItem(key))===now)localStorage.removeItem(key)}catch{}
-    })
+    recordView(slug)
    }
   },{threshold:0.5})
-  root.querySelectorAll('article.weibo-entry').forEach(article=>observer.observe(article))
+  root.querySelectorAll('article.weibo-entry').forEach(article=>{
+   if(!foldableSlugs.has(article.id))observer.observe(article)
+  })
   return()=>observer.disconnect()
- },[items])
+ },[items,compact])
 
  useEffect(()=>{
   const syncHash=()=>{
@@ -114,7 +129,12 @@ export default function WeiboFeed({items=[],compact=false}){
  }
 
  function toggleBody(id){
+  const isExpanding=!expandedBody[id]
   setExpandedBody(prev=>({...prev,[id]:!prev[id]}))
+  if(isExpanding){
+   const item=items.find(x=>x.id===id)
+   if(item)recordView(item.slug)
+  }
  }
 
  if(!items.length)return null
