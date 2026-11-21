@@ -97,7 +97,7 @@ export default function WeiboFeed({items=[],compact=false}){
    const commentCount=item.comment_count??topComments.length
    const isOpen=Boolean(openComments[item.id])
    const {text:summaryText,hasImage,lineCount}=collapsedSummary(item.body)
-   const foldable=compact?(summaryText.length>46||lineCount>2||hasImage):(summaryText.length>110||lineCount>3||hasImage)
+   const foldable=compact&&(summaryText.length>46||lineCount>2||hasImage)
    const bodyExpanded=!foldable||Boolean(expandedBody[item.id])
    return <article className="weibo-entry" id={item.slug} key={item.id}>
     <span className="weibo-number" aria-hidden="true">{String(index+1).padStart(2,'0')}</span>
