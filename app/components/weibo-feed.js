@@ -170,8 +170,8 @@ export default function WeiboFeed({items=[],compact=false}){
       {bodyExpanded?<PostBody body={item.body}/>:<p className="weibo-collapsed-text" onClick={()=>toggleBody(item.id)}>{summaryText}</p>}
       {foldable&&<button type="button" className="weibo-toggle" aria-expanded={bodyExpanded} onClick={()=>toggleBody(item.id)}>{bodyExpanded?'收起 ↑':'展开全文 ↓'}</button>}
      </div>
-     {isOpen&&<div className="weibo-comments">
-      {topComments.length>0?<div className="comment-list">
+     {(topComments.length>0||isOpen)&&<div className="weibo-comments">
+      {topComments.length>0&&<div className="comment-list">
        {topComments.map(comment=><article className="comment" key={comment.id}>
         <header><b>{comment.name}</b><time dateTime={comment.created_at}>{new Date(comment.created_at).toLocaleDateString('zh-CN')}</time></header>
         <p>{comment.body}</p>
@@ -182,8 +182,11 @@ export default function WeiboFeed({items=[],compact=false}){
          </article>)}
         </div>}
        </article>)}
-      </div>:<p className="comment-empty">还没有人留下评论。</p>}
-      <InteractionForm kind="comment" postSlug={item.slug}/>
+      </div>}
+      {isOpen&&<>
+       {topComments.length===0&&<p className="comment-empty">还没有人留下评论。</p>}
+       <InteractionForm kind="comment" postSlug={item.slug}/>
+      </>}
      </div>}
     </div>
    </article>
