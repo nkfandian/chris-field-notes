@@ -19,7 +19,7 @@ export async function POST(request){
   const db=createAdminClient()
   if(!await enforceRateLimit(db,clientKey(request,`post-view:${slug.toLowerCase()}`),24,3600))return Response.json({ok:true,counted:false},{headers:{'Cache-Control':'no-store'}})
   const isWeibo=slug.toLowerCase().startsWith('weibo-')
-  const {data,error}=await db.rpc(isWeibo?'record_weibo_view':'record_post_view',{p_post_slug:slug})
+  const {data,error}=await db.rpc(isWeibo?'record_weibo_view':'record_post_view',isWeibo?{p_weibo_slug:slug}:{p_post_slug:slug})
   if(error){
    if(isWeibo&&isMissingWeiboViewTarget(error))return Response.json({ok:true,counted:false},{headers:{'Cache-Control':'no-store'}})
    throw error
