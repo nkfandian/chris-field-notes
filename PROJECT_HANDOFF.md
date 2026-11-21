@@ -884,6 +884,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-11-21 | 微博浏览量改为终身去重（同一 IP 只计一次）：`app/components/weibo-feed.js` 删掉 30 分钟窗口，localStorage 改为永久标记（同一浏览器对同一条微博只记一次，不再按时间窗口重记）；`app/api/views/route.js` 把微博的服务端限流改为每 IP 每条 1 次、窗口 10 年（`weibo-view-once:<slug>`，借用现有 `check_rate_limit`，无新迁移），同一 IP 换浏览器也不再重计。日志浏览量口径不变（仍 24/小时）。 | 用户要求：不能过一段时间又重新开始算；同一 IP 以后再看多少次都只算一次。注意：改后浏览量只反映去重后的独立访客数，数字会比之前更低；已记过的 localStorage 时间戳仍为真值、继续视为已记。 |
 | 2026-11-21 | 微博点赞/评论操作栏移到正文下方：`app/components/weibo-feed.js` 把 `.weibo-actions`（点赞、评论按钮）从顶部时间行移出，放到 `.weibo-body` 之后、评论区之前；`app/weibo/weibo.css` 给 `.weibo-actions` 加 `margin-top:12px`，`.weibo-meta` 仅剩时间、不再两端对齐。 | 参照新浪微博 / Twitter 的版式：时间在上、正文居中、操作栏在正文下方、评论再往下，符合用户习惯；桌面端原先按钮挤在时间行里位置不好。 |
 | 2026-11-21 | 微博评论改为常驻显示：`app/components/weibo-feed.js` 把已通过的评论列表移出「评论」按钮的折叠区，改为只要有已通过评论就直接显示在微博正文下方；点「评论」按钮只展开输入框（无评论时显示“还没有人留下评论。”再加输入框）；无评论且未点开时不渲染评论区、不留空边框。 | 用户反馈桌面端评论藏在按钮后面位置不好、通过后还得点开才看得见。改后通过的评论直接可见，输入框仍由「评论」按钮展开。 |
 | 2026-11-21 | 修复微博浏览量一直为 0：`app/api/views/route.js` 调 `record_weibo_view` 时传参名错写成 `p_post_slug`，而函数签名是 `record_weibo_view(p_weibo_slug)`，PostgREST 找不到对应签名的函数而报错，又被“目标缺失则不计”的兜底逻辑静默吞掉、返回 counted:false。改为按函数分流传参（微博用 `p_weibo_slug`，日志用 `p_post_slug`）。 | 该 bug 自 31cf3bfe 起就存在，微博浏览量从未真正记上过；不是部署延迟。修后需重新点展开/进内页验证计数。 |

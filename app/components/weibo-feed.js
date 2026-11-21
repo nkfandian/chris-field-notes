@@ -7,7 +7,6 @@ import '@/app/weibo/weibo.css'
 
 const LIKE_STORAGE_KEY='field-notes:weibo-likes'
 const VIEW_STORAGE_PREFIX='field-notes:weibo-view:'
-const VIEW_WINDOW=30*60*1000
 
 function formatWeiboDate(value){
  if(!value)return ''
@@ -57,19 +56,18 @@ export default function WeiboFeed({items=[],compact=false}){
   }catch{}
  },[])
 
- // 浏览量：记一次的去重（每条每页一次、30 分钟内不重复）。
+ // 浏览量：同一浏览器对同一条微博终身只记一次（localStorage 永久标记，不再按时间窗口重记）；服务端再按 IP 终身去重。
  function recordView(slug){
   if(!slug)return
   if(recordedRef.current.has(slug))return
   recordedRef.current.add(slug)
   const key=`${VIEW_STORAGE_PREFIX}${slug}`
-  const now=Date.now()
-  let previous=0
-  try{previous=Number(localStorage.getItem(key)||0)}catch{}
-  if(previous&&now-previous<VIEW_WINDOW)return
-  try{localStorage.setItem(key,String(now))}catch{}
+  try{
+   if(localStorage.getItem(key))return
+   localStorage.setItem(key,'1')
+  }catch{}
   fetch('/api/views',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({slug}),keepalive:true}).catch(()=>{
-   try{if(Number(localStorage.getItem(key))===now)localStorage.removeItem(key)}catch{}
+   try{localStorage.removeItem(key)}catch{}
   })
  }
 
