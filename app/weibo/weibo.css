@@ -6,7 +6,8 @@
 
 .weibo-list{border-bottom:1px solid var(--line)}
 .weibo-list.is-compact{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 clamp(32px,5vw,64px);border-top:1px solid var(--line)}
-.weibo-entry{display:grid;grid-template-columns:40px minmax(0,1fr);gap:24px;padding:28px 0;border-top:1px solid var(--line);align-items:start}
+.weibo-entry{display:grid;grid-template-columns:40px minmax(0,1fr);gap:24px;padding:24px 0;border-top:1px solid var(--line);align-items:start}
+.weibo-list.is-compact .weibo-entry{padding:18px 0}
 .weibo-page .weibo-list>.weibo-entry:first-child{border-top:0}
 .weibo-list.is-compact>.weibo-entry:nth-child(-n+2){border-top:0}
 .weibo-number{color:var(--muted);font:12px/1.8 var(--mono)}
@@ -17,7 +18,12 @@
 .weibo-action{appearance:none;border:0;background:transparent;padding:4px 0;color:var(--muted);font:12px/1.5 var(--mono);display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:color .18s ease}
 .weibo-action:hover,.weibo-action.is-active{color:var(--accent)}
 
-.weibo-body{margin-top:10px;max-width:680px;font:1rem/1.9 var(--serif);color:var(--ink)}
+.weibo-body{margin-top:8px;max-width:680px;font:1rem/1.85 var(--serif);color:var(--ink)}
+.weibo-list.is-compact .weibo-body{margin-top:6px;font-size:.95rem;line-height:1.75}
+.weibo-collapsed-text{margin:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden;cursor:pointer}
+.weibo-list.is-compact .weibo-collapsed-text{-webkit-line-clamp:2}
+.weibo-toggle{display:inline-flex;align-items:center;margin-top:4px;min-height:28px;padding:0;border:0;background:none;color:var(--accent);font:12px/1.4 var(--mono);cursor:pointer}
+.weibo-toggle:hover{text-decoration:underline;text-underline-offset:.25em}
 .weibo-body p{margin:0 0 .9rem;white-space:pre-line}
 .weibo-body p:last-child{margin-bottom:0}
 .weibo-body a{color:var(--accent);text-decoration:underline;text-underline-offset:.18em}
@@ -48,8 +54,11 @@
   .weibo-page{padding:0 5vw 9vh}
   .weibo-page>header{margin:2.4rem 0 .9rem;padding-bottom:1rem}
   .weibo-page h1{font-size:2.1rem}
-  .weibo-entry{grid-template-columns:1fr;gap:8px;padding:22px 0}
+  .weibo-entry{grid-template-columns:1fr;gap:6px;padding:16px 0}
+  .weibo-list.is-compact .weibo-entry{padding:11px 0}
   .weibo-number{display:none}
-  .weibo-action{min-height:36px}
-  .weibo-body{font-size:15px;line-height:1.85}
+  .weibo-action{min-height:32px}
+  .weibo-body{font-size:15px;line-height:1.8}
+  .weibo-list.is-compact .weibo-body{margin-top:4px;font-size:14px;line-height:1.65}
+  .weibo-collapsed-text{-webkit-line-clamp:2}
 }

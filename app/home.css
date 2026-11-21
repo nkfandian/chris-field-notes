@@ -499,12 +499,22 @@
 }
 
 .home-page .home-weibo {
+  padding-top: 48px;
   padding-bottom: 12px;
+}
+
+.home-page .home-weibo .home-section-heading {
+  margin-bottom: 16px;
 }
 
 @media (max-width: 600px) {
   .home-page .home-weibo {
-    padding-bottom: 8px;
+    padding-top: 26px;
+    padding-bottom: 4px;
+  }
+
+  .home-page .home-weibo .home-section-heading {
+    margin-bottom: 10px;
   }
 }
 

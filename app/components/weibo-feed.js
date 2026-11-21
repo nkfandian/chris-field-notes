@@ -24,10 +24,27 @@ function formatWeiboDate(value){
  return `${map.year}.${map.month}.${map.day} ${map.hour}:${map.minute}`
 }
 
+function collapsedSummary(raw=''){
+ const source=String(raw||'')
+ const hasImage=/!\[[^\]]*\]\((https?:\/\/[^)\s]+)|<img[^>]+src=|https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|webp|avif)/i.test(source)
+ const text=source
+  .replace(/!\[[^\]]*\]\([^)]*\)/g,' [图片] ')
+  .replace(/<img[^>]*>/gi,' [图片] ')
+  .replace(/\[([^\]]+)\]\([^)]*\)/g,'$1')
+  .replace(/^:::(?:center(?:-bold)?)\s*$/gm,' ')
+  .replace(/^:::\s*$/gm,' ')
+  .replace(/[`#>*_~]/g,' ')
+  .replace(/\s+/g,' ')
+  .trim()
+ const lineCount=source.trim().split(/\n+/).length
+ return {text,hasImage,lineCount}
+}
+
 export default function WeiboFeed({items=[],compact=false}){
  const [likedMap,setLikedMap]=useState({})
  const [likeCounts,setLikeCounts]=useState(()=>Object.fromEntries(items.map(x=>[x.id,Number(x.likes)||0])))
  const [openComments,setOpenComments]=useState({})
+ const [expandedBody,setExpandedBody]=useState({})
 
  useEffect(()=>{
   try{
@@ -65,6 +82,10 @@ export default function WeiboFeed({items=[],compact=false}){
   setOpenComments(prev=>({...prev,[id]:!prev[id]}))
  }
 
+ function toggleBody(id){
+  setExpandedBody(prev=>({...prev,[id]:!prev[id]}))
+ }
+
  if(!items.length)return null
 
  return <div className={`weibo-list${compact?' is-compact':''}`}>
@@ -75,6 +96,9 @@ export default function WeiboFeed({items=[],compact=false}){
    const replies=item.replies||{}
    const commentCount=item.comment_count??topComments.length
    const isOpen=Boolean(openComments[item.id])
+   const {text:summaryText,hasImage,lineCount}=collapsedSummary(item.body)
+   const foldable=compact?(summaryText.length>46||lineCount>2||hasImage):(summaryText.length>110||lineCount>3||hasImage)
+   const bodyExpanded=!foldable||Boolean(expandedBody[item.id])
    return <article className="weibo-entry" id={item.slug} key={item.id}>
     <span className="weibo-number" aria-hidden="true">{String(index+1).padStart(2,'0')}</span>
     <div className="weibo-main">
@@ -91,8 +115,9 @@ export default function WeiboFeed({items=[],compact=false}){
        </button>
       </div>
      </div>
-     <div className="weibo-body">
-      <PostBody body={item.body}/>
+     <div className={`weibo-body${bodyExpanded?' is-expanded':' is-collapsed'}`}>
+      {bodyExpanded?<PostBody body={item.body}/>:<p className="weibo-collapsed-text" onClick={()=>toggleBody(item.id)}>{summaryText}</p>}
+      {foldable&&<button type="button" className="weibo-toggle" aria-expanded={bodyExpanded} onClick={()=>toggleBody(item.id)}>{bodyExpanded?'收起 ↑':'展开全文 ↓'}</button>}
      </div>
      {isOpen&&<div className="weibo-comments">
       {topComments.length>0?<div className="comment-list">
