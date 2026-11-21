@@ -10,13 +10,13 @@ export default function SiteFooter(){
     <section id="subscribe" className="sc-contact" aria-labelledby="sc-contact-title">
       <div className="sc-contact-intro"><small>KEEP IN TOUCH</small><h2 id="sc-contact-title">偶尔更新，<br/>随时联系。</h2></div>
       <div className="sc-contact-actions">
-        <div className="sc-subscribe"><div className="sc-copy"><b>订阅新日志</b><span>只在新内容发布时发送。</span></div><SubscribeForm/></div>
+        <div className="sc-subscribe"><div className="sc-copy"><b>订阅新日志</b><span>只在新内容发布时发送 · <Link href="/newsletter" style={{color:'inherit',textDecoration:'underline',textUnderlineOffset:'.25em'}}>往期归档</Link></span></div><SubscribeForm/></div>
         <details id="message" className="sc-message"><summary><span className="sc-copy"><b>给我留言</b><span>问题、线索，或只是打个招呼。</span></span><i aria-hidden="true">＋</i></summary><InteractionForm kind="message"/></details>
       </div>
     </section>
     <div className="sc-footer-bar">
       <span>CHRIS / FIELD NOTES © 2026</span>
-      <nav aria-label="页脚导航"><Link href="/logs">日志</Link><Link href="/weibo">微博</Link><Link href="/books">书单</Link><Link href="/trails">轨迹</Link><AboutLink/><Link href="/privacy">隐私政策</Link><a href="#top">返回顶部 ↑</a></nav>
+      <nav aria-label="页脚导航"><Link href="/logs">日志</Link><Link href="/weibo">微博</Link><Link href="/books">书单</Link><Link href="/trails">轨迹</Link><Link href="/newsletter">往期通信</Link><Link href="/annual">年度盘点</Link><AboutLink/><Link href="/privacy">隐私政策</Link><a href="#top">返回顶部 ↑</a></nav>
     </div>
   </footer>
 }

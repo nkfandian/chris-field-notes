@@ -1,5 +1,5 @@
 /* Public-facing palette: old paper, letterpress ink and a clear paper indigo. */
-:is(.home-page,.logs-index,.log-page,.books-page,.trails-page,.trail-detail,.search-page,.privacy-page,.weibo-page){
+:is(.home-page,.logs-index,.log-page,.books-page,.trails-page,.trail-detail,.search-page,.privacy-page,.weibo-page,.annual-page,.newsletter-page){
   --paper:#f4f0e7;
   --paper-deep:#e9e1d4;
   --ink:#27231e;
@@ -13,12 +13,12 @@
   color:var(--ink);
 }
 
-body:has(:is(.home-page,.logs-index,.log-page,.books-page,.trails-page,.trail-detail,.search-page,.privacy-page,.weibo-page)){
+body:has(:is(.home-page,.logs-index,.log-page,.books-page,.trails-page,.trail-detail,.search-page,.privacy-page,.weibo-page,.annual-page,.newsletter-page)){
   background:#f4f0e7;
   color:#27231e;
 }
 
-:is(.home-page,.logs-index,.log-page,.books-page,.trails-page,.trail-detail,.search-page,.privacy-page,.weibo-page) :is(a,button,input,textarea):focus-visible{
+:is(.home-page,.logs-index,.log-page,.books-page,.trails-page,.trail-detail,.search-page,.privacy-page,.weibo-page,.annual-page,.newsletter-page) :is(a,button,input,textarea):focus-visible{
   outline-color:var(--accent);
 }
 

@@ -24,6 +24,8 @@ export default async function sitemap(){
       ...categoryEntries(demoPosts),
       {url:`${SITE_URL}/books`,changeFrequency:'weekly',priority:.8},
       {url:`${SITE_URL}/trails`,changeFrequency:'weekly',priority:.8},
+      {url:`${SITE_URL}/annual`,changeFrequency:'monthly',priority:.6},
+      {url:`${SITE_URL}/newsletter`,changeFrequency:'weekly',priority:.7},
       {url:`${SITE_URL}/about`,changeFrequency:'monthly',priority:.65},
       {url:`${SITE_URL}/privacy`,lastModified:'2026-11-10',changeFrequency:'yearly',priority:.3},
       ...demoPosts.map(postEntry)
@@ -48,6 +50,8 @@ export default async function sitemap(){
     ...categoryEntries(posts||[]),
     {url:`${SITE_URL}/books`,lastModified:bookDate,changeFrequency:'weekly',priority:.8},
     {url:`${SITE_URL}/trails`,lastModified:trailDate,changeFrequency:'weekly',priority:.8},
+    {url:`${SITE_URL}/annual`,lastModified:homeDate,changeFrequency:'monthly',priority:.6},
+    {url:`${SITE_URL}/newsletter`,lastModified:homeDate,changeFrequency:'weekly',priority:.7},
     {url:`${SITE_URL}/about`,lastModified:about?.updated_at,changeFrequency:'monthly',priority:.65},
     {url:`${SITE_URL}/privacy`,lastModified:'2026-11-10',changeFrequency:'yearly',priority:.3},
     ...(posts||[]).map(postEntry),

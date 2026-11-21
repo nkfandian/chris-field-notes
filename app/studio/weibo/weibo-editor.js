@@ -3,6 +3,7 @@
 import {useRef,useState} from 'react'
 import Link from 'next/link'
 import MarkdownEditor from '../markdown-editor'
+import WeiboCardExporter from './weibo-card-exporter'
 
 function toLocalInput(iso){
  const d=iso?new Date(iso):new Date()
@@ -106,7 +107,10 @@ export default function WeiboEditor({initialWeibos=[]}){
      <label>状态<select value={edit.status||'published'} onChange={e=>setEdit({...edit,status:e.target.value})}><option value="published">发布</option><option value="draft">草稿</option></select></label>
      <label>发布时间<input type="datetime-local" value={edit.published_at||''} onChange={e=>setEdit({...edit,published_at:e.target.value})}/></label>
     </div>
-    <button className="save" disabled={saving}>{saving?'保存中…':'保存微博'}</button>
+    <div style={{display:'flex',flexWrap:'wrap',alignItems:'center'}}>
+     <button className="save" disabled={saving}>{saving?'保存中…':'保存微博'}</button>
+     <WeiboCardExporter body={edit.body} publishedAt={edit.published_at} slug={edit.slug}/>
+    </div>
     <p aria-live="polite">{notice}</p>
    </form>
   </div>

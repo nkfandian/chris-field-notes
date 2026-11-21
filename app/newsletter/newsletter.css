@@ -1,0 +1,33 @@
+.newsletter-page{min-height:60vh;padding:0 6vw 12vh;background:var(--paper);color:var(--ink)}
+.newsletter-page>header{margin:clamp(3rem,8vh,5rem) 0 1.4rem;padding-bottom:1.4rem;border-bottom:1px solid var(--line);display:flex;align-items:baseline;justify-content:space-between;gap:1.5rem}
+.newsletter-page h1{font:700 clamp(2.2rem,4vw,3.2rem)/1.15 var(--serif);letter-spacing:0;margin:0}
+.newsletter-actions{display:flex;align-items:baseline;gap:1.2rem;flex:0 0 auto;font:12px var(--mono);color:var(--muted)}
+.newsletter-actions a{color:var(--accent);text-decoration:none}
+.newsletter-actions a:hover{text-decoration:underline;text-underline-offset:.3em}
+
+.newsletter-list{border-bottom:1px solid var(--line)}
+.newsletter-item{display:grid;grid-template-columns:40px minmax(0,1fr);gap:24px;padding:24px 0;border-top:1px solid var(--line);align-items:start}
+.newsletter-item:first-child{border-top:0}
+.newsletter-no{color:var(--muted);font:12px/1.8 var(--mono)}
+.newsletter-main{min-width:0;max-width:740px}
+.newsletter-meta{display:flex;align-items:center;gap:16px;font:12px/1.8 var(--mono)}
+.newsletter-meta small{color:var(--accent)}
+.newsletter-meta time{color:var(--muted)}
+.newsletter-item h2{margin:.45rem 0 .4rem;font:700 clamp(1.2rem,2vw,1.55rem)/1.45 var(--serif);letter-spacing:0}
+.newsletter-item h2 a{color:inherit;text-decoration:none}
+.newsletter-item h2 a:hover{color:var(--accent)}
+.newsletter-excerpt{margin:0;color:var(--muted);font-size:.95rem;line-height:1.75}
+.newsletter-detail{margin-top:.5rem}
+.newsletter-detail summary{font:12px var(--mono);color:var(--accent);cursor:pointer;list-style:none}
+.newsletter-detail summary::-webkit-details-marker{display:none}
+.newsletter-body{margin-top:1rem;padding:1.2rem;background:var(--paper-deep);border-left:3px solid var(--accent);font:1rem/1.85 var(--serif)}
+.newsletter-body p:last-child{margin-bottom:0}
+.newsletter-empty{padding:2.4rem 0;color:var(--muted)}
+
+@media(max-width:600px){
+  .newsletter-page{padding:0 5vw 9vh}
+  .newsletter-page>header{margin:2.4rem 0 .9rem;padding-bottom:1rem}
+  .newsletter-page h1{font-size:2.1rem}
+  .newsletter-item{grid-template-columns:1fr;gap:6px;padding:18px 0}
+  .newsletter-no{display:none}
+}

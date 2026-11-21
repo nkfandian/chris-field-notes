@@ -17,6 +17,17 @@
 .result-group article h2{font-size:clamp(1.2rem,1.8vw,1.5rem);line-height:1.45;letter-spacing:0;margin:.3rem 0}
 .result-group article p{margin:0;color:var(--muted);max-width:850px}
 .search-empty{border-top:1px solid;padding:2rem 0;font:12px var(--mono);color:var(--muted)}
+.search-modes{display:flex;gap:1.5rem;border-bottom:1px solid var(--line);margin-bottom:2rem;font:13px var(--mono)}
+.search-modes a{padding:.55rem 0;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.search-modes a.active{color:var(--accent);border-bottom-color:var(--accent)}
+.ask-error{font:12px var(--mono);color:#8b453d;margin:1rem 0 0}
+.ask-result{margin-top:2rem;max-width:900px}
+.ask-answer{font:1.05rem/1.85 var(--serif);color:var(--ink);margin:0 0 1.5rem;white-space:pre-line}
+.ask-sources{border-top:1px solid var(--line)}
+.ask-sources a{display:block;padding:1.2rem 0;border-bottom:1px solid var(--line)}
+.ask-sources small{font:12px var(--mono);color:var(--accent)}
+.ask-sources h3{margin:.35rem 0;font:600 1.1rem/1.45 var(--serif)}
+.ask-sources p{margin:0;color:var(--muted);font-size:.92rem;line-height:1.7}
 @media(max-width:600px){
  .search-page{padding:0 5vw 9vh} .search-page>header h1{font-size:2.1rem;margin-bottom:1.4rem}
 

@@ -223,13 +223,16 @@ npm run start
 |---|---|---|
 | `/` | 首页：首屏、微博（最近 2 条）、日志、书单、轨迹（订阅和留言在共用页脚里） | `app/page.js`、`app/home-client.js`、`app/home.css` |
 | `/about` | 可抓取的作者/网站介绍页（SEO 作者页，导航里不再直接链接；文章署名 `rel=author` 和 Sitemap 仍指向它） | `app/about/page.js` |
-| `/logs` | 全部日志与栏目筛选 | `app/logs/page.js` |
+| `/logs` | 全部日志、栏目筛选、年份筛选、10 篇/页分页与随机漫步入口 | `app/logs/page.js` |
+| `/logs/random` | 随机跳转至一篇已发布日志 | `app/logs/random/route.js` |
 | `/logs/[slug]` | 日志正文、分享、书籍关联、相关文章、评论 | `app/logs/[slug]/*` |
 | `/weibo` | 微博（短内容时间流，支持点赞、原地展开评论与站长回复） | `app/weibo/*`、`app/components/weibo-feed.js`、`lib/weibo.js` |
 | `/books` | 书单、筛选和短评 | `app/books/*` |
 | `/trails` | 阅读轨迹列表 | `app/trails/page.js` |
 | `/trails/[slug]` | 轨迹详情，连接日志、书和短注 | `app/trails/[slug]/page.js` |
-| `/search` | 站内搜索 | `app/search/*` |
+| `/annual` | 年度盘点（按年份汇总日志篇数、字数、微博数与栏目分布） | `app/annual/*` |
+| `/newsletter` | 往期通信归档（展示专刊群发与新日志推送历史） | `app/newsletter/*` |
+| `/search` | 站内搜索与「问问档案」RAG 问答 | `app/search/*`、`app/api/ask/route.js` |
 | `/privacy` | 隐私政策 | `app/privacy/*` |
 | `/subscribe/confirm` | 旧版确认链接的兼容页（订阅已改为单次确认，新订阅不再发确认邮件） | `app/subscribe/confirm/*` |
 | `/unsubscribe` | 退订 | `app/unsubscribe/*` |
@@ -884,6 +887,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-11-22 | 全站功能升级与历史档案激活：①`/logs` 增加 10 篇/页分页（支持 `?page=` 与页码导航，方便直达早期文章）、年份筛选（`2026`–`2009`）及 `/logs/random` 随机读一篇；②新增「年度盘点」`/annual`（按年份汇总日志、微博、总字数、栏目分布与目录）；③新增「往期通信」`/newsletter`（归档专刊群发与新日志推送期数，页脚订阅旁提供入口）；④`/search` 新增「问问档案」模式（`POST /api/ask`，带 IP 限流与 `noindex` 头，从日志、书单与微博抽取最相关观点并附原文链接，若配置 `GEMINI_API_KEY` 自动升级为大模型总结）；⑤`/studio/weibo` 新增「导出卡片图」（`WeiboCardExporter` Canvas 生成 900px 纸靛蓝二维码卡片 PNG）。另在生产库完成 98 篇历史文章（2009–2025）清洗排版并导入 `posts`（已置 `notification_sent_at = now()`，不触发推送）。 | 结合 138 篇历史文章沉淀，补齐分页、年份切片、随机漫步、年度盘点、往期通信、档案问答与卡片导出功能。 |
 | 2026-11-21 | 微博评论区与正文视觉区隔：`app/weibo/weibo.css` 把 `.weibo-comments` 改为深纸色（`paper-deep`）底 + 细边框的独立区块（替代原来只有一条上边框线），评论文字略缩小（0.92rem）；嵌套的站长回复卡片在评论区内改用主纸色底，与深纸色评论区形成反差。仅改微博评论区，日志页评论样式不动。 | 原先评论与微博正文同字号同版式、只隔一条细线，容易被当成另一条微博。参照微博/Twitter 的做法：评论区用底色 + 边框明确划出，文字略小、层级更低，一眼就能看出是评论不是正文。 |
 | 2026-11-21 | 微博浏览量改为终身去重（同一 IP 只计一次）：`app/components/weibo-feed.js` 删掉 30 分钟窗口，localStorage 改为永久标记（同一浏览器对同一条微博只记一次，不再按时间窗口重记）；`app/api/views/route.js` 把微博的服务端限流改为每 IP 每条 1 次、窗口 10 年（`weibo-view-once:<slug>`，借用现有 `check_rate_limit`，无新迁移），同一 IP 换浏览器也不再重计。日志浏览量口径不变（仍 24/小时）。 | 用户要求：不能过一段时间又重新开始算；同一 IP 以后再看多少次都只算一次。注意：改后浏览量只反映去重后的独立访客数，数字会比之前更低；已记过的 localStorage 时间戳仍为真值、继续视为已记。 |
 | 2026-11-21 | 微博点赞/评论操作栏移到正文下方：`app/components/weibo-feed.js` 把 `.weibo-actions`（点赞、评论按钮）从顶部时间行移出，放到 `.weibo-body` 之后、评论区之前；`app/weibo/weibo.css` 给 `.weibo-actions` 加 `margin-top:12px`，`.weibo-meta` 仅剩时间、不再两端对齐。 | 参照新浪微博 / Twitter 的版式：时间在上、正文居中、操作栏在正文下方、评论再往下，符合用户习惯；桌面端原先按钮挤在时间行里位置不好。 |
