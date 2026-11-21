@@ -92,12 +92,12 @@ export default function WeiboEditor({initialWeibos=[]}){
     {weibos.map(item=><article key={item.id} role="button" tabIndex={0} aria-pressed={edit.id===item.id} onClick={()=>choose(item)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(item)}}}>
      <small>{formatListTime(item.published_at)}</small>
      <h3>{previewText(item.body)}</h3>
-     <div className="post-list-meta"><span>{item.status==='draft'?'draft':'published'}</span><b>♥ {Number(item.likes)||0}</b></div>
+     <div className="post-list-meta"><span>{item.status==='draft'?'draft':'published'}</span><b>♥ {Number(item.likes)||0}</b><span>👁 {Number(item.view_count)||0} · 今日 {Number(item.views_today)||0}</span></div>
     </article>)}
    </aside>
    <form ref={editorRef} className="editor" onSubmit={save}>
     <div className="editor-top">
-     <div><span>{edit.id?'编辑微博':'新建微博'}</span>{edit.id&&<b className="editor-view-count">♥ {Number(edit.likes)||0} 次点赞</b>}</div>
+     <div><span>{edit.id?'编辑微博':'新建微博'}</span>{edit.id&&<b className="editor-view-count">♥ {Number(edit.likes)||0} 次点赞</b>}{edit.id&&<b className="editor-view-count">👁 {Number(edit.view_count)||0} 次浏览 · 今日 {Number(edit.views_today)||0}</b>}</div>
      {edit.id&&<button type="button" onClick={()=>remove(edit.id)}>删除</button>}
     </div>
     <label className="body-label">正文格式</label>

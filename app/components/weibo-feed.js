@@ -1,11 +1,13 @@
 'use client'
 
-import {useEffect,useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import PostBody from '@/app/logs/[slug]/post-body'
 import InteractionForm from './interaction-form'
 import '@/app/weibo/weibo.css'
 
 const LIKE_STORAGE_KEY='field-notes:weibo-likes'
+const VIEW_STORAGE_PREFIX='field-notes:weibo-view:'
+const VIEW_WINDOW=30*60*1000
 
 function formatWeiboDate(value){
  if(!value)return ''
@@ -45,6 +47,8 @@ export default function WeiboFeed({items=[],compact=false}){
  const [likeCounts,setLikeCounts]=useState(()=>Object.fromEntries(items.map(x=>[x.id,Number(x.likes)||0])))
  const [openComments,setOpenComments]=useState({})
  const [expandedBody,setExpandedBody]=useState({})
+ const listRef=useRef(null)
+ const recordedRef=useRef(new Set())
 
  useEffect(()=>{
   try{
@@ -52,6 +56,33 @@ export default function WeiboFeed({items=[],compact=false}){
    if(saved&&typeof saved==='object')setLikedMap(saved)
   }catch{}
  },[])
+
+ // 浏览量：条目进入视口一半时记一次，每条每页只记一次，30 分钟内不重复记。
+ useEffect(()=>{
+  const root=listRef.current
+  if(!root||!items.length)return
+  const observer=new IntersectionObserver(entries=>{
+   for(const entry of entries){
+    if(!entry.isIntersecting)continue
+    const slug=entry.target.id
+    if(!slug)continue
+    observer.unobserve(entry.target)
+    if(recordedRef.current.has(slug))continue
+    recordedRef.current.add(slug)
+    const key=`${VIEW_STORAGE_PREFIX}${slug}`
+    const now=Date.now()
+    let previous=0
+    try{previous=Number(localStorage.getItem(key)||0)}catch{}
+    if(previous&&now-previous<VIEW_WINDOW)continue
+    try{localStorage.setItem(key,String(now))}catch{}
+    fetch('/api/views',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({slug}),keepalive:true}).catch(()=>{
+     try{if(Number(localStorage.getItem(key))===now)localStorage.removeItem(key)}catch{}
+    })
+   }
+  },{threshold:0.5})
+  root.querySelectorAll('article.weibo-entry').forEach(article=>observer.observe(article))
+  return()=>observer.disconnect()
+ },[items])
 
  useEffect(()=>{
   const syncHash=()=>{
@@ -88,7 +119,7 @@ export default function WeiboFeed({items=[],compact=false}){
 
  if(!items.length)return null
 
- return <div className={`weibo-list${compact?' is-compact':''}`}>
+ return <div className={`weibo-list${compact?' is-compact':''}`} ref={listRef}>
   {items.map((item,index)=>{
    const liked=Boolean(likedMap[item.id])
    const likes=likeCounts[item.id]??(Number(item.likes)||0)

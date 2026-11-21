@@ -23,7 +23,9 @@ export default function CommentModeration({initial,posts={}}){
  const roots=items.filter(x=>!x.parent_id)
  const repliesOf=id=>items.filter(x=>x.parent_id===id).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at))
  const filtered=filter==='all'?roots:roots.filter(x=>x.status===filter)
- const shownComments=filtered.filter(x=>x.kind==='comment')
+ const isWeiboSlug=x=>String(x.post_slug||'').startsWith('weibo-')
+ const shownComments=filtered.filter(x=>x.kind==='comment'&&!isWeiboSlug(x))
+ const shownWeiboComments=filtered.filter(x=>x.kind==='comment'&&isWeiboSlug(x))
  const shownMessages=filtered.filter(x=>x.kind!=='comment')
  // 同一篇文章下内容完全相同的行打上疑似重复标记：通常是提交时点了两次。
  const dupCounts={}
@@ -107,6 +109,11 @@ export default function CommentModeration({initial,posts={}}){
     <header><h2>日志评论</h2><span>{shownComments.length} 条</span></header>
     <div className="moderation-list">{shownComments.map(renderCard)}</div>
     {!shownComments.length&&<p>当前没有此状态的日志评论。</p>}
+   </section>
+   <section className="moderation-panel">
+    <header><h2>微博评论</h2><span>{shownWeiboComments.length} 条</span></header>
+    <div className="moderation-list">{shownWeiboComments.map(renderCard)}</div>
+    {!shownWeiboComments.length&&<p>当前没有此状态的微博评论。</p>}
    </section>
    <section className="moderation-panel">
     <header><h2>网站留言</h2><span>{shownMessages.length} 条</span></header>
