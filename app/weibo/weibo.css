@@ -12,9 +12,9 @@
 .weibo-list.is-compact>.weibo-entry:nth-child(-n+2){border-top:0}
 .weibo-number{color:var(--muted);font:12px/1.8 var(--mono)}
 .weibo-main{min-width:0}
-.weibo-meta{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.weibo-meta{display:flex;align-items:center;gap:16px}
 .weibo-meta time{color:var(--muted);font:12px/1.8 var(--mono)}
-.weibo-actions{display:flex;align-items:center;gap:18px}
+.weibo-actions{display:flex;align-items:center;gap:18px;margin-top:12px}
 .weibo-action{appearance:none;border:0;background:transparent;padding:4px 0;color:var(--muted);font:12px/1.5 var(--mono);display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:color .18s ease}
 .weibo-action:hover,.weibo-action.is-active{color:var(--accent)}
 

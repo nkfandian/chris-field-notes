@@ -155,20 +155,20 @@ export default function WeiboFeed({items=[],compact=false}){
     <div className="weibo-main">
      <div className="weibo-meta">
       <time dateTime={item.published_at}>{formatWeiboDate(item.published_at)}</time>
-      <div className="weibo-actions">
-       <button type="button" className={`weibo-action${liked?' is-active':''}`} aria-pressed={liked} aria-label={`点赞 ${likes}`} onClick={()=>handleLike(item.id)}>
-        <span aria-hidden="true">{liked?'♥':'♡'}</span>
-        <span>{likes}</span>
-       </button>
-       <button type="button" className={`weibo-action${isOpen?' is-active':''}`} aria-expanded={isOpen} onClick={()=>toggleComments(item.id)}>
-        <span>评论</span>
-        <span>{commentCount}</span>
-       </button>
-      </div>
      </div>
      <div className={`weibo-body${bodyExpanded?' is-expanded':' is-collapsed'}`}>
       {bodyExpanded?<PostBody body={item.body}/>:<p className="weibo-collapsed-text" onClick={()=>toggleBody(item.id)}>{summaryText}</p>}
       {foldable&&<button type="button" className="weibo-toggle" aria-expanded={bodyExpanded} onClick={()=>toggleBody(item.id)}>{bodyExpanded?'收起 ↑':'展开全文 ↓'}</button>}
+     </div>
+     <div className="weibo-actions">
+      <button type="button" className={`weibo-action${liked?' is-active':''}`} aria-pressed={liked} aria-label={`点赞 ${likes}`} onClick={()=>handleLike(item.id)}>
+       <span aria-hidden="true">{liked?'♥':'♡'}</span>
+       <span>{likes}</span>
+      </button>
+      <button type="button" className={`weibo-action${isOpen?' is-active':''}`} aria-expanded={isOpen} onClick={()=>toggleComments(item.id)}>
+       <span>评论</span>
+       <span>{commentCount}</span>
+      </button>
      </div>
      {(topComments.length>0||isOpen)&&<div className="weibo-comments">
       {topComments.length>0&&<div className="comment-list">

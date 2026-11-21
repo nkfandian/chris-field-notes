@@ -884,6 +884,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-11-21 | 微博点赞/评论操作栏移到正文下方：`app/components/weibo-feed.js` 把 `.weibo-actions`（点赞、评论按钮）从顶部时间行移出，放到 `.weibo-body` 之后、评论区之前；`app/weibo/weibo.css` 给 `.weibo-actions` 加 `margin-top:12px`，`.weibo-meta` 仅剩时间、不再两端对齐。 | 参照新浪微博 / Twitter 的版式：时间在上、正文居中、操作栏在正文下方、评论再往下，符合用户习惯；桌面端原先按钮挤在时间行里位置不好。 |
 | 2026-11-21 | 微博评论改为常驻显示：`app/components/weibo-feed.js` 把已通过的评论列表移出「评论」按钮的折叠区，改为只要有已通过评论就直接显示在微博正文下方；点「评论」按钮只展开输入框（无评论时显示“还没有人留下评论。”再加输入框）；无评论且未点开时不渲染评论区、不留空边框。 | 用户反馈桌面端评论藏在按钮后面位置不好、通过后还得点开才看得见。改后通过的评论直接可见，输入框仍由「评论」按钮展开。 |
 | 2026-11-21 | 修复微博浏览量一直为 0：`app/api/views/route.js` 调 `record_weibo_view` 时传参名错写成 `p_post_slug`，而函数签名是 `record_weibo_view(p_weibo_slug)`，PostgREST 找不到对应签名的函数而报错，又被“目标缺失则不计”的兜底逻辑静默吞掉、返回 counted:false。改为按函数分流传参（微博用 `p_weibo_slug`，日志用 `p_post_slug`）。 | 该 bug 自 31cf3bfe 起就存在，微博浏览量从未真正记上过；不是部署延迟。修后需重新点展开/进内页验证计数。 |
 | 2026-11-21 | 微博浏览量口径改为按“展开 / 点进读”计：`app/components/weibo-feed.js` 把记一次的逻辑抽为 `recordView()`（去重不变：每条每页一次、localStorage 30 分钟内不重复）；折叠条目（首页紧凑模式）不再用 IntersectionObserver，滑过不记，只在用户点「展开全文 ↓」（或点折叠正文展开）时记一次；不折叠条目（`/weibo` 内页全文展示）仍用 IntersectionObserver（可见一半记一次）。 | 首页折叠预览滑过不再虚增阅读。`/weibo` 内页无折叠按钮，用户是点「更多」进来读的，故仍按进入视野计。 |
