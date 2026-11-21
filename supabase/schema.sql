@@ -195,9 +195,17 @@ create policy "published trail items are public" on public.trail_items for selec
 create policy "admin manages trail items" on public.trail_items for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
 alter table public.subscribers add column if not exists confirmation_sent_at timestamptz;
 
+create table if not exists public.weibos (id uuid primary key default gen_random_uuid(),slug text unique not null,body text not null check (char_length(body) between 1 and 5000),status text not null default 'published' check (status in ('draft','published')),likes integer not null default 0 check (likes>=0),published_at timestamptz not null default now(),created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+create index if not exists weibos_published_idx on public.weibos(status,published_at desc);
+alter table public.weibos enable row level security;
+drop policy if exists "published weibos are public" on public.weibos;
+drop policy if exists "admin manages weibos" on public.weibos;
+create policy "published weibos are public" on public.weibos for select using(status='published');
+create policy "admin manages weibos" on public.weibos for all to authenticated using(public.is_site_admin()) with check(public.is_site_admin());
+
 revoke all on table public.comments,public.subscribers,public.email_campaigns,public.email_deliveries,public.email_campaign_deliveries,public.rate_limits,public.site_admins,public.post_views from anon;
 revoke all on table public.rate_limits,public.site_admins from authenticated;
-grant select on table public.posts,public.site_content,public.books,public.trails,public.trail_items to anon,authenticated;
+grant select on table public.posts,public.site_content,public.books,public.trails,public.trail_items,public.weibos to anon,authenticated;
 grant select on table public.post_views to authenticated;
 grant select on table public.email_campaign_deliveries to authenticated;
 alter default privileges for role postgres in schema public revoke all on tables from anon;

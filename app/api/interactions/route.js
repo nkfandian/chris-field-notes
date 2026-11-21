@@ -1,5 +1,6 @@
 import {createAdminClient} from '@/lib/supabase/admin'
 import {cleanText,clientKey,enforceRateLimit,jsonMutationGuard,parseJsonBody,subjectKey,validEmail} from '@/lib/security'
+import {getPublicWeiboBySlug} from '@/lib/weibo'
 
 export async function POST(request){
  try{
@@ -14,9 +15,14 @@ export async function POST(request){
   if(!await enforceRateLimit(db,clientKey(request,'interaction'),4,3600))return Response.json({error:'提交过于频繁，请稍后再试。'},{status:429})
   if(!await enforceRateLimit(db,subjectKey(payload.email,'interaction-email'),6,86400))return Response.json({error:'该邮箱提交过于频繁，请稍后再试。'},{status:429})
   if(payload.kind==='comment'){
-   if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/i.test(payload.post_slug||''))return Response.json({error:'日志链接无效。'},{status:400})
-   const {data:post}=await db.from('posts').select('id').eq('slug',payload.post_slug).eq('status','published').maybeSingle()
-   if(!post)return Response.json({error:'日志不存在或尚未发布。'},{status:404})
+   if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/i.test(payload.post_slug||''))return Response.json({error:'链接无效。'},{status:400})
+   if(payload.post_slug.startsWith('weibo-')){
+    const weibo=await getPublicWeiboBySlug(payload.post_slug)
+    if(!weibo)return Response.json({error:'微博不存在或尚未发布。'},{status:404})
+   }else{
+    const {data:post}=await db.from('posts').select('id').eq('slug',payload.post_slug).eq('status','published').maybeSingle()
+    if(!post)return Response.json({error:'日志不存在或尚未发布。'},{status:404})
+   }
   }
   const since=new Date(Date.now()-10*60*1000).toISOString()
   let dupQuery=db.from('comments').select('id').eq('kind',payload.kind).eq('email',payload.email).eq('body',payload.body).gte('created_at',since).limit(1)

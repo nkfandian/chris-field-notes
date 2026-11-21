@@ -6,6 +6,7 @@ import {createClient} from '@/lib/supabase/client'
 
 const items=[
  ['/studio','日志'],
+ ['/studio/weibo','微博'],
  ['/studio/books','书单'],
  ['/studio/trails','轨迹'],
  ['/studio/site','首页内容'],

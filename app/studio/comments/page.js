@@ -3,6 +3,7 @@ import {createClient,isConfigured} from '@/lib/supabase/server'
 import CommentModeration from './comment-moderation'
 import {getSiteAdmin} from '@/lib/auth'
 import {markStudioSeen} from '@/lib/studio-badges'
+import {listAdminWeibos,weiboExcerpt} from '@/lib/weibo'
 import '../studio.css'
 import './moderation.css'
 
@@ -12,13 +13,15 @@ export default async function CommentsPage(){
  if(!isConfigured())return null
  const db=await createClient()
  if(!await getSiteAdmin(db))redirect('/studio')
- const [{data:comments},{data:posts}]=await Promise.all([
+ const [{data:comments},{data:posts},weibos]=await Promise.all([
   db.from('comments').select('*').order('created_at',{ascending:false}),
   db.from('posts').select('slug,title'),
+  listAdminWeibos(db).catch(()=>[])
  ])
  // 进页面即视为已看：导航栏的互动审核气泡清零。
  await markStudioSeen(db,'comments')
  const titles={}
  for(const post of posts||[])titles[post.slug]=post.title
+ for(const weibo of weibos||[])titles[weibo.slug]=weiboExcerpt(weibo.body,28)
  return <CommentModeration initial={comments||[]} posts={titles}/>
 }

@@ -4,12 +4,13 @@ import {getSiteAdmin} from '@/lib/auth'
 import {cleanText,jsonMutationGuard,parseJsonBody} from '@/lib/security'
 import {idempotencyKey,sendEmail} from '@/lib/resend'
 import {buildReplyEmail} from '@/lib/comment-reply'
+import {getPublicWeiboBySlug,weiboExcerpt} from '@/lib/weibo'
 import {revalidatePath} from 'next/cache'
 
 // 后台评论审核统一走服务端：service role 不受浏览器会话与 RLS 影响，
 // 通过 / 拒绝只做单向状态迁移，重复点击是 no-op，不会再产生重复公开。
 const REPLY_FROM=process.env.COMMENTS_FROM||'Chris <comments@chrisreading.ink>'
-const revalidatePost=slug=>{if(slug)try{revalidatePath(`/logs/${slug}`)}catch{}}
+const revalidatePost=slug=>{if(!slug)return;try{if(slug.startsWith('weibo-')){revalidatePath('/weibo');revalidatePath('/')}else revalidatePath(`/logs/${slug}`)}catch{}}
 
 export async function POST(request){
  try{
@@ -59,8 +60,13 @@ export async function POST(request){
    }
    let postTitle=''
    if(row.post_slug){
-    const {data:post}=await admin.from('posts').select('title').eq('slug',row.post_slug).maybeSingle()
-    postTitle=post?.title||row.post_slug
+    if(row.post_slug.startsWith('weibo-')){
+     const weibo=await getPublicWeiboBySlug(row.post_slug)
+     postTitle=weibo?weiboExcerpt(weibo.body,28):'微博'
+    }else{
+     const {data:post}=await admin.from('posts').select('title').eq('slug',row.post_slug).maybeSingle()
+     postTitle=post?.title||row.post_slug
+    }
    }
    const {data:reply,error:insertError}=await admin.from('comments').insert({kind:row.kind,post_slug:row.post_slug,parent_id:row.id,name:'Chris',email:'comments@chrisreading.ink',body,status:'approved'}).select('*').single()
    if(insertError)throw insertError

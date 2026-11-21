@@ -1,6 +1,6 @@
 # CHRIS / FIELD NOTES 项目交接文档
 
-> 最后核对：2026-11-12（Asia/Shanghai）
+> 最后核对：2026-11-21（Asia/Shanghai）
 >
 > 目标：让新的开发者或大模型无需依赖历史聊天记录，即可安全地继续修改、验证和发布本项目。
 
@@ -221,10 +221,11 @@ npm run start
 
 | 路径 | 功能 | 关键文件 |
 |---|---|---|
-| `/` | 首页：首屏、日志、书单、轨迹（订阅和留言在共用页脚里） | `app/page.js`、`app/home-client.js`、`app/home.css` |
+| `/` | 首页：首屏、微博（最近 2 条）、日志、书单、轨迹（订阅和留言在共用页脚里） | `app/page.js`、`app/home-client.js`、`app/home.css` |
 | `/about` | 可抓取的作者/网站介绍页（SEO 作者页，导航里不再直接链接；文章署名 `rel=author` 和 Sitemap 仍指向它） | `app/about/page.js` |
 | `/logs` | 全部日志与栏目筛选 | `app/logs/page.js` |
 | `/logs/[slug]` | 日志正文、分享、书籍关联、相关文章、评论 | `app/logs/[slug]/*` |
+| `/weibo` | 微博（短内容时间流，支持点赞、原地展开评论与站长回复） | `app/weibo/*`、`app/components/weibo-feed.js`、`lib/weibo.js` |
 | `/books` | 书单、筛选和短评 | `app/books/*` |
 | `/trails` | 阅读轨迹列表 | `app/trails/page.js` |
 | `/trails/[slug]` | 轨迹详情，连接日志、书和短注 | `app/trails/[slug]/page.js` |
@@ -239,6 +240,7 @@ npm run start
 | 路径 | 功能 |
 |---|---|
 | `/studio` | 日志编辑、格式工具、浏览量、图片导出 |
+| `/studio/weibo` | 微博编辑与发布（无需标题，支持格式工具与 R2 传图，不触发订阅邮件群发） |
 | `/studio/books` | 书单编辑 |
 | `/studio/trails` | 轨迹编辑 |
 | `/studio/site` | 首页标题、强调句、英文引语 |
@@ -253,6 +255,8 @@ Studio 使用 Supabase Auth 登录，并通过 `site_admins` + `is_site_admin()`
 | 路径 | 调用方 | 功能 |
 |---|---|---|
 | `POST / DELETE /api/posts` | 管理员 | 创建/更新/删除日志、触发邮件、刷新缓存、通知 IndexNow |
+| `POST / DELETE /api/weibo` | 管理员 | 创建/更新/删除微博、刷新首页与 `/weibo` 缓存、通知 IndexNow（不触发邮件群发） |
+| `POST /api/weibo/like` | 公开 | 微博点赞，带 IP 限流（单条每 IP 24 小时 1 次，全局每小时 30 次） |
 | `POST /api/uploads/sign` | 管理员 | 为编辑器“⤒ 上传图片”签发 5 分钟有效的 R2 直传地址（含 `ContentLength` 锁定）；浏览器再 PUT 到 `*.r2.cloudflarestorage.com`（CSP `connect-src` 已放行这一个域）。带来源检查和 2KB 请求体限制 |
 | `POST /api/interactions` | 公开 | 提交评论或网站留言，默认 `pending`；10 分钟内完全相同的内容（kind / post_slug / email / body）只保存一次，重复提交返回 ok 不再入库 |
 | `POST /api/studio/comments` | 管理员 | 通过 / 拒绝 / 删除 / 回复评论（同步触发对应文章 `revalidatePath`）；回复保存为 `parent_id` 指向原评论的子行并经 Resend 从 `comments@chrisreading.ink` 发邮件提醒 |
@@ -880,6 +884,7 @@ gh api repos/nkfandian/chris-field-notes/commits/$sha/status
 
 | 日期 | 变更 | 原因 / 注意事项 |
 |---|---|---|
+| 2026-11-21 | 新增「微博」模块（`/weibo`、首页最近 2 条紧凑展示、后台 `/studio/weibo`）：①公开页：顶部与页脚导航新增“微博”；首页首屏下方、“最新日志”上方新增“微博”区块（无装饰说明文字，与“最新日志”同构标题栏 + 双列展示最近 2 条）；`/weibo` 页采用与 `/logs` 一致的单行标题 + 条数版式；每条微博显示精确到分钟的发布时间、正文（复用 `PostBody` 支持 Markdown 与 R2 装裱配图）、点赞（`♡/♥`，`localStorage` + `POST /api/weibo/like` 服务端 IP 限流）及原地展开评论区（含站长回复卡片）；②后台与评论打通：Studio 导航新增“微博”（`/studio/weibo`），无需标题即可直接输入正文、上传 R2 图片并保存（不触发订阅邮件群发）；微博评论复用 `comments` 表（`post_slug` 为 `weibo-<id>`），后台“互动审核”自动标识“微博：摘要 ↗”并支持站长回复与邮件通知（链接直达 `/weibo#weibo-<id>` 并自动展开评论区）；全站搜索与 Sitemap 同步收录；③数据层：`lib/weibo.js` 优先读写 `public.weibos` 表（见 `supabase/migrations/20261121_weibos.sql` 与 `supabase/schema.sql`），若线上尚未执行建表迁移则自动回退到 `site_content`（`key='weibos'`），确保代码部署即刻可用。 | 用户希望增加类似微博/备忘录的短内容功能，用于发布日常细碎想法，支持显示时间、点赞和评论（无转发），且不加装饰说明文字、不打破现有版式。 |
 | 2026-11-12 | 生产库执行 `20261111_security_and_campaigns.sql`（版本 `20261112000728`）并验证匿名 REST/RPC；执行 `20261112_restrict_rls_event_trigger.sql`（版本 `20261112000941`），撤销 API 角色对 RLS 事件触发器函数的直接执行权限。 | 修复公开 `site_content` 401 与私下留言公开 RPC 边界、创建逐人邮件投递表；安全顾问指出事件触发器函数不应直接暴露给匿名/普通登录角色。Vercel 修复分支预览 `839ea49` 已 success，发布 main 后须核对正式部署。 |
 | 2026-11-11 | 删除首页 ISR 请求中遗留的 `getSiteAdmin(db)` 调用。 | Vercel 带 Supabase 环境变量预渲染首页时调用了已移除的函数，导致预览部署失败；本地无数据库变量时的构建无法覆盖该路径。 |
 | 2026-11-11 | Next.js 升至 15.5.29；字体由 `next/font/google` 构建下载改为锁定的 Fontsource 自托管资源，保留中文 unicode-range 切片与原字体变量。 | 安全修复分支在 Vercel 预览构建时，`next/font/google` 解析字体 URL 报错；新方式不依赖构建期间访问 Google Fonts。生产 SQL 迁移仍需先执行，且须确认预览构建成功后再发布 main。 |

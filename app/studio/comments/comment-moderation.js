@@ -79,7 +79,7 @@ export default function CommentModeration({initial,posts={}}){
    <header><div><span>{labels[x.status]}</span>{isDup(x)&&<span className="moderation-dup">疑似重复</span>}</div><time>{new Date(x.created_at).toLocaleString('zh-CN')}</time></header>
    <h3>{x.name}</h3>
    <a href={`mailto:${x.email}`}>{x.email}</a>
-   {x.post_slug&&<p className="moderation-target">文章：<a href={`/logs/${encodeURIComponent(x.post_slug)}`} target="_blank" rel="noreferrer">{posts[x.post_slug]||x.post_slug} ↗</a></p>}
+   {x.post_slug&&<p className="moderation-target">{x.post_slug.startsWith('weibo-')?'微博':'文章'}：<a href={x.post_slug.startsWith('weibo-')?`/weibo#${encodeURIComponent(x.post_slug)}`:`/logs/${encodeURIComponent(x.post_slug)}`} target="_blank" rel="noreferrer">{posts[x.post_slug]||x.post_slug} ↗</a></p>}
    <p className="moderation-body">{x.body}</p>
    {repliesOf(x.id).length>0&&<div className="moderation-replies">{repliesOf(x.id).map(r=><div className="moderation-reply" key={r.id}>
     <header><b>站长回复</b><time>{new Date(r.created_at).toLocaleString('zh-CN')}</time></header>

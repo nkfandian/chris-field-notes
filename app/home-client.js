@@ -5,13 +5,14 @@ import {labels} from '@/lib/demo'
 import {trailComposition} from '@/lib/trails'
 import SiteHeader from './components/site-header'
 import SiteFooter from './components/site-footer'
+import WeiboFeed from './components/weibo-feed'
 import './home.css'
 
 const domains = ['decode','execute','deploy','trek','roots']
 const domainName = key => labels[key]?.split('/ ')[1] || key
 const bookStatus = {Reading:'在读',Read:'已读','To Read':'想读'}
 
-export default function HomeClient({posts,books=[],bookCount=0,trails=[],content={},showStudio=false}) {
+export default function HomeClient({posts,weibos=[],books=[],bookCount=0,trails=[],content={},showStudio=false}) {
   const [filter,setFilter] = useState('all')
   const shown = (filter==='all' ? posts : posts.filter(p=>p.domain===filter)).slice(0,6)
   const legacyHero = !content.hero_title || content.hero_title==='我不展示答案。'
@@ -47,6 +48,10 @@ export default function HomeClient({posts,books=[],bookCount=0,trails=[],content
         </article>}
         <div className="hero-note"><span>A NOTE TO SELF</span><p lang="en">{heroDeck}</p><cite>{heroAttribution}</cite></div>
         <a className="hero-next" href="#log"><span>SCROLL TO READ</span><i aria-hidden="true"/><b aria-hidden="true">↓</b></a>
+      </section>
+      <section id="weibo" className="section home-weibo" aria-labelledby="home-weibo-title">
+        <div className="home-section-heading"><h2 id="home-weibo-title">微博</h2><Link className="all-logs-link" href="/weibo">查看全部 <span aria-hidden="true">↗</span></Link></div>
+        {weibos.length>0?<WeiboFeed items={weibos.slice(0,2)} compact/>:<p className="home-empty" role="status">还没有发布微博。</p>}
       </section>
       <section id="log" className="section home-logs" aria-labelledby="home-logs-title">
         <div className="home-section-heading"><h2 id="home-logs-title">最新日志</h2><Link className="all-logs-link" href={filter==='all'?'/logs':`/logs?domain=${filter}`}>查看全部 <span aria-hidden="true">↗</span></Link></div>

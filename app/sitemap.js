@@ -20,6 +20,7 @@ export default async function sitemap(){
     return [
       {url:SITE_URL,lastModified:logDate,changeFrequency:'daily',priority:1},
       {url:`${SITE_URL}/logs`,lastModified:logDate,changeFrequency:'daily',priority:.9},
+      {url:`${SITE_URL}/weibo`,lastModified:logDate,changeFrequency:'daily',priority:.85},
       ...categoryEntries(demoPosts),
       {url:`${SITE_URL}/books`,changeFrequency:'weekly',priority:.8},
       {url:`${SITE_URL}/trails`,changeFrequency:'weekly',priority:.8},
@@ -43,6 +44,7 @@ export default async function sitemap(){
   return [
     {url:SITE_URL,lastModified:homeDate,changeFrequency:'daily',priority:1},
     {url:`${SITE_URL}/logs`,lastModified:postDate,changeFrequency:'daily',priority:.9},
+    {url:`${SITE_URL}/weibo`,lastModified:homeDate,changeFrequency:'daily',priority:.85},
     ...categoryEntries(posts||[]),
     {url:`${SITE_URL}/books`,lastModified:bookDate,changeFrequency:'weekly',priority:.8},
     {url:`${SITE_URL}/trails`,lastModified:trailDate,changeFrequency:'weekly',priority:.8},

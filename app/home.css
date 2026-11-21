@@ -498,6 +498,16 @@
   background: var(--paper);
 }
 
+.home-page .home-weibo {
+  padding-bottom: 12px;
+}
+
+@media (max-width: 600px) {
+  .home-page .home-weibo {
+    padding-bottom: 8px;
+  }
+}
+
 .home-page .reading-grid {
   border-color: var(--line);
 }

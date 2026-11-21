@@ -6,7 +6,7 @@ import AboutModal,{AboutLink} from './about-modal'
 import {createClient} from '@/lib/supabase/client'
 import './site-chrome.css'
 
-const links=[['logs','/logs','日志'],['books','/books','书单'],['trails','/trails','轨迹'],['search','/search','搜索']]
+const links=[['logs','/logs','日志'],['weibo','/weibo','微博'],['books','/books','书单'],['trails','/trails','轨迹'],['search','/search','搜索']]
 
 // 所有公开页面共用的顶部导航；current 标记当前栏目。
 export default function SiteHeader({current,showStudio=false}){
