@@ -62,7 +62,7 @@ export default function AskArchive(){
   </div>
 
   {!messages.length&&<form className="ai-chat-form ai-chat-form-top" onSubmit={submit}>
-   <input id="ask-q" value={question} onChange={e=>setQuestion(e.target.value)} placeholder="向 AI 作者提问，例如：对何伟怎么看？" maxLength={160} aria-label="向 AI 作者提问"/>
+   <input id="ask-q" value={question} onChange={e=>setQuestion(e.target.value)} placeholder="向 AI 作者提问，支持追问…" maxLength={160} aria-label="向 AI 作者提问"/>
    <button disabled={loading}>{loading?'思考中…':'发送 ✦'}</button>
   </form>}
 

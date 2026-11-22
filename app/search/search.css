@@ -83,6 +83,7 @@
  .ai-chat-head{align-items:flex-start;gap:.75rem;padding-bottom:.85rem}
  .ai-chat-form{padding:.4rem .45rem .4rem .85rem!important;gap:.5rem}
  .ai-chat-form input{font-size:16px!important}
+ .ai-chat-form input::placeholder{font-size:13.5px;color:var(--muted)}
  .ai-chat-form button{padding:.55rem .95rem!important;min-height:40px!important}
  .ai-chat-form-bottom{position:sticky;bottom:10px;z-index:10;box-shadow:0 8px 24px rgba(39,35,30,.1)}
  .ai-msg.is-user .ai-bubble{max-width:90%}
