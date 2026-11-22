@@ -15,7 +15,7 @@ export default async function Page(){
    db.from('posts').select('id,slug,title,excerpt,domain,published_at,updated_at').eq('status','published').order('published_at',{ascending:false}),
    db.from('posts').select('slug,title,excerpt,domain,body,published_at,updated_at').eq('status','published').order('published_at',{ascending:false}).limit(10),
    listPublicWeibos({limit:2,withComments:true}),
-   db.from('books').select('id,title,author,cover_url,status,rating,language',{count:'exact'}).order('created_at',{ascending:false}).limit(4),
+   db.from('books').select('id,title,author,cover_url,status,rating,language',{count:'exact'}).eq('status','Read').order('created_at',{ascending:false}).limit(4),
    db.from('trails').select('id,slug,title,summary,updated_at,trail_items(id,item_type)').eq('status','published').order('updated_at',{ascending:false}).limit(10),
    db.from('site_content').select('value').eq('key','home').maybeSingle()
   ])

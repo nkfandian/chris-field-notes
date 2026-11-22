@@ -19,7 +19,7 @@ function buildPageList(current,total){
 export default function BooksClient({initialBooks}){
   const topRef=useRef(null)
   const [language,setLanguage]=useState('All')
-  const [status,setStatus]=useState('All')
+  const [status,setStatus]=useState('Read')
   const [list,setList]=useState('All')
   const [page,setPage]=useState(1)
   const [expanded,setExpanded]=useState(()=>new Set())
@@ -27,7 +27,7 @@ export default function BooksClient({initialBooks}){
   useEffect(()=>{
     const sp=new URLSearchParams(window.location.search)
     const qList=sp.get('list'),qStatus=sp.get('status'),qLang=sp.get('language')
-    if(qList)setList(qList)
+    if(qList){setList(qList);if(!qStatus)setStatus('All')}
     if(qStatus)setStatus(qStatus)
     if(qLang)setLanguage(qLang)
   },[])
@@ -53,7 +53,7 @@ export default function BooksClient({initialBooks}){
   return <>
     <section className="book-controls" ref={topRef} aria-label="筛选书单">
       {row('语言',language,setLanguage,[['All','全部'],['Chinese','中文'],['English','英文']])}
-      {row('状态',status,setStatus,[['All','全部'],['Reading','在读'],['Read','已读'],['To Read','想读']])}
+      {row('状态',status,setStatus,[['Read','已读'],['Reading','在读'],['To Read','想读'],['All','全部']])}
       {lists.length>0&&row('专题',list,setList,[['All','全部'],...lists.map(x=>[x,x])])}
     </section>
     <p className="book-count" aria-live="polite">第 {currentPage} / {totalPages} 页 · 共 {shown.length} / {initialBooks.length} 本</p>
