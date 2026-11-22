@@ -292,8 +292,22 @@ export async function POST(request){
   const sources=candidates.slice(0,8).map(s=>({...s,title:redact(s.title),snippet:redact(s.snippet),context:redact(s.context)}))
 
   if(!sources.length){
+   const emptyAnswer='档案中没有找到与这个问题直接相关的记录，你可以换个关键词试试。'
+   if(isConfigured()){
+    try{
+     await createAdminClient().from('ask_logs').insert({
+      question,
+      answer:emptyAnswer,
+      mode:'empty',
+      ai_status:'no_sources',
+      source_count:0,
+      sources:[],
+      session_hash:clientKey(request,'ask-log')
+     })
+    }catch{}
+   }
    return Response.json({
-    answer:'档案中没有找到与这个问题直接相关的记录，你可以换个关键词试试。',
+    answer:emptyAnswer,
     mode:'empty',
     sources:[]
    },{headers:{'Cache-Control':'no-store'}})
@@ -303,12 +317,27 @@ export async function POST(request){
   const llm=allowDailyAI?await callLLM(question,sources,readingBackground,history):{reason:'daily_cap'}
   const answer=(llm?.answer||buildExtractiveSummary(question,sources)).replace(/范典/g,'Chris')
   const mode=llm?.mode||'extractive'
+  const publicSources=sources.map(({context,...rest})=>rest)
+
+  if(isConfigured()){
+   try{
+    await createAdminClient().from('ask_logs').insert({
+     question,
+     answer,
+     mode,
+     ai_status:llm?.reason||'unknown',
+     source_count:publicSources.length,
+     sources:publicSources.map(({type,title,date,url})=>({type,title,date,url})),
+     session_hash:clientKey(request,'ask-log')
+    })
+   }catch{}
+  }
 
   return Response.json({
    answer,
    mode,
    ai_status:llm?.reason||'unknown',
-   sources:sources.map(({context,...rest})=>rest)
+   sources:publicSources
   },{headers:{'Cache-Control':'no-store'}})
  }catch(error){
   console.error('ask archive failed',error)

@@ -12,6 +12,7 @@ const items=[
  ['/studio/site','首页内容'],
  ['/studio/about','ABOUT'],
  ['/studio/comments','互动审核'],
+ ['/studio/ask','AI 对话'],
  ['/studio/subscribers','订阅用户']
 ]
 
