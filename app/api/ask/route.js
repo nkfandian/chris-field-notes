@@ -65,10 +65,33 @@ async function fetchAllTable(db,table,selectCols,orderCol,asc=false){
  return rows
 }
 
-async function callLLM(question,sources){
+function buildReadingBackground(books){
+ const readBooks=books.filter(b=>b.status==='Read')
+ if(!readBooks.length)return ''
+ const catCounts={}
+ for(const b of readBooks){
+  for(const c of (b.custom_lists||[])){
+   if(c&&c!=='豆瓣导入'&&c!=='历史日志关联')catCounts[c]=(catCounts[c]||0)+1
+  }
+ }
+ const topCats=Object.entries(catCounts).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([c,n])=>`${c}(${n}本)`).join('、')
+ // 精选已读且高分(4-5星)并写有实质短评的代表作作为长期阅读背景
+ const highlights=readBooks
+  .filter(b=>(b.rating||0)>=4&&plainText(b.review||'').length>=20)
+  .sort((a,b)=>(b.rating||0)-(a.rating||0)||plainText(b.review||'').length-plainText(a.review||'').length)
+  .slice(0,22)
+  .map(b=>{
+   const rev=plainText(b.review||'').slice(0,110)
+   return `- 《${b.title}》(${b.author||'佚名'}，${b.rating}星)：${rev}${plainText(b.review||'').length>110?'…':''}`
+  })
+ return `Chris 已读共 ${readBooks.length} 本书${topCats?`，主要集中在：${topCats}`:''}。\n以下高分（4–5 星）且写有短评的已读书籍代表了他的核心阅读品味与思考底色：\n${highlights.join('\n')}`
+}
+
+async function callLLM(question,sources,readingBackground=''){
  const context=sources.map((s,i)=>`[${i+1}] (${s.type==='post'?'日志':s.type==='book'?'书单':'微博'} · ${s.date}) 《${s.title}》\n${s.context||s.snippet}`).join('\n\n')
- const systemPrompt='你是 Chris（范典）个人网站的档案 AI 助手。请严格基于下方提供的 Chris 历史日志、书单短评和微博原文，用自然、有条理、像真人对话一样的中文回答读者问题。不要编造原文之外的事实；在合适的位置用 [1] [2] 标注出处；如果材料有时间跨度，可以点出观点或经历随时间的演变。'
- const userPrompt=`读者问题：${question}\n\n检索到的原文材料：\n${context}`
+ const systemPrompt='你是 Chris（范典）个人网站的档案 AI 助手，也是基于他十八年阅读与写作构建的个人知识分身。请严格基于下方提供的 Chris 历史日志、书单短评、微博原文以及他的「已读高分书单背景」来回答读者问题：用自然、真诚、有条理的中文像作者本人一样对话；不仅列出书名，更要自然融入他读过这些书后的真实评价、星级偏好与观点脉络；不要编造原文之外的事实；在引用具体检索片段时标注 [1] [2] 出处。'
+ const bgBlock=readingBackground?`\n\n=== Chris 已读书单与核心书评背景 ===\n${readingBackground}`:''
+ const userPrompt=`读者问题：${question}\n\n=== 本次最相关的检索片段 ===\n${context}${bgBlock}`
 
  let lastReason='no_key'
  if(process.env.GEMINI_API_KEY){
@@ -194,7 +217,7 @@ export async function POST(request){
    const db=createPublicClient()
    const [p,b,w]=await Promise.all([
     fetchAllTable(db,'posts','slug,title,excerpt,body,published_at,domain','published_at',false),
-    fetchAllTable(db,'books','id,title,author,review,linked_post_slug,created_at','created_at',false),
+    fetchAllTable(db,'books','id,title,author,status,rating,review,custom_lists,linked_post_slug,created_at','created_at',false),
     listPublicWeibos({limit:5000,withComments:false})
    ])
    posts=p
@@ -225,17 +248,23 @@ export async function POST(request){
   }
 
   for(const b of books){
-   const total=scoreText(`${b.title} ${b.author} ${b.review}`,tokens,question)*2.2
-   if(total>0){
+   const listText=(b.custom_lists||[]).join(' ')
+   const base=scoreText(`${b.title} ${b.author} ${b.review} ${listText}`,tokens,question)
+   if(base>0){
+    const statusWeight=b.status==='Read'?1.6:b.status==='Reading'?1.4:0.65
+    const ratingWeight=(b.rating||0)>=5?1.3:(b.rating||0)>=4?1.15:1
+    const reviewWeight=plainText(b.review||'').length>=15?1.25:1
+    const total=base*2.2*statusWeight*ratingWeight*reviewWeight
     const rev=plainText(b.review||'')
+    const metaTag=[b.status==='Read'?'已读':b.status==='Reading'?'在读':'想读',b.rating?`${b.rating}星`:'',String(b.created_at||'').slice(0,7)].filter(Boolean).join(' · ')
     candidates.push({
      type:'book',
      score:total,
      title:`${b.title}${b.author?` · ${b.author}`:''}`,
-     date:String(b.created_at||'').slice(0,7)||'书单',
+     date:metaTag||'书单',
      url:`/books#book-${b.id}`,
      snippet:rev.slice(0,220),
-     context:rev.slice(0,500)
+     context:`[${metaTag}] ${rev.slice(0,650)}`
     })
    }
   }
@@ -267,7 +296,8 @@ export async function POST(request){
    },{headers:{'Cache-Control':'no-store'}})
   }
 
-  const llm=allowDailyAI?await callLLM(question,sources):{reason:'daily_cap'}
+  const readingBackground=buildReadingBackground(books)
+  const llm=allowDailyAI?await callLLM(question,sources,readingBackground):{reason:'daily_cap'}
   const answer=llm?.answer||buildExtractiveSummary(question,sources)
   const mode=llm?.mode||'extractive'
 
