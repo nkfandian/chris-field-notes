@@ -1,7 +1,6 @@
 'use client'
 import {useMemo,useState} from 'react'
 import Link from 'next/link'
-import StudioNav from '../studio-nav'
 
 const MODE_LABEL={ai:'✦ AI 分身',extractive:'智能摘要',empty:'无匹配'}
 const MIGRATION_SQL=`create table if not exists public.ask_logs (
@@ -68,8 +67,8 @@ export default function AskLogsClient({initial=[],tableMissing=false,errorMessag
   }catch{}
  }
 
- return <div className="studio-page"><StudioNav/>
-  <header className="studio-head">
+ return <main className="studio">
+  <header>
    <div><h1>AI 作者对话记录</h1><p>共 {logs.length} 条访客提问记录（仅管理员可见，不记录明文 IP）。</p></div>
    <div className="studio-actions"><Link href="/search?mode=ask">去前台体验 ↗</Link></div>
   </header>
@@ -117,5 +116,5 @@ export default function AskLogsClient({initial=[],tableMissing=false,errorMessag
     {!visible.length&&<p className="moderation-empty">暂无匹配的 AI 对话记录。</p>}
    </div>
   </>}
- </div>
+ </main>
 }
