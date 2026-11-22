@@ -158,7 +158,7 @@ export default function WeiboFeed({items=[],compact=false}){
       {bodyExpanded?<PostBody body={item.body}/>:<p className="weibo-collapsed-text" onClick={()=>toggleBody(item.id)}>{summaryText}</p>}
       {foldable&&<button type="button" className="weibo-toggle" aria-expanded={bodyExpanded} onClick={()=>toggleBody(item.id)}>{bodyExpanded?'收起 ↑':'展开全文 ↓'}</button>}
      </div>
-     <div className="weibo-actions">
+     {bodyExpanded&&<div className="weibo-actions">
       <button type="button" className={`weibo-action${liked?' is-active':''}`} aria-pressed={liked} aria-label={`点赞 ${likes}`} onClick={()=>handleLike(item.id)}>
        <span aria-hidden="true">{liked?'♥':'♡'}</span>
        <span>{likes}</span>
@@ -167,8 +167,8 @@ export default function WeiboFeed({items=[],compact=false}){
        <span>评论</span>
        <span>{commentCount}</span>
       </button>
-     </div>
-     {(topComments.length>0||isOpen)&&<div className="weibo-comments">
+     </div>}
+     {bodyExpanded&&(topComments.length>0||isOpen)&&<div className="weibo-comments">
       {topComments.length>0&&<div className="comment-list">
        {topComments.map(comment=><article className="comment" key={comment.id}>
         <header><b>{comment.name}</b><time dateTime={comment.created_at}>{new Date(comment.created_at).toLocaleDateString('zh-CN')}</time></header>
