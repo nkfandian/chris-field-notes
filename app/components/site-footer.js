@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import SubscribeForm from './subscribe-form'
 import InteractionForm from './interaction-form'
+import BackToTop from './back-to-top'
 import {AboutLink} from './about-modal'
 import './site-chrome.css'
 
@@ -16,7 +17,7 @@ export default function SiteFooter(){
     </section>
     <div className="sc-footer-bar">
       <span>CHRIS / FIELD NOTES © 2026</span>
-      <nav aria-label="页脚导航"><Link href="/logs">日志</Link><Link href="/weibo">微博</Link><Link href="/books">书单</Link><Link href="/trails">轨迹</Link><Link href="/annual">年度盘点</Link><AboutLink/><Link href="/privacy">隐私政策</Link><a href="#top">返回顶部 ↑</a></nav>
+      <nav aria-label="页脚导航"><Link href="/logs">日志</Link><Link href="/weibo">微博</Link><Link href="/books">书单</Link><Link href="/trails">轨迹</Link><Link href="/annual">年度盘点</Link><AboutLink/><Link href="/privacy">隐私政策</Link><BackToTop/></nav>
     </div>
   </footer>
 }
