@@ -71,7 +71,7 @@ async function callLLM(question,sources){
  const userPrompt=`读者问题：${question}\n\n检索到的原文材料：\n${context}`
 
  if(process.env.GEMINI_API_KEY){
-  for(const model of ['gemini-2.5-flash','gemini-2.0-flash']){
+  for(const model of ['gemini-flash-latest','gemini-3.1-flash-lite','gemini-flash-lite-latest','gemini-3-flash-preview']){
    try{
     const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,{
      method:'POST',
