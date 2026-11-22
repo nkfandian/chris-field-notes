@@ -70,6 +70,7 @@ async function callLLM(question,sources){
  const systemPrompt='你是 Chris（范典）个人网站的档案 AI 助手。请严格基于下方提供的 Chris 历史日志、书单短评和微博原文，用自然、有条理、像真人对话一样的中文回答读者问题。不要编造原文之外的事实；在合适的位置用 [1] [2] 标注出处；如果材料有时间跨度，可以点出观点或经历随时间的演变。'
  const userPrompt=`读者问题：${question}\n\n检索到的原文材料：\n${context}`
 
+ let lastReason='no_key'
  if(process.env.GEMINI_API_KEY){
   for(const model of ['gemini-3.1-flash-lite','gemini-flash-lite-latest','gemini-3-flash-preview','gemini-flash-latest']){
    try{
@@ -85,11 +86,14 @@ async function callLLM(question,sources){
     if(res.ok){
      const gData=await res.json()
      const text=gData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
-     if(text)return {answer:text,mode:'ai'}
+     if(text)return {answer:text,mode:'ai',reason:'ok'}
+     lastReason=`empty_${model}`
     }else{
+     lastReason=`http_${res.status}_${model}`
      console.error('ask gemini error',model,res.status,await res.text().catch(()=>''))
     }
    }catch(err){
+    lastReason=`err_${model}`
     console.error('ask gemini exception',model,err?.message||err)
    }
   }
@@ -142,7 +146,7 @@ async function callLLM(question,sources){
   }catch{}
  }
 
- return null
+ return {reason:lastReason}
 }
 
 function buildExtractiveSummary(question,sources){
@@ -261,13 +265,14 @@ export async function POST(request){
    },{headers:{'Cache-Control':'no-store'}})
   }
 
-  const llm=allowDailyAI?await callLLM(question,sources):null
+  const llm=allowDailyAI?await callLLM(question,sources):{reason:'daily_cap'}
   const answer=llm?.answer||buildExtractiveSummary(question,sources)
   const mode=llm?.mode||'extractive'
 
   return Response.json({
    answer,
    mode,
+   ai_status:llm?.reason||'unknown',
    sources:sources.map(({context,...rest})=>rest)
   },{headers:{'Cache-Control':'no-store'}})
  }catch(error){
