@@ -21,14 +21,18 @@ export default async function AnnualPage({searchParams}){
  let posts=demoPosts,weibos=[],books=[]
  if(isConfigured()){
   const db=createPublicClient()
-  const [{data:p},w,{data:b}]=await Promise.all([
+  const [{data:p},w]=await Promise.all([
    db.from('posts').select('id,slug,title,domain,body,excerpt,published_at').eq('status','published').order('published_at',{ascending:false}),
-   listPublicWeibos({limit:300,withComments:false}),
-   db.from('books').select('id,title,author,status,rating,created_at').order('sort_order')
+   listPublicWeibos({limit:300,withComments:false})
   ])
+  for(let from=0;from<5000;from+=1000){
+   const {data:b}=await db.from('books').select('id,title,author,status,rating,created_at').order('created_at',{ascending:false}).range(from,from+999)
+   if(!b||!b.length)break
+   books.push(...b)
+   if(b.length<1000)break
+  }
   posts=p||[]
   weibos=w||[]
-  books=b||[]
  }
  const years=[...new Set([
   ...posts.map(p=>String(p.published_at||'').slice(0,4)),
@@ -39,6 +43,8 @@ export default async function AnnualPage({searchParams}){
  const year=years.includes(requested)?requested:(years[0]||'2026')
  const yearPosts=posts.filter(p=>String(p.published_at||'').startsWith(year))
  const yearWeibos=weibos.filter(w=>String(w.published_at||'').startsWith(year))
+ const yearBooks=books.filter(b=>String(b.created_at||'').startsWith(year))
+ const cumulativeBooks=books.filter(b=>{const y=String(b.created_at||'').slice(0,4);return /^\d{4}$/.test(y)&&y<=year}).length
  const postChars=yearPosts.reduce((sum,p)=>sum+plainText(p.body||p.excerpt||'').replace(/\s/g,'').length,0)
  const weiboChars=yearWeibos.reduce((sum,w)=>sum+plainText(w.body||'').replace(/\s/g,'').length,0)
  const totalChars=postChars+weiboChars
@@ -63,7 +69,7 @@ export default async function AnnualPage({searchParams}){
     <div><small>日志</small><strong>{yearPosts.length}</strong><span>篇</span></div>
     <div><small>微博</small><strong>{yearWeibos.length}</strong><span>条</span></div>
     <div><small>总字数</small><strong>{(totalChars/10000).toFixed(1)}</strong><span>万字</span></div>
-    <div><small>书架累计</small><strong>{books.length}</strong><span>本</span></div>
+    <div><small>当年书单</small><strong>{yearBooks.length}</strong><span>本（累计 {cumulativeBooks} 本）</span></div>
    </section>
 
    {domainList.length>0&&<section className="annual-domains">
