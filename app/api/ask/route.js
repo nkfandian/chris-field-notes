@@ -71,7 +71,7 @@ async function callLLM(question,sources){
  const userPrompt=`读者问题：${question}\n\n检索到的原文材料：\n${context}`
 
  if(process.env.GEMINI_API_KEY){
-  for(const model of ['gemini-flash-latest','gemini-3.1-flash-lite','gemini-flash-lite-latest','gemini-3-flash-preview']){
+  for(const model of ['gemini-3.1-flash-lite','gemini-flash-lite-latest','gemini-3-flash-preview','gemini-flash-latest']){
    try{
     const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,{
      method:'POST',
@@ -80,15 +80,21 @@ async function callLLM(question,sources){
       systemInstruction:{parts:[{text:systemPrompt}]},
       contents:[{parts:[{text:userPrompt}]}]
      }),
-     signal:AbortSignal.timeout(15000)
+     signal:AbortSignal.timeout(9000)
     })
     if(res.ok){
      const gData=await res.json()
      const text=gData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
      if(text)return {answer:text,mode:'ai'}
+    }else{
+     console.error('ask gemini error',model,res.status,await res.text().catch(()=>''))
     }
-   }catch{}
+   }catch(err){
+    console.error('ask gemini exception',model,err?.message||err)
+   }
   }
+ }else{
+  console.error('ask llm skipped: no GEMINI_API_KEY/OPENAI_API_KEY/ANTHROPIC_API_KEY')
  }
 
  if(process.env.OPENAI_API_KEY){
