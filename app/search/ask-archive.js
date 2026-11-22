@@ -13,7 +13,7 @@ const SAMPLE_QUESTIONS=[
  '你的阅读品味和知识结构是怎样的？'
 ]
 
-export default function AskArchive(){
+export default function AskArchive({counts}){
  const [question,setQuestion]=useState('')
  const [loading,setLoading]=useState(false)
  const [error,setError]=useState('')
@@ -55,9 +55,12 @@ export default function AskArchive(){
   runAsk(question)
  }
 
- return <section className="ai-chat-shell" aria-label="和 AI 作者对话">
+  const countLine=counts
+   ?`基于 ${counts.posts.toLocaleString('en-US')} 篇日志 · ${counts.books.toLocaleString('en-US')} 本书单 · ${counts.weibos.toLocaleString('en-US')} 条微博`
+   :'基于全站已发布日志 · 书单 · 微博'
+  return <section className="ai-chat-shell" aria-label="和 AI 作者对话">
   <div className="ai-chat-head">
-   <div className="ai-chat-status"><span className="ai-dot" aria-hidden="true"/><strong>Chris · AI 分身</strong><small>基于 290 篇日志 · 1,065 本书单 · 1,813 条微博</small></div>
+   <div className="ai-chat-status"><span className="ai-dot" aria-hidden="true"/><strong>Chris · AI 分身</strong><small>{countLine}</small></div>
    {messages.length>0&&<button type="button" className="ai-reset" onClick={()=>{setMessages([]);setError('')}}>开启新对话</button>}
   </div>
 
