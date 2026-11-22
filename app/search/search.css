@@ -25,9 +25,11 @@
 .ai-chat-status{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;font:13px var(--mono)}
 .ai-chat-status small{color:var(--muted);font-size:12px}
 .ai-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(63,113,140,.18)}
-.ai-reset{border:1px solid var(--line);background:transparent;color:var(--muted);padding:.35rem .7rem;font:12px var(--mono);cursor:pointer}
-.ai-reset:hover{border-color:var(--accent);color:var(--accent)}
-.ai-chat-body{display:flex;flex-direction:column;gap:1.25rem;padding:1.4rem 0;min-height:240px}
+.ai-reset{border:1px solid var(--line);border-radius:999px;background:var(--paper);color:var(--muted);padding:.38rem .85rem;font:12px/1 var(--mono);white-space:nowrap;flex-shrink:0;cursor:pointer;transition:border-color .18s,color .18s,background .18s}
+.ai-reset:hover{border-color:var(--accent);color:var(--accent);background:rgba(63,113,140,.06)}
+.ai-chat-body{display:flex;flex-direction:column;gap:1.25rem;padding:1.4rem 0;min-height:220px}
+.ai-chat-body.is-empty{min-height:0;padding:1.1rem 0 .2rem}
+.ai-chat-form-top{margin-top:1.1rem}
 .ai-welcome p{margin:0 0 1rem;font:1.02rem/1.8 var(--serif);color:var(--muted)}
 .ask-samples{display:flex;flex-wrap:wrap;gap:.55rem;margin:0}
 .ask-samples button{border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:.45rem .85rem;border-radius:999px;font:12px var(--mono);cursor:pointer;transition:border-color .2s,color .2s,background .2s}
@@ -68,12 +70,21 @@
 .ask-sources h3{margin:.35rem 0;font:600 1.1rem/1.45 var(--serif)}
 .ask-sources p{margin:0;color:var(--muted);font-size:.92rem;line-height:1.7}
 @media(max-width:600px){
- .search-page{padding:0 5vw 9vh} .search-page>header h1{font-size:2.1rem;margin-bottom:1.4rem}
+ .search-page{padding:0 5vw 9vh} .search-page>header h1{font-size:2rem;margin-bottom:1rem}
 
- .search-page>header{padding:2.4rem 0 2rem}
+ .search-page>header{padding:1.4rem 0 1.4rem}
+ .search-modes{margin-bottom:1.25rem}
  .search-page form{grid-template-columns:1fr auto}
  .search-page form label{grid-column:1/-1;margin-bottom:.7rem}
  .search-page input{font-size:1.2rem}
  .search-page form button{padding:.8rem;min-height:44px}
  .result-group article:hover{padding-left:0}
+ .ai-chat-shell{padding:1rem}
+ .ai-chat-head{align-items:flex-start;gap:.75rem;padding-bottom:.85rem}
+ .ai-chat-form{padding:.4rem .45rem .4rem .85rem!important;gap:.5rem}
+ .ai-chat-form input{font-size:16px!important}
+ .ai-chat-form button{padding:.55rem .95rem!important;min-height:40px!important}
+ .ai-chat-form-bottom{position:sticky;bottom:10px;z-index:10;box-shadow:0 8px 24px rgba(39,35,30,.1)}
+ .ai-msg.is-user .ai-bubble{max-width:90%}
+ .ai-msg.is-assistant .ai-bubble{padding:.85rem 1rem}
 }

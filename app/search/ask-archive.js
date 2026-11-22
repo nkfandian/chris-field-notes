@@ -61,9 +61,14 @@ export default function AskArchive(){
    {messages.length>0&&<button type="button" className="ai-reset" onClick={()=>{setMessages([]);setError('')}}>开启新对话</button>}
   </div>
 
-  <div className="ai-chat-body">
+  {!messages.length&&<form className="ai-chat-form ai-chat-form-top" onSubmit={submit}>
+   <input id="ask-q" value={question} onChange={e=>setQuestion(e.target.value)} placeholder="向 AI 作者提问，例如：对何伟怎么看？" maxLength={160} aria-label="向 AI 作者提问"/>
+   <button disabled={loading}>{loading?'思考中…':'发送 ✦'}</button>
+  </form>}
+
+  <div className={`ai-chat-body${messages.length?'':' is-empty'}`}>
    {!messages.length&&<div className="ai-welcome">
-    <p>你好，我是 Chris 的数字分身。我已经预装了这十八年来写下的全部长文、上千本已读高分书单的短评以及微博随记。你可以直接问我任何问题，也支持连续追问。</p>
+    <p>你好，我是 Chris 的数字分身。已预装十八年全部长文、高分已读书单短评与微博随记，支持连续追问。</p>
     <div className="ask-samples" aria-label="示例问题">
      {SAMPLE_QUESTIONS.map(q=><button type="button" key={q} onClick={()=>runAsk(q)} disabled={loading}>✦ {q}</button>)}
     </div>
@@ -92,9 +97,9 @@ export default function AskArchive(){
 
   {error&&<p className="ask-error" role="status">{error}</p>}
 
-  <form className="ai-chat-form" onSubmit={submit}>
-   <input id="ask-q" value={question} onChange={e=>setQuestion(e.target.value)} placeholder="向 AI 作者提问，例如：对何伟怎么看？支持连续追问…" maxLength={160} aria-label="向 AI 作者提问"/>
+  {messages.length>0&&<form className="ai-chat-form ai-chat-form-bottom" onSubmit={submit}>
+   <input id="ask-q" value={question} onChange={e=>setQuestion(e.target.value)} placeholder="继续追问 AI 作者…" maxLength={160} aria-label="继续追问 AI 作者"/>
    <button disabled={loading}>{loading?'思考中…':'发送 ✦'}</button>
-  </form>
+  </form>}
  </section>
 }
