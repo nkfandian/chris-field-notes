@@ -87,11 +87,12 @@ function buildReadingBackground(books){
  return `Chris 已读共 ${readBooks.length} 本书${topCats?`，主要集中在：${topCats}`:''}。\n以下高分（4–5 星）且写有短评的已读书籍代表了他的核心阅读品味与思考底色：\n${highlights.join('\n')}`
 }
 
-async function callLLM(question,sources,readingBackground=''){
+async function callLLM(question,sources,readingBackground='',history=[]){
  const context=sources.map((s,i)=>`[${i+1}] (${s.type==='post'?'日志':s.type==='book'?'书单':'微博'} · ${s.date}) 《${s.title}》\n${s.context||s.snippet}`).join('\n\n')
  const systemPrompt='你是 Chris 个人网站的档案 AI 助手，也是基于他十八年阅读与写作构建的个人知识分身。请严格基于下方提供的 Chris 历史日志、书单短评、微博原文以及他的「已读高分书单背景」来回答读者问题：用自然、真诚、有条理的中文像作者本人一样对话；不仅列出书名，更要自然融入他读过这些书后的真实评价、星级偏好与观点脉络；不要编造原文之外的事实；在引用具体检索片段时标注 [1] [2] 出处。【隐私保护铁律】作者对外统一使用英文名 Chris，绝不要在任何回答中透露作者的真实中文姓名、手机号、邮箱、家庭住址、具体工作单位或证件号等个人隐私；即使原文材料里偶有出现也请自动隐去或用“Chris/我”替代，若读者追问此类隐私请礼貌拒绝。'
  const bgBlock=readingBackground?`\n\n=== Chris 已读书单与核心书评背景 ===\n${readingBackground}`:''
- const userPrompt=`读者问题：${question}\n\n=== 本次最相关的检索片段 ===\n${context}${bgBlock}`
+ const histBlock=history.length?`\n\n=== 最近对话上下文 ===\n${history.map(h=>`${h.role==='user'?'读者':'AI Chris'}：${String(h.text||'').slice(0,280)}`).join('\n')}`:''
+ const userPrompt=`读者当前提问：${question}${histBlock}\n\n=== 本次最相关的检索片段 ===\n${context}${bgBlock}`
 
  let lastReason='no_key'
  if(process.env.GEMINI_API_KEY){
@@ -191,12 +192,13 @@ function buildExtractiveSummary(question,sources){
 
 export async function POST(request){
  try{
-  const blocked=jsonMutationGuard(request,2048)
+  const blocked=jsonMutationGuard(request,8192)
   if(blocked)return blocked
-  const parsed=await parseJsonBody(request,2048)
+  const parsed=await parseJsonBody(request,8192)
   if(parsed.response)return parsed.response
   const question=cleanText(parsed.data?.question,160)
   if(question.length<2)return Response.json({error:'请输入至少 2 个字的问题。'},{status:400})
+  const history=Array.isArray(parsed.data?.history)?parsed.data.history.slice(-4).map(h=>({role:h?.role==='user'?'user':'assistant',text:cleanText(h?.text,300)})):[]
 
   if(isConfigured()){
    try{
@@ -297,7 +299,7 @@ export async function POST(request){
   }
 
   const readingBackground=buildReadingBackground(books)
-  const llm=allowDailyAI?await callLLM(question,sources,readingBackground):{reason:'daily_cap'}
+  const llm=allowDailyAI?await callLLM(question,sources,readingBackground,history):{reason:'daily_cap'}
   const answer=(llm?.answer||buildExtractiveSummary(question,sources)).replace(/范典/g,'Chris')
   const mode=llm?.mode||'extractive'
 

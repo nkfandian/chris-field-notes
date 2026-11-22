@@ -20,10 +20,37 @@
 .search-modes{display:flex;gap:1.5rem;border-bottom:1px solid var(--line);margin-bottom:2rem;font:13px var(--mono)}
 .search-modes a{padding:.55rem 0;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
 .search-modes a.active{color:var(--accent);border-bottom-color:var(--accent)}
-.ask-samples{display:flex;flex-wrap:wrap;gap:.5rem;margin:1rem 0 0;max-width:1100px}
-.ask-samples button{border:1px solid var(--line);background:transparent;color:var(--muted);padding:.35rem .75rem;font:12px var(--mono);cursor:pointer;transition:border-color .2s,color .2s}
-.ask-samples button:hover{border-color:var(--accent);color:var(--accent)}
-.ask-badge{display:inline-block;margin-bottom:.75rem;padding:.2rem .55rem;border:1px solid var(--line);font:11px var(--mono);color:var(--accent)}
+.ai-chat-shell{max-width:920px;border:1px solid var(--line);background:rgba(255,255,255,.35);padding:1.25rem 1.5rem}
+.ai-chat-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding-bottom:1rem;border-bottom:1px solid var(--line)}
+.ai-chat-status{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;font:13px var(--mono)}
+.ai-chat-status small{color:var(--muted);font-size:12px}
+.ai-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(63,113,140,.18)}
+.ai-reset{border:1px solid var(--line);background:transparent;color:var(--muted);padding:.35rem .7rem;font:12px var(--mono);cursor:pointer}
+.ai-reset:hover{border-color:var(--accent);color:var(--accent)}
+.ai-chat-body{display:flex;flex-direction:column;gap:1.25rem;padding:1.4rem 0;min-height:240px}
+.ai-welcome p{margin:0 0 1rem;font:1.02rem/1.8 var(--serif);color:var(--muted)}
+.ask-samples{display:flex;flex-wrap:wrap;gap:.55rem;margin:0}
+.ask-samples button{border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:.45rem .85rem;border-radius:999px;font:12px var(--mono);cursor:pointer;transition:border-color .2s,color .2s,background .2s}
+.ask-samples button:hover{border-color:var(--accent);color:var(--accent);background:rgba(63,113,140,.06)}
+.ai-msg{display:flex;flex-direction:column;gap:.45rem}
+.ai-msg.is-user{align-items:flex-end}
+.ai-msg.is-user .ai-bubble{max-width:82%;padding:.75rem 1.05rem;background:var(--ink);color:var(--paper);font:.98rem/1.65 var(--serif);border-radius:12px 12px 2px 12px}
+.ai-msg.is-assistant{align-items:flex-start}
+.ai-msg.is-assistant .ai-bubble{width:100%;padding:1rem 1.2rem;background:var(--paper);border:1px solid var(--line);border-radius:2px 12px 12px 12px}
+.ai-typing{display:flex;align-items:center;gap:.45rem;color:var(--muted);font:13px var(--mono)}
+.ai-typing span{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:aiPulse 1.2s infinite ease-in-out}
+.ai-typing span:nth-child(2){animation-delay:.2s}
+.ai-typing span:nth-child(3){animation-delay:.4s}
+.ai-typing em{font-style:normal;margin-left:.35rem}
+@keyframes aiPulse{0%,80%,100%{opacity:.25;transform:scale(.85)}40%{opacity:1;transform:scale(1)}}
+.ai-citations{width:100%;margin-top:.2rem}
+.ai-citations summary{cursor:pointer;font:12px var(--mono);color:var(--accent);padding:.3rem 0}
+.ask-badge{display:inline-block;padding:.2rem .55rem;border:1px solid var(--accent);border-radius:999px;font:11px var(--mono);color:var(--accent)}
+.ai-chat-form{display:grid!important;grid-template-columns:minmax(0,1fr) auto!important;gap:.75rem;align-items:center!important;border:1px solid var(--line)!important;background:var(--paper);padding:.45rem .55rem .45rem 1rem!important;border-radius:10px;max-width:none!important}
+.ai-chat-form:focus-within{border-color:var(--accent)!important}
+.ai-chat-form input{font:1rem/1.5 var(--serif)!important;padding:.35rem 0}
+.ai-chat-form button{border-radius:7px!important;padding:.65rem 1.25rem!important;background:var(--accent)!important;color:var(--paper)!important;font:13px var(--mono)!important;white-space:nowrap}
+.ai-chat-form button:disabled{opacity:.6}
 .ask-error{font:12px var(--mono);color:#8b453d;margin:1rem 0 0}
 .ask-result{margin-top:2rem;max-width:900px}
 .ask-answer{font:1.05rem/1.85 var(--serif);color:var(--ink);margin:0 0 1.5rem}
