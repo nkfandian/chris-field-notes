@@ -28,6 +28,13 @@
 .book-link{display:inline-block;margin-top:.6rem;color:var(--moss);font:12px var(--mono);text-decoration:none}
 .book-link:hover{text-decoration:underline;text-underline-offset:.3em}
 .book-empty{grid-column:1/-1;padding:10vh 0;text-align:center;color:var(--muted)}
+.books-pagination{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:2.4rem;padding:1.8rem 0 0;border-top:1px solid var(--line);font:13px var(--mono)}
+.books-pagination .page-numbers{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;justify-content:center}
+.books-pagination .page-numbers button,.books-pagination .page-ellipsis,.books-pagination .page-step{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:36px;padding:0 .5rem;border:0;background:transparent;color:var(--muted);font:inherit;cursor:pointer}
+.books-pagination .page-ellipsis{cursor:default}
+.books-pagination .page-numbers button:hover,.books-pagination .page-step:hover:not(:disabled){color:var(--ink)}
+.books-pagination .page-numbers button.active{color:var(--accent);border-bottom:2px solid var(--accent);font-weight:700}
+.books-pagination .page-step:disabled{opacity:.4;cursor:default}
 @media(max-width:600px){
   .books-page{padding:0 5vw 9vh}
   .books-head{margin:2.4rem 0 1.4rem}

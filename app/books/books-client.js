@@ -1,31 +1,70 @@
 'use client'
-import {useMemo,useState} from 'react'
+import {useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
+
+const PAGE_SIZE=10
 const statusLabel={Reading:'在读',Read:'已读','To Read':'想读'}
+const formatMonth=iso=>iso?String(iso).slice(0,7):''
+
+function buildPageList(current,total){
+  if(total<=7)return Array.from({length:total},(_,i)=>i+1)
+  const pages=[1]
+  if(current>3)pages.push('...')
+  for(let p=Math.max(2,current-1);p<=Math.min(total-1,current+1);p++)pages.push(p)
+  if(current<total-2)pages.push('...')
+  pages.push(total)
+  return pages
+}
+
 export default function BooksClient({initialBooks}){
-  const [language,setLanguage]=useState('All'),[status,setStatus]=useState('All'),[list,setList]=useState('All'),[expanded,setExpanded]=useState(()=>new Set())
+  const topRef=useRef(null)
+  const [language,setLanguage]=useState('All')
+  const [status,setStatus]=useState('All')
+  const [list,setList]=useState('All')
+  const [page,setPage]=useState(1)
+  const [expanded,setExpanded]=useState(()=>new Set())
+
   const lists=useMemo(()=>[...new Set(initialBooks.flatMap(b=>b.custom_lists||[]))].sort(),[initialBooks])
-  const shown=initialBooks.filter(b=>(language==='All'||b.language===language)&&(status==='All'||b.status===status)&&(list==='All'||(b.custom_lists||[]).includes(list)))
+  const shown=useMemo(()=>initialBooks.filter(b=>(language==='All'||b.language===language)&&(status==='All'||b.status===status)&&(list==='All'||(b.custom_lists||[]).includes(list))),[initialBooks,language,status,list])
+
+  const totalPages=Math.max(1,Math.ceil(shown.length/PAGE_SIZE))
+  const currentPage=Math.min(page,totalPages)
+  const paged=shown.slice((currentPage-1)*PAGE_SIZE,currentPage*PAGE_SIZE)
+  const pageList=buildPageList(currentPage,totalPages)
+
   const toggle=id=>setExpanded(current=>{const next=new Set(current);next.has(id)?next.delete(id):next.add(id);return next})
-  const row=(label,value,setValue,options)=><div className="book-filter" role="group" aria-label={label}><span>{label}</span><div>{options.map(([key,text])=><button type="button" className={value===key?'active':''} aria-pressed={value===key} onClick={()=>setValue(key)} key={key}>{text}</button>)}</div></div>
+  const changeFilter=(setter,val)=>{setter(val);setPage(1)}
+  const goPage=next=>{
+    const p=Math.max(1,Math.min(totalPages,next))
+    setPage(p)
+    topRef.current?.scrollIntoView({behavior:'smooth',block:'start'})
+  }
+
+  const row=(label,value,setter,options)=><div className="book-filter" role="group" aria-label={label}><span>{label}</span><div>{options.map(([key,text])=><button type="button" className={value===key?'active':''} aria-pressed={value===key} onClick={()=>changeFilter(setter,key)} key={key}>{text}</button>)}</div></div>
+
   return <>
-    <section className="book-controls" aria-label="筛选书单">
+    <section className="book-controls" ref={topRef} aria-label="筛选书单">
       {row('语言',language,setLanguage,[['All','全部'],['Chinese','中文'],['English','英文']])}
       {row('状态',status,setStatus,[['All','全部'],['Reading','在读'],['Read','已读'],['To Read','想读']])}
       {lists.length>0&&row('专题',list,setList,[['All','全部'],...lists.map(x=>[x,x])])}
     </section>
-    <p className="book-count" aria-live="polite">{shown.length} / {initialBooks.length} 本</p>
-    <section className="book-grid">{shown.map(book=>{
-      const open=expanded.has(book.id),long=(book.review||'').length>60
+    <p className="book-count" aria-live="polite">第 {currentPage} / {totalPages} 页 · 共 {shown.length} / {initialBooks.length} 本</p>
+    <section className="book-grid">{paged.map(book=>{
+      const open=expanded.has(book.id),long=(book.review||'').length>60,month=formatMonth(book.created_at)
       return <article className="book-card" id={`book-${book.id}`} key={book.id}>
         <div className="book-cover">{book.cover_url?<img src={book.cover_url} alt={`${book.title} 封面`} loading="lazy"/>:<span>暂无封面</span>}</div>
-        <p className="book-meta"><span>{book.language==='English'?'英文':'中文'} · {statusLabel[book.status]||book.status}</span>{book.rating>0&&<span className="book-rating" aria-label={`评分 ${book.rating} / 5`}>{'★'.repeat(book.rating)}</span>}</p>
+        <p className="book-meta"><span>{book.language==='English'?'英文':'中文'} · {statusLabel[book.status]||book.status}{month?` · ${month}`:''}</span>{book.rating>0&&<span className="book-rating" aria-label={`评分 ${book.rating} / 5`}>{'★'.repeat(book.rating)}</span>}</p>
         <h2>{book.title}</h2>
         {book.author&&<p className="book-author">{book.author}</p>}
         {book.review&&<div className={`book-review${open?' is-open':''}`}><p>{book.review}</p>{long&&<button type="button" onClick={()=>toggle(book.id)} aria-expanded={open}>{open?'收起':'展开短评'}</button>}</div>}
         {book.linked_post_slug&&<Link className="book-link" href={`/logs/${encodeURIComponent(book.linked_post_slug)}`}>关联日志 →</Link>}
       </article>})}
-      {!shown.length&&<div className="book-empty">没有符合条件的书。</div>}
+      {!paged.length&&<div className="book-empty">没有符合条件的书。</div>}
     </section>
+    {totalPages>1&&<nav className="books-pagination" aria-label="书单分页">
+      <button type="button" className="page-step" disabled={currentPage<=1} onClick={()=>goPage(currentPage-1)}>← 上一页</button>
+      <div className="page-numbers">{pageList.map((item,idx)=>item==='...'?<span className="page-ellipsis" key={`e-${idx}`}>…</span>:<button type="button" key={item} className={item===currentPage?'active':''} aria-current={item===currentPage?'page':undefined} onClick={()=>goPage(item)}>{item}</button>)}</div>
+      <button type="button" className="page-step" disabled={currentPage>=totalPages} onClick={()=>goPage(currentPage+1)}>下一页 →</button>
+    </nav>}
   </>
 }
