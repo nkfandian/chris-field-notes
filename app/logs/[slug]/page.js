@@ -52,7 +52,7 @@ export async function generateMetadata({params}){
   const card=ogImage(post.title),contentImage=firstPostImage(post.body)
   const description=seoDescription(post.excerpt||post.body)
   const keywords=[labels[post.domain],...(post.tags||[])].filter(Boolean)
-  const images=contentImage?[{url:contentImage,alt:post.title},{url:card,width:1200,height:630,alt:post.title}]:[{url:card,width:1200,height:630,alt:post.title}]
+  const images=contentImage?[{url:card,width:512,height:512,alt:post.title},{url:contentImage,alt:post.title}]:[{url:card,width:512,height:512,alt:post.title}]
   return {
     title:post.title,
     description,
