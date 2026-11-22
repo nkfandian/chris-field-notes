@@ -35,6 +35,7 @@
 .ask-samples button{border:1px solid var(--line);background:var(--paper);color:var(--ink);padding:.45rem .85rem;border-radius:999px;font:12px var(--mono);cursor:pointer;transition:border-color .2s,color .2s,background .2s}
 .ask-samples button:hover{border-color:var(--accent);color:var(--accent);background:rgba(63,113,140,.06)}
 .ai-msg{display:flex;flex-direction:column;gap:.45rem}
+.ai-msg.is-assistant{scroll-margin-top:90px}
 .ai-msg.is-user{align-items:flex-end}
 .ai-msg.is-user .ai-bubble{max-width:82%;padding:.75rem 1.05rem;background:var(--ink);color:var(--paper);font:.98rem/1.65 var(--serif);border-radius:12px 12px 2px 12px}
 .ai-msg.is-assistant{align-items:flex-start}

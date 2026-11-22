@@ -19,6 +19,7 @@ export default function AskArchive({counts}){
  const [error,setError]=useState('')
  const [messages,setMessages]=useState([])
  const bottomRef=useRef(null)
+ const answerRef=useRef(null)
 
  async function runAsk(raw){
   if(loading)return
@@ -43,7 +44,8 @@ export default function AskArchive({counts}){
     mode:data.mode||'extractive',
     sources:data.sources||[]
    }])
-   setTimeout(()=>bottomRef.current?.scrollIntoView({behavior:'smooth',block:'nearest'}),80)
+   // 答案出来后回到答案开头（而不是跳到答案末尾），方便从头往下读
+   setTimeout(()=>answerRef.current?.scrollIntoView({behavior:'smooth',block:'start'}),80)
   }catch{
    setLoading(false)
    setError('网络异常，请稍后再试。')
@@ -77,9 +79,9 @@ export default function AskArchive({counts}){
     </div>
    </div>}
 
-   {messages.map(m=>m.role==='user'
+   {messages.map((m,i)=>m.role==='user'
     ?<div className="ai-msg is-user" key={m.id}><div className="ai-bubble">{m.text}</div></div>
-    :<div className="ai-msg is-assistant" key={m.id}>
+    :<div className="ai-msg is-assistant" key={m.id} ref={i===messages.length-1?answerRef:null}>
      <div className="ai-msg-meta"><span className="ask-badge">{m.mode==='ai'?'✦ AI 分身回答':'档案智能摘要'}</span></div>
      <div className="ai-bubble ask-answer"><PostBody body={m.text}/></div>
      {m.sources?.length>0&&<details className="ai-citations">
