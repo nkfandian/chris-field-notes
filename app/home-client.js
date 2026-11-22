@@ -82,7 +82,7 @@ export default function HomeClient({posts,weibos=[],books=[],bookCount=0,trails=
           </section>
           <section className="reading-trails" aria-labelledby="home-trails-title">
             <header className="reading-panel-head"><div><small>ROUTES / {trails.length} PATHS</small><h2 id="home-trails-title">轨迹</h2></div></header>
-            <ol>{trails.map((trail,index)=><li key={trail.id}><Link href={`/trails/${encodeURIComponent(trail.slug)}`}>
+            <ol>{trails.slice(0,3).map((trail,index)=><li key={trail.id}><Link href={`/trails/${encodeURIComponent(trail.slug)}`}>
               <span className="reading-trail-no">{String(index+1).padStart(2,'0')}</span>
               <span className="reading-trail-copy"><small>{trailComposition(trail.trail_items)}</small><strong>{trail.title}</strong>{trail.summary&&<em>{trail.summary}</em>}</span>
               <b className="reading-trail-open" aria-hidden="true">↗</b>
