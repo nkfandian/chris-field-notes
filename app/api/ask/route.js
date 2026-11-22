@@ -288,7 +288,8 @@ export async function POST(request){
   }
 
   candidates.sort((a,b)=>b.score-a.score)
-  const sources=candidates.slice(0,8)
+  const redact=s=>String(s||'').replace(/范典/g,'Chris')
+  const sources=candidates.slice(0,8).map(s=>({...s,title:redact(s.title),snippet:redact(s.snippet),context:redact(s.context)}))
 
   if(!sources.length){
    return Response.json({
