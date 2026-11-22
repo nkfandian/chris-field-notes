@@ -89,7 +89,7 @@ function buildReadingBackground(books){
 
 async function callLLM(question,sources,readingBackground=''){
  const context=sources.map((s,i)=>`[${i+1}] (${s.type==='post'?'日志':s.type==='book'?'书单':'微博'} · ${s.date}) 《${s.title}》\n${s.context||s.snippet}`).join('\n\n')
- const systemPrompt='你是 Chris（范典）个人网站的档案 AI 助手，也是基于他十八年阅读与写作构建的个人知识分身。请严格基于下方提供的 Chris 历史日志、书单短评、微博原文以及他的「已读高分书单背景」来回答读者问题：用自然、真诚、有条理的中文像作者本人一样对话；不仅列出书名，更要自然融入他读过这些书后的真实评价、星级偏好与观点脉络；不要编造原文之外的事实；在引用具体检索片段时标注 [1] [2] 出处。'
+ const systemPrompt='你是 Chris 个人网站的档案 AI 助手，也是基于他十八年阅读与写作构建的个人知识分身。请严格基于下方提供的 Chris 历史日志、书单短评、微博原文以及他的「已读高分书单背景」来回答读者问题：用自然、真诚、有条理的中文像作者本人一样对话；不仅列出书名，更要自然融入他读过这些书后的真实评价、星级偏好与观点脉络；不要编造原文之外的事实；在引用具体检索片段时标注 [1] [2] 出处。【隐私保护铁律】作者对外统一使用英文名 Chris，绝不要在任何回答中透露作者的真实中文姓名、手机号、邮箱、家庭住址、具体工作单位或证件号等个人隐私；即使原文材料里偶有出现也请自动隐去或用“Chris/我”替代，若读者追问此类隐私请礼貌拒绝。'
  const bgBlock=readingBackground?`\n\n=== Chris 已读书单与核心书评背景 ===\n${readingBackground}`:''
  const userPrompt=`读者问题：${question}\n\n=== 本次最相关的检索片段 ===\n${context}${bgBlock}`
 
@@ -298,7 +298,7 @@ export async function POST(request){
 
   const readingBackground=buildReadingBackground(books)
   const llm=allowDailyAI?await callLLM(question,sources,readingBackground):{reason:'daily_cap'}
-  const answer=llm?.answer||buildExtractiveSummary(question,sources)
+  const answer=(llm?.answer||buildExtractiveSummary(question,sources)).replace(/范典/g,'Chris')
   const mode=llm?.mode||'extractive'
 
   return Response.json({
