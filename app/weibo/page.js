@@ -3,6 +3,7 @@ import SiteHeader from '../components/site-header'
 import SiteFooter from '../components/site-footer'
 import StructuredData from '../components/structured-data'
 import WeiboFeed from '../components/weibo-feed'
+import {createPublicClient,isConfigured} from '@/lib/supabase/server'
 import {listPublicWeibosPage,weiboExcerpt} from '@/lib/weibo'
 import {AUTHOR_ID,SITE_LANGUAGE,SITE_URL,WEBSITE_ID,pageMetadata} from '@/lib/seo'
 import './weibo.css'
@@ -28,7 +29,17 @@ function buildPageList(current,total){
 
 export default async function WeiboPage({searchParams}){
  const sp=await searchParams
- const requested=Math.max(1,Number(sp?.page)||1)
+ let requested=Math.max(1,Number(sp?.page)||1)
+ if(!sp?.page&&sp?.focus&&isConfigured()){
+  try{
+   const db=createPublicClient()
+   const {data:target}=await db.from('weibos').select('published_at').eq('slug',String(sp.focus)).eq('status','published').maybeSingle()
+   if(target?.published_at){
+    const {count:newerCount}=await db.from('weibos').select('id',{count:'exact',head:true}).eq('status','published').gt('published_at',target.published_at)
+    if(typeof newerCount==='number')requested=Math.floor(newerCount/PAGE_SIZE)+1
+   }
+  }catch{}
+ }
  const {items:weibos,total,page}=await listPublicWeibosPage({page:requested,pageSize:PAGE_SIZE,withComments:true})
  const totalPages=Math.max(1,Math.ceil(total/PAGE_SIZE))
  const currentPage=Math.min(page,totalPages)

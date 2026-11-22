@@ -22,7 +22,7 @@ export default async function NewsletterPage(){
   let campaigns=[]
   try{
    const admin=createAdminClient()
-   const {data}=await admin.from('email_campaigns').select('id,subject,body,sent_at,created_at,status').in('status',['sent','partial']).order('sent_at',{ascending:false}).limit(50)
+   const {data}=await admin.from('email_campaigns').select('id,subject,body,sent_at,created_at,status').in('status',['sent','partial']).eq('is_public',true).order('sent_at',{ascending:false}).limit(50)
    campaigns=data||[]
   }catch{}
   const db=createPublicClient()

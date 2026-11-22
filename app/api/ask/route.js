@@ -201,31 +201,41 @@ export async function POST(request){
   if(question.length<2)return Response.json({error:'请输入至少 2 个字的问题。'},{status:400})
   const history=Array.isArray(parsed.data?.history)?parsed.data.history.slice(-4).map(h=>({role:h?.role==='user'?'user':'assistant',text:cleanText(h?.text,300)})):[]
 
+  let allowDailyAI=false
   if(isConfigured()){
    try{
     const admin=createAdminClient()
     if(!await enforceRateLimit(admin,clientKey(request,'ask-archive'),15,3600)){
      return Response.json({error:'提问过于频繁，请稍后再试。'},{status:429})
     }
-   }catch{}
+    const dayKey=new Date().toISOString().slice(0,10)
+    allowDailyAI=await enforceRateLimit(admin,`ask-archive-global-daily:${dayKey}`,200,86400)
+   }catch(err){
+    console.error('ask rate limit error',err)
+    return Response.json({error:'限流服务暂时不可用，请稍后再试。'},{status:503})
+   }
+  }else{
+   allowDailyAI=true
   }
-  const dayKey=new Date().toISOString().slice(0,10)
-  const gCounter=globalThis.__askDailyCounter||={day:dayKey,count:0}
-  if(gCounter.day!==dayKey){gCounter.day=dayKey;gCounter.count=0}
-  const allowDailyAI=gCounter.count<200
-  if(allowDailyAI)gCounter.count+=1
 
   let posts=demoPosts,books=[],weibos=[]
   if(isConfigured()){
-   const db=createPublicClient()
-   const [p,b,w]=await Promise.all([
-    fetchAllTable(db,'posts','slug,title,excerpt,body,published_at,domain','published_at',false),
-    fetchAllTable(db,'books','id,title,author,status,rating,review,custom_lists,linked_post_slug,created_at','created_at',false),
-    listPublicWeibos({limit:5000,withComments:false})
-   ])
-   posts=p
-   books=b
-   weibos=w||[]
+   const now=Date.now()
+   const cached=globalThis.__askArchiveCache
+   if(cached&&now-cached.ts<60000){
+    posts=cached.posts;books=cached.books;weibos=cached.weibos
+   }else{
+    const db=createPublicClient()
+    const [p,b,w]=await Promise.all([
+     fetchAllTable(db,'posts','slug,title,excerpt,body,published_at,domain','published_at',false),
+     fetchAllTable(db,'books','id,title,author,status,rating,review,custom_lists,linked_post_slug,created_at','created_at',false),
+     listPublicWeibos({limit:5000,withComments:false})
+    ])
+    posts=p
+    books=b
+    weibos=w||[]
+    globalThis.__askArchiveCache={ts:now,posts,books,weibos}
+   }
   }
 
   const tokens=tokenizeQuery(question)
@@ -281,7 +291,7 @@ export async function POST(request){
      score:total,
      title:text.slice(0,36)+(text.length>36?'…':''),
      date:String(w.published_at||'').slice(0,10),
-     url:`/weibo#${encodeURIComponent(w.slug)}`,
+     url:`/weibo?focus=${encodeURIComponent(w.slug)}#${encodeURIComponent(w.slug)}`,
      snippet:text.slice(0,220),
      context:text.slice(0,500)
     })
@@ -289,7 +299,11 @@ export async function POST(request){
   }
 
   candidates.sort((a,b)=>b.score-a.score)
-  const redact=s=>String(s||'').replace(/范典/g,'Chris')
+  const redact=s=>String(s||'')
+   .replace(/范典/g,'Chris')
+   .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[邮箱已隐藏]')
+   .replace(/(?<!\d)1[3-9]\d{9}(?!\d)/g,'[号码已隐藏]')
+   .replace(/(?<!\d)\d{17}[\dXx](?!\d)/g,'[证件号已隐藏]')
   const sources=candidates.slice(0,8).map(s=>({...s,title:redact(s.title),snippet:redact(s.snippet),context:redact(s.context)}))
 
   if(!sources.length){
@@ -314,11 +328,11 @@ export async function POST(request){
    },{headers:{'Cache-Control':'no-store'}})
   }
 
-  const readingBackground=buildReadingBackground(books)
+  const readingBackground=redact(buildReadingBackground(books))
   const readCount=books.filter(b=>b.status==='Read').length
   const liveStats=`- 日志：${posts.length} 篇\n- 微博：${weibos.length} 条\n- 已读书单：${readCount} 本`
   const llm=allowDailyAI?await callLLM(question,sources,readingBackground,history,liveStats):{reason:'daily_cap'}
-  const answer=(llm?.answer||buildExtractiveSummary(question,sources)).replace(/范典/g,'Chris')
+  const answer=redact(llm?.answer||buildExtractiveSummary(question,sources))
   const mode=llm?.mode||'extractive'
   const publicSources=sources.map(({context,...rest})=>rest)
 

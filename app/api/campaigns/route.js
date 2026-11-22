@@ -75,7 +75,8 @@ export async function POST(request){
   if(lookupError)throw lookupError
   if(!campaign){
    if(!subject||!body)return Response.json({error:'主题和正文不能为空'},{status:400})
-   const result=await db.from('email_campaigns').insert({id:input.campaignId,subject,body,recipient_count:0,status:'preparing',created_by:user.id}).select('*').single()
+   const isPublic=Boolean(input.isPublic)
+   const result=await db.from('email_campaigns').insert({id:input.campaignId,subject,body,recipient_count:0,status:'preparing',is_public:isPublic,created_by:user.id}).select('*').single()
    if(result.error&&result.error.code!=='23505')throw result.error
    if(result.data)campaign=result.data
    else{

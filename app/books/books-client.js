@@ -30,7 +30,27 @@ export default function BooksClient({initialBooks}){
     if(qList){setList(qList);if(!qStatus)setStatus('All')}
     if(qStatus)setStatus(qStatus)
     if(qLang)setLanguage(qLang)
-  },[])
+    const hashMatch=window.location.hash.match(/^#book-(.+)$/)
+    if(hashMatch){
+      const targetId=decodeURIComponent(hashMatch[1])
+      const target=initialBooks.find(b=>String(b.id)===targetId)
+      if(target){
+        const nextStatus=qStatus||target.status||'All'
+        const nextLang=qLang||'All'
+        const nextList=qList||'All'
+        setLanguage(nextLang)
+        setStatus(nextStatus)
+        setList(nextList)
+        const filtered=initialBooks.filter(b=>(nextLang==='All'||b.language===nextLang)&&(nextStatus==='All'||b.status===nextStatus)&&(nextList==='All'||(b.custom_lists||[]).includes(nextList)))
+        const idx=filtered.findIndex(b=>String(b.id)===targetId)
+        if(idx>=0){
+          setPage(Math.floor(idx/PAGE_SIZE)+1)
+          setExpanded(prev=>{const next=new Set(prev);next.add(target.id);return next})
+          setTimeout(()=>document.getElementById(`book-${target.id}`)?.scrollIntoView({behavior:'smooth',block:'center'}),120)
+        }
+      }
+    }
+  },[initialBooks])
 
   const lists=useMemo(()=>[...new Set(initialBooks.flatMap(b=>b.custom_lists||[]))].sort(),[initialBooks])
   const shown=useMemo(()=>initialBooks.filter(b=>(language==='All'||b.language===language)&&(status==='All'||b.status===status)&&(list==='All'||(b.custom_lists||[]).includes(list))),[initialBooks,language,status,list])

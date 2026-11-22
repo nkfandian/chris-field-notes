@@ -12,7 +12,7 @@ export const metadata=pageMetadata({
   keywords:['隐私政策','个人信息保护']
 })
 
-const updated='2026-11-10'
+const updated='2026-11-22'
 
 export default function PrivacyPage(){
   const schema={'@context':'https://schema.org','@type':'WebPage',name:'隐私政策',url:`${SITE_URL}/privacy`,description:'CHRIS / FIELD NOTES 的隐私政策。',inLanguage:SITE_LANGUAGE,isPartOf:{'@id':`${SITE_URL}/#website`},dateModified:updated}
@@ -26,13 +26,14 @@ export default function PrivacyPage(){
     <article className="privacy-copy privacy-simple">
       <PolicySection no="01" title="我们会收到什么信息">
         <p>访问网站时，托管和统计服务可能记录 IP 地址、设备类型、访问页面及时间，用于了解访问情况和排查故障。订阅时，我们保存你填写的邮箱及订阅状态。评论或留言时，我们保存你填写的称呼、邮箱、内容和提交时间。</p>
-        <p>审核通过的评论会公开显示称呼和正文；邮箱不会公开。请不要在留言中填写密码、证件号码等敏感信息。</p>
+        <p>使用「和 AI 作者对话」功能时，服务端会记录你的提问内容、AI 生成的回答、引用来源摘要以及单向哈希处理后的匿名会话标识（不保存明文 IP）。</p>
+        <p>审核通过的评论会公开显示称呼和正文；邮箱与 AI 对话记录不会公开。请不要在留言或 AI 对话中填写密码、证件号码、联系方式等个人敏感信息。</p>
       </PolicySection>
       <PolicySection no="02" title="这些信息用来做什么">
-        <p>邮箱用于发送你订阅的新日志和处理退订；评论、留言信息用于审核与回复；访问数据用于了解页面浏览情况、维护网站和防止滥用，不用于广告投放。</p>
+        <p>邮箱用于发送你订阅的新日志和处理退订；评论、留言信息用于审核与回复；AI 对话记录仅用于生成当次回答、防止接口滥用及站长在后台复盘回答质量；访问数据用于了解页面浏览情况、维护网站和防止滥用，不用于广告投放。</p>
       </PolicySection>
       <PolicySection no="03" title="信息如何保存">
-        <p>网站使用第三方托管、数据存储、图片和邮件发送服务；它们可能在提供相应功能时处理必要的数据。订阅邮箱保留至退订或提出删除请求；评论和留言在展示、审核或回复所需期间保留，服务日志按服务商的设置清理。</p>
+        <p>网站使用第三方托管、数据存储、图片、邮件发送和大语言模型接口服务；它们可能在提供相应功能时处理必要的数据（其中 AI 提问与公开文章检索片段会经加密通道传给模型接口生成回答）。订阅邮箱保留至退订或提出删除请求；评论、留言和 AI 对话记录在展示、审核或质量复盘所需期间保留，站长可随时在后台删除，服务日志按服务商的设置清理。</p>
       </PolicySection>
       <PolicySection no="04" title="退订与联系">
         <p>每封订阅邮件底部都有退订链接。若要查询、更正或删除你提交的信息，或对本政策有疑问，请到首页页脚的 <Link href="/#message">“给我留言”</Link> 联系，并留下便于核对的信息。网站处理方式有变化时，本页会更新日期和内容。</p>
