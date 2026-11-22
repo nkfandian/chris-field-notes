@@ -24,8 +24,6 @@ html{scroll-padding-top:84px}
 .sc-header nav a{padding:.65rem 0;border-bottom:1px solid transparent;color:inherit;text-decoration:none;transition:color .18s ease,border-color .18s ease}
 .sc-header nav a:hover{color:var(--accent)}
 .sc-header nav a[aria-current=page]{color:var(--accent);border-bottom-color:var(--accent)}
-.sc-header nav a.sc-ai-link{padding:.42rem .8rem;border:1px solid var(--accent);border-radius:999px;color:var(--accent);white-space:nowrap;transition:background .18s ease,color .18s ease}
-.sc-header nav a.sc-ai-link:hover{background:var(--accent);color:var(--paper)}
 .sc-header :is(a,button):focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .sc-menu{display:none}
 
