@@ -12,7 +12,7 @@ const domains = ['decode','execute','deploy','trek','roots']
 const domainName = key => labels[key]?.split('/ ')[1] || key
 const bookStatus = {Reading:'在读',Read:'已读','To Read':'想读'}
 
-export default function HomeClient({posts,weibos=[],books=[],bookCount=0,trails=[],content={},showStudio=false}) {
+export default function HomeClient({posts,weibos=[],weiboCount=0,books=[],bookCount=0,trails=[],content={},showStudio=false}) {
   const [filter,setFilter] = useState('all')
   const shown = (filter==='all' ? posts : posts.filter(p=>p.domain===filter)).slice(0,6)
   const legacyHero = !content.hero_title || content.hero_title==='我不展示答案。'
@@ -50,11 +50,11 @@ export default function HomeClient({posts,weibos=[],books=[],bookCount=0,trails=
         <a className="hero-next" href="#log"><span>SCROLL TO READ</span><i aria-hidden="true"/><b aria-hidden="true">↓</b></a>
       </section>
       <section id="weibo" className="section home-weibo" aria-labelledby="home-weibo-title">
-        <div className="home-section-heading"><div className="home-section-title"><small>WEIBO</small><h2 id="home-weibo-title">微博</h2></div><Link className="all-logs-link" href="/weibo">查看全部 <span aria-hidden="true">↗</span></Link></div>
+        <div className="home-section-heading"><div className="home-section-title"><small>TWEETS / {weiboCount} POSTS</small><h2 id="home-weibo-title">微博</h2></div><Link className="all-logs-link" href="/weibo">查看全部 <span aria-hidden="true">↗</span></Link></div>
         {weibos.length>0?<WeiboFeed items={weibos.slice(0,2)} compact/>:<p className="home-empty" role="status">还没有发布微博。</p>}
       </section>
       <section id="log" className="section home-logs" aria-labelledby="home-logs-title">
-        <div className="home-section-heading"><div className="home-section-title"><small>LOGS</small><h2 id="home-logs-title">最新日志</h2></div><Link className="all-logs-link" href={filter==='all'?'/logs':`/logs?domain=${filter}`}>查看全部 <span aria-hidden="true">↗</span></Link></div>
+        <div className="home-section-heading"><div className="home-section-title"><small>LOGS / {posts.length} ENTRIES</small><h2 id="home-logs-title">最新日志</h2></div><Link className="all-logs-link" href={filter==='all'?'/logs':`/logs?domain=${filter}`}>查看全部 <span aria-hidden="true">↗</span></Link></div>
         <p className="mobile-swipe-hint">左右滑动查看分类 <span aria-hidden="true">→</span></p>
         <div className="filters" role="group" aria-label="筛选日志分类">{['all',...domains].map(key=><button type="button" key={key} className={filter===key?'active':''} aria-pressed={filter===key} onClick={()=>setFilter(key)}>{key==='all'?'全部':domainName(key)}</button>)}</div>
         <div className="home-entry-list">{shown.map((post,index)=><article className="entry" key={post.id}>
