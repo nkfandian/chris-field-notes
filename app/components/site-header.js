@@ -38,6 +38,7 @@ export default function SiteHeader({current,showStudio=false}){
       {links.map(([key,href,label])=><Link key={key} href={href} aria-current={current===key?'page':undefined}>{label}</Link>)}
       <AboutLink onOpen={()=>setOpen(false)}/>
       <a href="#subscribe">订阅</a>
+      <Link className="sc-ai-link" href="/search?mode=ask">和 AI 作者对话</Link>
       {/* 用整页跳转进入后台，避免公开页已加载的广告和统计脚本留在后台页面 */}
       {canStudio&&<a className="sc-studio" href="/studio">STUDIO ↗</a>}
     </nav>
