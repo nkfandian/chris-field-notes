@@ -11,7 +11,8 @@
 .book-controls button:hover{color:var(--ink)}
 .book-controls button.active{color:var(--accent);border-bottom-color:var(--accent)}
 .book-count{margin:1.4rem 0 1.6rem;font:12px var(--mono);color:var(--muted);text-align:right}
-.book-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:2.6rem 1.8rem;align-items:start}
+.book-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2.6rem 1.8rem;align-items:start}
+@media(max-width:960px){.book-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .book-card{min-width:0}
 .book-cover{aspect-ratio:2/3;background:var(--paper-deep);border:1px solid var(--line);box-shadow:5px 6px 0 rgba(51,46,40,.08);overflow:hidden;display:grid;place-items:center}
 .book-cover img{display:block;width:100%;height:100%;object-fit:cover}
