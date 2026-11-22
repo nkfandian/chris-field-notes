@@ -175,17 +175,19 @@ export async function POST(request){
   const question=cleanText(parsed.data?.question,160)
   if(question.length<2)return Response.json({error:'请输入至少 2 个字的问题。'},{status:400})
 
-  let allowDailyAI=true
   if(isConfigured()){
    try{
     const admin=createAdminClient()
     if(!await enforceRateLimit(admin,clientKey(request,'ask-archive'),15,3600)){
      return Response.json({error:'提问过于频繁，请稍后再试。'},{status:429})
     }
-    // 全站每日 AI 调用硬上限（200 次/天），防止被刷爆后仍可降级为本地摘要
-    allowDailyAI=await enforceRateLimit(admin,'ask-archive:daily-global',200,86400)
    }catch{}
   }
+  const dayKey=new Date().toISOString().slice(0,10)
+  const gCounter=globalThis.__askDailyCounter||={day:dayKey,count:0}
+  if(gCounter.day!==dayKey){gCounter.day=dayKey;gCounter.count=0}
+  const allowDailyAI=gCounter.count<200
+  if(allowDailyAI)gCounter.count+=1
 
   let posts=demoPosts,books=[],weibos=[]
   if(isConfigured()){
