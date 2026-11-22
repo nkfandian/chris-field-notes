@@ -51,4 +51,9 @@
   .book-meta{margin:0 0 .3rem}
   .book-card h2{font-size:1rem}
   .book-review{margin-top:.6rem}
+  /* 分页在手机上保持一行：页码不换行、上下页不拆字，整体收紧以免末页数字掉到第二行 */
+  .books-pagination{gap:.5rem;font-size:12px}
+  .books-pagination .page-numbers{flex-wrap:nowrap;gap:.15rem}
+  .books-pagination .page-numbers button,.books-pagination .page-ellipsis,.books-pagination .page-step{min-width:28px;min-height:34px;padding:0 .3rem}
+  .books-pagination .page-step{white-space:nowrap}
 }
