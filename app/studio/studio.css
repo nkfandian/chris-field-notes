@@ -2,7 +2,16 @@
 .post-list-meta{display:flex;align-items:center;justify-content:space-between;gap:1rem}.post-list-meta b{font:700 10px var(--mono);letter-spacing:.04em;color:var(--moss)}.editor-top>div{display:flex;align-items:center;gap:1rem}.editor-view-count{padding-left:1rem;border-left:1px solid var(--line);font:700 11px var(--mono);color:var(--ink)}
 .studio-console-nav{margin:0 0 3rem;display:grid;grid-template-columns:auto 1fr auto;align-items:stretch;border:1px solid var(--ink);background:color-mix(in srgb,var(--paper) 88%,white);font:10px var(--mono);letter-spacing:.06em}.studio-console-nav+.studio{padding-top:2rem}.studio>.studio-console-nav{margin-top:0}.studio-console-mark{display:flex;align-items:center;padding:.85rem 1rem;border-right:1px solid var(--ink);font-weight:700;letter-spacing:.12em}.studio-console-nav>div{display:flex;overflow-x:auto}.studio-console-nav a{color:inherit;text-decoration:none;white-space:nowrap}.studio-console-nav>div a{padding:.85rem 1rem;border-right:1px solid var(--line);transition:background .18s ease,color .18s ease}.studio-console-nav>div a:hover,.studio-console-nav>div a.active{background:var(--ink);color:var(--paper)}.studio-console-nav>button{border:0;border-left:1px solid var(--ink);padding:.85rem 1rem;background:transparent;color:var(--muted);font:inherit;cursor:pointer}.studio-console-nav>button:hover{background:#8b453d;color:white}.studio-nav-badge{display:inline-flex;align-items:center;justify-content:center;min-width:1.35em;height:1.35em;margin-left:.45em;padding:0 .3em;border-radius:999px;background:#8b453d;color:#fff;font:700 10px/1 var(--mono);vertical-align:.05em}.studio>header>div:last-child a:not(:last-child){display:none}
 body>.studio-console-nav{margin:4vw 4vw 0}
-@media(max-width:800px){.studio-console-nav{grid-template-columns:auto 1fr}.studio-console-nav>button{grid-column:1/-1;border-left:0;border-top:1px solid var(--ink);text-align:right}.studio-console-nav>div a{padding:.8rem}.studio-console-mark{padding:.8rem}.studio>.studio-console-nav{margin-bottom:2rem}body>.studio-console-nav{margin:5vw 5vw 0}.studio-console-nav+.studio{padding-top:1.5rem}}
+@media(max-width:800px){
+  /* 手机上导航改为两行：首行左 C/ STUDIO、右退出；次行 9 个入口排成 3 列网格全部可见，不再横向滑动 */
+  .studio-console-nav{grid-template-columns:1fr auto}
+  .studio-console-mark{grid-column:1;grid-row:1;padding:.8rem}
+  .studio-console-nav>div{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:repeat(3,1fr);overflow-x:visible;border-top:1px solid var(--ink)}
+  .studio-console-nav>div a{display:flex;align-items:center;justify-content:center;min-height:44px;padding:.7rem .5rem;text-align:center;border-bottom:1px solid var(--line);touch-action:manipulation}
+  .studio-console-nav>div a:nth-child(3n){border-right:0}
+  .studio-console-nav>div a:nth-child(n+7){border-bottom:0}
+  .studio-console-nav>button{grid-column:2;grid-row:1;border-left:0;border-top:0;text-align:right}
+  .studio>.studio-console-nav{margin-bottom:2rem}body>.studio-console-nav{margin:5vw 5vw 0}.studio-console-nav+.studio{padding-top:1.5rem}}
 
 /* Studio uses the same paper-and-indigo system as the public site. */
 .studio,.studio-console-nav{
