@@ -4,7 +4,7 @@ import {createPublicClient,isConfigured} from '@/lib/supabase/server'
 import {listPublicWeibos} from '@/lib/weibo'
 import StructuredData from './components/structured-data'
 import {AUTHOR_ID,HOME_TITLE,PUBLISHER_ID,RSS_ALTERNATES,SITE_DESCRIPTION,SITE_LANGUAGE,SITE_NAME,SITE_URL,WEBSITE_ID,firstPostImage,ogImage,seoDescription} from '@/lib/seo'
-export const revalidate=300
+export const revalidate=60
 export const metadata={title:{absolute:HOME_TITLE},openGraph:{title:HOME_TITLE,description:SITE_DESCRIPTION,url:'/',siteName:SITE_NAME,type:'website',images:[{url:ogImage('面对复杂，保持欢喜'),width:1200,height:630,alt:SITE_NAME}]},twitter:{card:'summary_large_image',title:HOME_TITLE,description:SITE_DESCRIPTION,images:[ogImage('面对复杂，保持欢喜')]},alternates:{canonical:'/',languages:{'zh-CN':'/','x-default':'/'},types:RSS_ALTERNATES}}
 export default async function Page(){
  let posts=demoPosts,schemaPosts=demoPosts,weibos=[],books=[],bookCount=0,trails=[],content={}
@@ -14,8 +14,8 @@ export default async function Page(){
    db.from('posts').select('id,slug,title,excerpt,domain,published_at,updated_at').eq('status','published').order('published_at',{ascending:false}),
    db.from('posts').select('slug,title,excerpt,domain,body,published_at,updated_at').eq('status','published').order('published_at',{ascending:false}).limit(10),
    listPublicWeibos({limit:2,withComments:true}),
-   db.from('books').select('id,title,author,cover_url,status,rating,language',{count:'exact'}).order('sort_order',{ascending:true}).order('created_at',{ascending:false}).limit(4),
-   db.from('trails').select('id,slug,title,summary,updated_at,trail_items(id,item_type)').eq('status','published').order('updated_at',{ascending:false}).limit(3),
+   db.from('books').select('id,title,author,cover_url,status,rating,language',{count:'exact'}).order('created_at',{ascending:false}).limit(4),
+   db.from('trails').select('id,slug,title,summary,updated_at,trail_items(id,item_type)').eq('status','published').order('updated_at',{ascending:false}).limit(10),
    db.from('site_content').select('value').eq('key','home').maybeSingle()
   ])
   if(postResult.data?.length)posts=postResult.data
