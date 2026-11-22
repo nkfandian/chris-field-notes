@@ -38,7 +38,7 @@ export default function HomeClient({posts,weibos=[],books=[],bookCount=0,trails=
         <div className="hero-intro">
           <div className="hero-kicker"><span>PERSONAL ARCHIVE</span><i/><span>READING · WRITING · WALKING</span></div>
           <h1 id="home-hero-title"><span>{heroTitle}</span><em>{heroEmphasis}</em></h1>
-          <div className="hero-actions"><a className="hero-primary" href="#log">翻开日志 <span aria-hidden="true">↘</span></a><Link className="hero-ai" href="/search?mode=ask">和 AI 作者对话 <span aria-hidden="true">↗</span></Link><a href="#reading">去往书单与轨迹</a></div>
+          <div className="hero-actions"><a className="hero-primary" href="#log">翻开日志 <span aria-hidden="true">↘</span></a><Link className="hero-ai" href="/search?mode=ask"><svg className="hero-ai-spark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L14.4 9.6L22 12L14.4 14.4L12 22L9.6 14.4L2 12L9.6 9.6L12 2Z"/></svg><span>和 AI 作者对话</span><span className="hero-ai-arrow" aria-hidden="true">↗</span></Link><a href="#reading">去往书单与轨迹</a></div>
         </div>
         {latestPost&&<article className="hero-latest" aria-labelledby="hero-latest-title">
           <span className="hero-paperclip" aria-hidden="true"/>
