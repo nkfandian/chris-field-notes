@@ -63,7 +63,7 @@ export default async function TrailPage({params}){
   ])
   const postIndex=indexRows(postRows,['id','slug','firebase_id','title'])
   const bookIndex=indexRows(bookRows,['id','firebase_id','title'])
-  const resolved=(items||[]).map((item,index)=>{const target=resolveItem(item,postIndex,bookIndex);const href=target?(item.item_type==='post'?`/logs/${encodeURIComponent(target.slug)}`:`/books#book-${target.id}`):null;return {item,target,href,title:target?.title||cleanLabel(item.label)||'未命名条目',position:index+1}})
+  const resolved=(items||[]).map((item,index)=>{const target=resolveItem(item,postIndex,bookIndex);const customHref=String(item.reference_id||'').trim().startsWith('/')?String(item.reference_id).trim():null;const href=customHref||(target?(item.item_type==='post'?`/logs/${encodeURIComponent(target.slug)}`:`/books#book-${target.id}`):null);return {item,target,href,title:target?.title||cleanLabel(item.label)||'未命名条目',position:index+1}})
   const url=`${SITE_URL}/trails/${encodeURIComponent(slug)}`
   const schema={'@context':'https://schema.org','@graph':[
     {'@type':'CollectionPage','@id':url,url,name:trail.title,description:trail.summary,inLanguage:SITE_LANGUAGE,mainEntity:{

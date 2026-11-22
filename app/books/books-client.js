@@ -1,5 +1,5 @@
 'use client'
-import {useMemo,useRef,useState} from 'react'
+import {useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 
 const PAGE_SIZE=10
@@ -23,6 +23,14 @@ export default function BooksClient({initialBooks}){
   const [list,setList]=useState('All')
   const [page,setPage]=useState(1)
   const [expanded,setExpanded]=useState(()=>new Set())
+
+  useEffect(()=>{
+    const sp=new URLSearchParams(window.location.search)
+    const qList=sp.get('list'),qStatus=sp.get('status'),qLang=sp.get('language')
+    if(qList)setList(qList)
+    if(qStatus)setStatus(qStatus)
+    if(qLang)setLanguage(qLang)
+  },[])
 
   const lists=useMemo(()=>[...new Set(initialBooks.flatMap(b=>b.custom_lists||[]))].sort(),[initialBooks])
   const shown=useMemo(()=>initialBooks.filter(b=>(language==='All'||b.language===language)&&(status==='All'||b.status===status)&&(list==='All'||(b.custom_lists||[]).includes(list))),[initialBooks,language,status,list])
