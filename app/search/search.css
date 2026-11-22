@@ -26,7 +26,15 @@
 .ask-badge{display:inline-block;margin-bottom:.75rem;padding:.2rem .55rem;border:1px solid var(--line);font:11px var(--mono);color:var(--accent)}
 .ask-error{font:12px var(--mono);color:#8b453d;margin:1rem 0 0}
 .ask-result{margin-top:2rem;max-width:900px}
-.ask-answer{font:1.05rem/1.85 var(--serif);color:var(--ink);margin:0 0 1.5rem;white-space:pre-line}
+.ask-answer{font:1.05rem/1.85 var(--serif);color:var(--ink);margin:0 0 1.5rem}
+.ask-answer p{margin:0 0 .9rem}
+.ask-answer p:last-child{margin-bottom:0}
+.ask-answer h1,.ask-answer h2,.ask-answer h3{font:700 1.2rem/1.4 var(--serif);margin:1.3rem 0 .6rem;color:var(--ink)}
+.ask-answer h1{font-size:1.35rem}
+.ask-answer ul,.ask-answer ol{margin:0 0 .9rem;padding-left:1.35rem}
+.ask-answer li{margin:.25rem 0}
+.ask-answer strong{font-weight:700;color:var(--ink)}
+.ask-answer blockquote{margin:1rem 0;padding:.6rem 1rem;border-left:3px solid var(--accent);background:var(--paper-deep);color:var(--muted)}
 .ask-sources{border-top:1px solid var(--line)}
 .ask-sources a{display:block;padding:1.2rem 0;border-bottom:1px solid var(--line)}
 .ask-sources small{font:12px var(--mono);color:var(--accent)}

@@ -2,6 +2,7 @@
 
 import {useState} from 'react'
 import Link from 'next/link'
+import PostBody from '../logs/[slug]/post-body'
 
 const TYPE_LABEL={post:'日志',book:'书单',weibo:'微博'}
 const SAMPLE_QUESTIONS=[
@@ -53,7 +54,7 @@ export default function AskArchive(){
   {error&&<p className="ask-error" role="status">{error}</p>}
   {result&&<div className="ask-result">
    {result.mode&&result.mode!=='empty'&&<span className="ask-badge">{result.mode==='ai'?'AI 综合回答':'档案智能摘要'}</span>}
-   <p className="ask-answer">{result.answer}</p>
+   <div className="ask-answer"><PostBody body={result.answer}/></div>
    {result.sources?.length>0&&<div className="ask-sources">
     {result.sources.map((s,i)=><Link href={s.url} key={`${s.url}-${i}`}>
      <small>[{i+1}] {TYPE_LABEL[s.type]||s.type} · {s.date}</small>
