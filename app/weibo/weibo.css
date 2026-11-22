@@ -3,6 +3,12 @@
 .weibo-page h1{font:700 clamp(2.2rem,4vw,3.2rem)/1.15 var(--serif);letter-spacing:0;margin:0}
 .weibo-page>header span{flex:0 0 auto;font:12px var(--mono);color:var(--muted)}
 .weibo-empty{padding:2.4rem 0;color:var(--muted)}
+.weibo-pagination{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:2rem 0 0;font:13px var(--mono)}
+.weibo-pagination .page-numbers{display:flex;align-items:center;gap:.35rem;flex-wrap:wrap;justify-content:center}
+.weibo-pagination .page-numbers a,.weibo-pagination .page-ellipsis,.weibo-pagination .page-step{display:inline-flex;align-items:center;justify-content:center;min-width:34px;min-height:36px;padding:0 .5rem;color:var(--muted);text-decoration:none}
+.weibo-pagination .page-numbers a:hover,.weibo-pagination .page-step:hover{color:var(--ink)}
+.weibo-pagination .page-numbers a.active{color:var(--accent);border-bottom:2px solid var(--accent);font-weight:700}
+.weibo-pagination .page-step.is-disabled{opacity:.4;pointer-events:none}
 
 .weibo-list{border-bottom:1px solid var(--line)}
 .weibo-list.is-compact{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 clamp(32px,5vw,64px);border-top:1px solid var(--line)}

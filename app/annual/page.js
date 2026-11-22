@@ -23,7 +23,7 @@ export default async function AnnualPage({searchParams}){
   const db=createPublicClient()
   const [{data:p},w]=await Promise.all([
    db.from('posts').select('id,slug,title,domain,body,excerpt,published_at').eq('status','published').order('published_at',{ascending:false}),
-   listPublicWeibos({limit:300,withComments:false})
+   listPublicWeibos({limit:5000,withComments:false})
   ])
   for(let from=0;from<5000;from+=1000){
    const {data:b}=await db.from('books').select('id,title,author,status,rating,created_at').order('created_at',{ascending:false}).range(from,from+999)
