@@ -1,25 +1,48 @@
 'use client'
 
-import {useRef,useState} from 'react'
+import {useEffect,useRef,useState} from 'react'
 import Link from 'next/link'
 import PostBody from '../logs/[slug]/post-body'
 
 const TYPE_LABEL={post:'日志',book:'书单',weibo:'微博'}
-const SAMPLE_QUESTIONS=[
+const QUESTION_POOL=[
  '对何伟怎么看？',
  '读过哪些印象最深的历史书？',
  '在南开六年印象最深的事？',
  '为什么要读脂批本红楼梦？',
- '你的阅读品味和知识结构是怎样的？'
+ '你的阅读品味和知识结构是怎样的？',
+ '怎么理解「面对复杂，保持欢喜」？',
+ '台湾之行有哪些最难忘的片段？',
+ '推荐几本打过五星的非虚构作品？',
+ '这十八年写作的心境有什么变化？',
+ '你在乡村观察里看到过什么？',
+ '最近在读哪些英文原版书？',
+ '为什么决定做一个自己的独立网站？',
+ '有哪些读完后劲特别大的小说？',
+ '你怎么看待 AI 与阅读、写作的关系？',
+ '日常记微博和写长文章有什么区别？',
+ '有没有反复重读很多遍的书？'
 ]
+
+function pickRandomQuestions(count=5){
+ const copy=[...QUESTION_POOL]
+ for(let i=copy.length-1;i>0;i--){
+  const j=Math.floor(Math.random()*(i+1))
+  ;[copy[i],copy[j]]=[copy[j],copy[i]]
+ }
+ return copy.slice(0,count)
+}
 
 export default function AskArchive({counts}){
  const [question,setQuestion]=useState('')
  const [loading,setLoading]=useState(false)
  const [error,setError]=useState('')
  const [messages,setMessages]=useState([])
+ const [samples,setSamples]=useState(()=>QUESTION_POOL.slice(0,5))
  const bottomRef=useRef(null)
  const answerRef=useRef(null)
+
+ useEffect(()=>{setSamples(pickRandomQuestions(5))},[])
 
  async function runAsk(raw){
   if(loading)return
@@ -63,7 +86,7 @@ export default function AskArchive({counts}){
   return <section className="ai-chat-shell" aria-label="和 AI 作者对话">
   <div className="ai-chat-head">
    <div className="ai-chat-status"><span className="ai-dot" aria-hidden="true"/><strong>Chris · AI 分身</strong><small>{countLine}</small></div>
-   {messages.length>0&&<button type="button" className="ai-reset" onClick={()=>{setMessages([]);setError('')}}>开启新对话</button>}
+   {messages.length>0&&<button type="button" className="ai-reset" onClick={()=>{setMessages([]);setError('');setSamples(pickRandomQuestions(5))}}>开启新对话</button>}
   </div>
 
   {!messages.length&&<form className="ai-chat-form ai-chat-form-top" onSubmit={submit}>
@@ -75,7 +98,8 @@ export default function AskArchive({counts}){
    {!messages.length&&<div className="ai-welcome">
     <p>你好，我是 Chris 的数字分身。已预装十八年全部长文、高分已读书单短评与微博随记，支持连续追问。</p>
     <div className="ask-samples" aria-label="示例问题">
-     {SAMPLE_QUESTIONS.map(q=><button type="button" key={q} onClick={()=>runAsk(q)} disabled={loading}>✦ {q}</button>)}
+     {samples.map(q=><button type="button" key={q} onClick={()=>runAsk(q)} disabled={loading}>✦ {q}</button>)}
+     <button type="button" onClick={()=>setSamples(pickRandomQuestions(5))} disabled={loading} style={{borderStyle:'dashed',color:'var(--accent)'}}>↻ 换一批</button>
     </div>
    </div>}
 
