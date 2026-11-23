@@ -94,25 +94,34 @@ export default function AskLogsClient({initial=[],tableMissing=false,errorMessag
    </div>
 
    <div className="moderation-list">
-    {visible.map(item=><article key={item.id} className="moderation-card">
-     <div className="moderation-meta">
-      <span>{fmtDate(item.created_at)}</span>
-      <span>{MODE_LABEL[item.mode]||item.mode}</span>
-      {item.source_count>0&&<span>引用 {item.source_count} 条</span>}
-      {item.session_hash&&<span title="匿名会话哈希">访客 #{String(item.session_hash).slice(0,6)}</span>}
-     </div>
-     <h2 style={{margin:'.4rem 0 .7rem',font:'700 1.08rem/1.5 var(--serif)'}}>问：{item.question}</h2>
-     <div style={{whiteSpace:'pre-wrap',font:'.95rem/1.75 var(--serif)',color:'var(--ink)',background:'var(--paper-deep)',padding:'.85rem 1rem',borderLeft:'3px solid var(--accent)'}}>{item.answer}</div>
-     {Array.isArray(item.sources)&&item.sources.length>0&&<details style={{marginTop:'.7rem',fontSize:'12px'}}>
-      <summary style={{cursor:'pointer',color:'var(--accent)',fontFamily:'var(--mono)'}}>查看引用出处（{item.sources.length}）</summary>
-      <ul style={{margin:'.5rem 0 0',paddingLeft:'1.2rem',color:'var(--muted)',lineHeight:1.7}}>
-       {item.sources.map((s,i)=><li key={`${s.url}-${i}`}><Link href={s.url||'#'} target="_blank" style={{color:'inherit',textDecoration:'underline'}}>[{i+1}] {s.title}（{s.date}）</Link></li>)}
-      </ul>
-     </details>}
-     <div className="moderation-actions" style={{marginTop:'.85rem'}}>
-      <button type="button" className="danger" disabled={busyId===item.id} onClick={()=>removeLog(item.id)}>{busyId===item.id?'删除中…':'删除记录'}</button>
-     </div>
-    </article>)}
+    {visible.map(item=>{
+     const ans=String(item.answer||'')
+     const preview=ans.replace(/\s+/g,' ').trim().slice(0,48)
+     return <article key={item.id} className="moderation-card" style={{padding:'.85rem 1rem'}}>
+      <div className="moderation-meta">
+       <span>{fmtDate(item.created_at)}</span>
+       <span>{MODE_LABEL[item.mode]||item.mode}</span>
+       {item.source_count>0&&<span>引用 {item.source_count} 条</span>}
+       {item.session_hash&&<span title="匿名会话哈希">访客 #{String(item.session_hash).slice(0,6)}</span>}
+      </div>
+      <h2 style={{margin:'.35rem 0 .45rem',font:'700 1.04rem/1.45 var(--serif)'}}>问：{item.question}</h2>
+      <details>
+       <summary style={{cursor:'pointer',color:'var(--accent)',fontSize:'12.5px',fontFamily:'var(--mono)',lineHeight:1.5}}>
+        展开回答（{ans.length} 字）{preview?` · ${preview}${ans.length>48?'…':''}`:''}
+       </summary>
+       <div style={{marginTop:'.7rem',whiteSpace:'pre-wrap',font:'.94rem/1.75 var(--serif)',color:'var(--ink)',background:'var(--paper-deep)',padding:'.85rem 1rem',borderLeft:'3px solid var(--accent)'}}>{ans}</div>
+       {Array.isArray(item.sources)&&item.sources.length>0&&<details style={{marginTop:'.65rem',fontSize:'12px'}}>
+        <summary style={{cursor:'pointer',color:'var(--accent)',fontFamily:'var(--mono)'}}>查看引用出处（{item.sources.length}）</summary>
+        <ul style={{margin:'.45rem 0 0',paddingLeft:'1.2rem',color:'var(--muted)',lineHeight:1.7}}>
+         {item.sources.map((s,i)=><li key={`${s.url}-${i}`}><Link href={s.url||'#'} target="_blank" style={{color:'inherit',textDecoration:'underline'}}>[{i+1}] {s.title}（{s.date}）</Link></li>)}
+        </ul>
+       </details>}
+       <div className="moderation-actions" style={{marginTop:'.75rem'}}>
+        <button type="button" className="danger" disabled={busyId===item.id} onClick={()=>removeLog(item.id)}>{busyId===item.id?'删除中…':'删除记录'}</button>
+       </div>
+      </details>
+     </article>
+    })}
     {!visible.length&&<p className="moderation-empty">暂无匹配的 AI 对话记录。</p>}
    </div>
   </>}
