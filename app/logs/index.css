@@ -36,4 +36,9 @@
   .log-index-entry time{grid-column:2;text-align:left}
   .log-index-entry h2{font-size:1.25rem}
   .log-index-entry p{font-size:.92rem;-webkit-line-clamp:3}
+  /* 翻页器不跨行：页码不换行、上一页/下一页文字不拆行（与书单、微博翻页同款问题） */
+  .logs-pagination{gap:.5rem;font-size:12px}
+  .logs-pagination .page-numbers{flex-wrap:nowrap;gap:.15rem}
+  .logs-pagination .page-numbers a,.logs-pagination .page-ellipsis,.logs-pagination .page-step{min-width:28px;min-height:34px;padding:0 .3rem}
+  .logs-pagination .page-step{white-space:nowrap}
 }
