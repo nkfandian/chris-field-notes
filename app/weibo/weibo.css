@@ -69,4 +69,9 @@
   .weibo-body{font-size:15px;line-height:1.8}
   .weibo-list.is-compact .weibo-body{margin-top:4px;font-size:14px;line-height:1.65}
   .weibo-collapsed-text{-webkit-line-clamp:2}
+  /* 翻页器不跨行：页码不换行、上一页/下一页文字不拆行 */
+  .weibo-pagination{gap:.5rem;font-size:12px}
+  .weibo-pagination .page-numbers{flex-wrap:nowrap;gap:.15rem}
+  .weibo-pagination .page-numbers a,.weibo-pagination .page-ellipsis,.weibo-pagination .page-step{min-width:28px;min-height:34px;padding:0 .3rem}
+  .weibo-pagination .page-step{white-space:nowrap}
 }
