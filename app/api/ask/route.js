@@ -65,31 +65,76 @@ async function fetchAllTable(db,table,selectCols,orderCol,asc=false){
  return rows
 }
 
-function buildReadingBackground(books){
+function buildReadingBackground(books,posts=[]){
  const readBooks=books.filter(b=>b.status==='Read')
- if(!readBooks.length)return ''
- const catCounts={}
- for(const b of readBooks){
-  for(const c of (b.custom_lists||[])){
-   if(c&&c!=='豆瓣导入'&&c!=='历史日志关联')catCounts[c]=(catCounts[c]||0)+1
+ const parts=[]
+ if(posts.length){
+  const domainCounts={}
+  for(const p of posts){
+   const d=p.domain||'其他'
+   domainCounts[d]=(domainCounts[d]||0)+1
+  }
+  const topDomains=Object.entries(domainCounts).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([d,n])=>`${d}(${n}篇)`).join('、')
+  parts.push(`Chris 从 2008 年至今共写下 ${posts.length} 篇公开日志，主要围绕：${topDomains}。`)
+ }
+ if(readBooks.length){
+  const catCounts={}
+  for(const b of readBooks){
+   for(const c of (b.custom_lists||[])){
+    if(c&&c!=='豆瓣导入'&&c!=='历史日志关联')catCounts[c]=(catCounts[c]||0)+1
+   }
+  }
+  const topCats=Object.entries(catCounts).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([c,n])=>`${c}(${n}本)`).join('、')
+  // 精选已读且高分(4-5星)并写有实质短评的代表作作为长期阅读背景，明确标注原书作者
+  const highlights=readBooks
+   .filter(b=>(b.rating||0)>=4&&plainText(b.review||'').length>=20)
+   .sort((a,b)=>(b.rating||0)-(a.rating||0)||plainText(b.review||'').length-plainText(a.review||'').length)
+   .slice(0,26)
+   .map(b=>{
+    const rev=plainText(b.review||'').slice(0,110)
+    return `- 《${b.title}》（原书作者：${b.author||'他人'}，Chris 评分 ${b.rating}星）：${rev}${plainText(b.review||'').length>110?'…':''}`
+   })
+  parts.push(`Chris 已读共 ${readBooks.length} 本他人著作${topCats?`，主要集中在：${topCats}`:''}。\n以下高分（4–5 星）且写有短评的已读书籍代表了他的核心阅读品味与思考底色（注意：这些书均为原书作者所著，非 Chris 所写）：\n${highlights.join('\n')}`)
+ }
+ return parts.join('\n\n')
+}
+
+function selectDiverseSources(candidates,limit=16){
+ const picked=[]
+ const used=new Set()
+ const takeByType=(type,quota)=>{
+  let count=0
+  for(let i=0;i<candidates.length&&count<quota;i++){
+   if(candidates[i].type===type&&!used.has(i)){
+    picked.push(candidates[i])
+    used.add(i)
+    count+=1
+   }
   }
  }
- const topCats=Object.entries(catCounts).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([c,n])=>`${c}(${n}本)`).join('、')
- // 精选已读且高分(4-5星)并写有实质短评的代表作作为长期阅读背景
- const highlights=readBooks
-  .filter(b=>(b.rating||0)>=4&&plainText(b.review||'').length>=20)
-  .sort((a,b)=>(b.rating||0)-(a.rating||0)||plainText(b.review||'').length-plainText(a.review||'').length)
-  .slice(0,22)
-  .map(b=>{
-   const rev=plainText(b.review||'').slice(0,110)
-   return `- 《${b.title}》(${b.author||'佚名'}，${b.rating}星)：${rev}${plainText(b.review||'').length>110?'…':''}`
-  })
- return `Chris 已读共 ${readBooks.length} 本书${topCats?`，主要集中在：${topCats}`:''}。\n以下高分（4–5 星）且写有短评的已读书籍代表了他的核心阅读品味与思考底色：\n${highlights.join('\n')}`
+ takeByType('post',7)
+ takeByType('book',5)
+ takeByType('weibo',4)
+ for(let i=0;i<candidates.length&&picked.length<limit;i++){
+  if(!used.has(i)){
+   picked.push(candidates[i])
+   used.add(i)
+  }
+ }
+ return picked.sort((a,b)=>b.score-a.score)
 }
 
 async function callLLM(question,sources,readingBackground='',history=[],liveStats=''){
- const context=sources.map((s,i)=>`[${i+1}] (${s.type==='post'?'日志':s.type==='book'?'书单':'微博'} · ${s.date}) 《${s.title}》\n${s.context||s.snippet}`).join('\n\n')
- const systemPrompt='你是 Chris 个人网站的档案 AI 助手，也是基于他十八年阅读与写作构建的个人知识分身。请严格基于下方提供的 Chris 历史日志、书单短评、微博原文以及他的「已读高分书单背景」来回答读者问题：用自然、真诚、有条理的中文像作者本人一样对话；不仅列出书名，更要自然融入他读过这些书后的真实评价、星级偏好与观点脉络；不要编造原文之外的事实；在引用具体检索片段时标注 [1] [2] 出处。【归属铁律】检索片段来自 Chris 的文章，但文章里写的不全是他本人的经历——很多是他在文章中记录、采访或描写的他人经历（如笔下人物、受访者、故事主角）。只有当片段明确是作者本人的第一人称经历时，才可以用「我」来表述；凡是文章中他人的人生经历、遭遇与言行，一律不得说成是「我」做过、经历过的事，必须明确归属到那个人身上（例如「我在文章里写过一位……」「我笔下的一位受访者……」），绝不能把别人的经历当作作者本人的经历来讲；无法确定是作者本人还是他人经历时，宁可归属到文章/人物身上，也不要用第一人称认领。【隐私保护铁律】作者对外统一使用英文名 Chris，绝不要在任何回答中透露作者的真实中文姓名、手机号、邮箱、家庭住址、具体工作单位或证件号等个人隐私；即使原文材料里偶有出现也请自动隐去或用“Chris/我”替代，若读者追问此类隐私请礼貌拒绝。'
+ const context=sources.map((s,i)=>{
+  if(s.type==='book'){
+   return `[${i+1}] 【Chris 读过的他人著作（书单短评，非 Chris 所著！）· 原书作者：${s.bookAuthor||'他人'} · ${s.date}】《${s.bookTitle||s.title}》\nChris 的阅读记录与短评：${s.context||s.snippet}`
+  }
+  if(s.type==='weibo'){
+   return `[${i+1}] 【Chris 原创微博 · ${s.date}】${s.title}\n${s.context||s.snippet}`
+  }
+  return `[${i+1}] 【Chris 原创日志 · ${s.date}】《${s.title}》\n${s.context||s.snippet}`
+ }).join('\n\n')
+ const systemPrompt='你是 Chris 个人网站的 AI 作者分身，基于他从 2008 年至今的真实阅读与写作构建。请严格基于下方提供的检索片段、已读高分书单背景与全站统计来回答读者问题：\n1.【文风与表达铁律】请完全采用 Chris 本人的随笔口吻：平实、克制、真诚、有具体细节，带一点田野观察者的冷静与温情（「面对复杂，保持欢喜」）。像给老朋友回信或写阅读随笔一样用流畅的自然段展开，把具体书名、作者、年份和思考脉络自然揉进句子里。严禁使用「第一、第二、第三」「首先、其次、最后」「总结起来」「你可以试着……」这类 AI 说教模板或公众号攻略体，也不要每段开头都加粗一句口号式小标题。不要编造原文之外的事实，引用检索片段时在句末标注 [1] [2] 出处。\n2.【著作权与归属铁律】必须严格区分「Chris 自己写的日志/微博」和「Chris 读过的他人著作」！凡是标注为「Chris 读过的他人著作」的书单条目，原书都是别的作家写的，绝不能说「我在《某本书》里写了/记录了……」或「我写的《某本书》」，只能说「我在读某某写的《某本书》时……」「我给《某本书》打过几星、在短评里提到……」，书中的人物、故事与观点也必须明确归属给原书作者（例如「Robert F. Schmitz 在《Street of Eternal Happiness》里记录的……」）。同时，文章里记录、采访或描写的他人经历，绝不能用第一人称「我」认领，必须明确归属到具体人物身上。\n3.【隐私保护铁律】作者对外统一使用英文名 Chris，绝不要透露作者的真实中文姓名、手机号、邮箱、家庭住址、具体工作单位或证件号等个人隐私，若读者追问请礼貌拒绝。'
  const bgBlock=readingBackground?`\n\n=== Chris 已读书单与核心书评背景 ===\n${readingBackground}`:''
  const histBlock=history.length?`\n\n=== 最近对话上下文 ===\n${history.map(h=>`${h.role==='user'?'读者':'AI Chris'}：${String(h.text||'').slice(0,280)}`).join('\n')}`:''
  const statsBlock=liveStats?`\n\n=== 全站实时统计（数据库最新数据） ===\n${liveStats}\n回答涉及数量的问题（如多少篇日志、多少条微博、读了多少本书）时，一律以这里的实时统计为准，不要引用检索片段或文章里提到的旧数字——文章成文时的数字可能已过时。`:''
@@ -247,7 +292,7 @@ export async function POST(request){
    const bodyScore=scoreText(p.body,tokens,question)
    const total=titleScore+excerptScore+bodyScore
    if(total>0){
-    const {snippet,context}=topParagraphs(p.body||p.excerpt,tokens,question,2,700)
+    const {snippet,context}=topParagraphs(p.body||p.excerpt,tokens,question,3,950)
     candidates.push({
      type:'post',
      score:total,
@@ -274,6 +319,8 @@ export async function POST(request){
      type:'book',
      score:total,
      title:`${b.title}${b.author?` · ${b.author}`:''}`,
+     bookTitle:b.title,
+     bookAuthor:b.author||'他人',
      date:metaTag||'书单',
      url:`/books#book-${b.id}`,
      snippet:rev.slice(0,220),
@@ -304,7 +351,7 @@ export async function POST(request){
    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[邮箱已隐藏]')
    .replace(/(?<!\d)1[3-9]\d{9}(?!\d)/g,'[号码已隐藏]')
    .replace(/(?<!\d)\d{17}[\dXx](?!\d)/g,'[证件号已隐藏]')
-  const sources=candidates.slice(0,8).map(s=>({...s,title:redact(s.title),snippet:redact(s.snippet),context:redact(s.context)}))
+  const sources=selectDiverseSources(candidates,16).map(s=>({...s,title:redact(s.title),bookTitle:redact(s.bookTitle),bookAuthor:redact(s.bookAuthor),snippet:redact(s.snippet),context:redact(s.context)}))
 
   if(!sources.length){
    const emptyAnswer='档案中没有找到与这个问题直接相关的记录，你可以换个关键词试试。'
@@ -328,13 +375,13 @@ export async function POST(request){
    },{headers:{'Cache-Control':'no-store'}})
   }
 
-  const readingBackground=redact(buildReadingBackground(books))
+  const readingBackground=redact(buildReadingBackground(books,posts))
   const readCount=books.filter(b=>b.status==='Read').length
   const liveStats=`- 日志：${posts.length} 篇\n- 微博：${weibos.length} 条\n- 已读书单：${readCount} 本`
   const llm=allowDailyAI?await callLLM(question,sources,readingBackground,history,liveStats):{reason:'daily_cap'}
   const answer=redact(llm?.answer||buildExtractiveSummary(question,sources))
   const mode=llm?.mode||'extractive'
-  const publicSources=sources.map(({context,...rest})=>rest)
+  const publicSources=sources.map(({context,bookTitle,bookAuthor,...rest})=>rest)
 
   if(isConfigured()){
    try{
