@@ -5,6 +5,8 @@ import {listPublicWeibos} from '@/lib/weibo'
 import {cleanText,clientKey,enforceRateLimit,jsonMutationGuard,parseJsonBody} from '@/lib/security'
 import {plainText} from '@/lib/seo'
 
+export const maxDuration=60
+
 const STOP_WORDS=new Set([
  '怎么','怎样','如何','什么','为什么','为何','哪些','哪个','哪里','是否','有没有','是不是','能不能','可以','能够',
  '觉得','认为','看法','评价','态度','观点','印象','最深','关于','以及','还有','或者','因为','所以','只是','但是',
@@ -117,7 +119,7 @@ function buildReadingBackground(books,posts=[]){
  return parts.join('\n\n')
 }
 
-function selectDiverseSources(candidates,limit=16){
+function selectDiverseSources(candidates,limit=12){
  const picked=[]
  const used=new Set()
  const takeByType=(type,quota)=>{
@@ -130,9 +132,9 @@ function selectDiverseSources(candidates,limit=16){
    }
   }
  }
- takeByType('post',7)
- takeByType('book',5)
- takeByType('weibo',4)
+ takeByType('post',6)
+ takeByType('book',4)
+ takeByType('weibo',2)
  for(let i=0;i<candidates.length&&picked.length<limit;i++){
   if(!used.has(i)){
    picked.push(candidates[i])
@@ -161,30 +163,40 @@ async function callLLM(question,sources,readingBackground='',history=[],liveStat
 
  let lastReason='no_key'
  if(process.env.GEMINI_API_KEY){
-  const geminiModels=['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-flash-latest','gemini-3-flash-preview']
-  for(const model of geminiModels){
+  const geminiModels=[
+   ['gemini-2.5-flash',true,9500],
+   ['gemini-2.5-flash-lite',true,8500],
+   ['gemini-2.0-flash',false,8500],
+   ['gemini-flash-lite-latest',false,8500]
+  ]
+  for(const [model,noThink,timeoutMs] of geminiModels){
    for(let attempt=0;attempt<2;attempt++){
     try{
+     const generationConfig=noThink
+      ?{temperature:0.45,thinkingConfig:{thinkingBudget:0}}
+      :{temperature:0.45}
      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,{
       method:'POST',
       headers:{'content-type':'application/json'},
       body:JSON.stringify({
        systemInstruction:{parts:[{text:systemPrompt}]},
-       contents:[{parts:[{text:userPrompt}]}]
+       contents:[{parts:[{text:userPrompt}]}],
+       generationConfig
       }),
-      signal:AbortSignal.timeout(12000)
+      signal:AbortSignal.timeout(timeoutMs)
      })
      if(res.ok){
       const gData=await res.json()
-      const text=gData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
-      if(text)return {answer:text,mode:'ai',reason:'ok'}
+      const parts=gData?.candidates?.[0]?.content?.parts||[]
+      const text=parts.map(p=>p?.thought?'':(p?.text||'')).join('').trim()
+      if(text)return {answer:text,mode:'ai',reason:`ok_${model}`}
       lastReason=`empty_${model}`
       break
      }else{
       lastReason=`http_${res.status}_${model}`
       console.error('ask gemini error',model,res.status,await res.text().catch(()=>''))
       if((res.status===503||res.status===429)&&attempt===0){
-       await new Promise(r=>setTimeout(r,600))
+       await new Promise(r=>setTimeout(r,500))
        continue
       }
       break
@@ -380,7 +392,7 @@ export async function POST(request){
    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[邮箱已隐藏]')
    .replace(/(?<!\d)1[3-9]\d{9}(?!\d)/g,'[号码已隐藏]')
    .replace(/(?<!\d)\d{17}[\dXx](?!\d)/g,'[证件号已隐藏]')
-  const sources=selectDiverseSources(candidates,16).map(s=>({...s,title:redact(s.title),bookTitle:redact(s.bookTitle),bookAuthor:redact(s.bookAuthor),snippet:redact(s.snippet),context:redact(s.context)}))
+  const sources=selectDiverseSources(candidates,12).map(s=>({...s,title:redact(s.title),bookTitle:redact(s.bookTitle),bookAuthor:redact(s.bookAuthor),snippet:redact(s.snippet),context:redact(s.context)}))
 
   if(!sources.length){
    const emptyAnswer='档案中没有找到与这个问题直接相关的记录，你可以换个关键词试试。'
