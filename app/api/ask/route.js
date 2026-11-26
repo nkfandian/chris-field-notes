@@ -6,13 +6,26 @@ import {cleanText,clientKey,enforceRateLimit,jsonMutationGuard,parseJsonBody} fr
 import {plainText} from '@/lib/seo'
 
 const STOP_WORDS=new Set([
- '怎么','怎样','如何','什么','为什么','为何','哪些','哪个','哪里','是否','有没有','可以','能够',
- '觉得','认为','看法','评价','态度','观点','印象','最深','关于','以及','还有','或者','因为','所以',
- '这个','那个','这些','那些','一个','一种','自己','我们','他们','它们','时候','东西','事情'
+ '怎么','怎样','如何','什么','为什么','为何','哪些','哪个','哪里','是否','有没有','是不是','能不能','可以','能够',
+ '觉得','认为','看法','评价','态度','观点','印象','最深','关于','以及','还有','或者','因为','所以','只是','但是',
+ '这个','那个','这些','那些','一个','一种','自己','我们','他们','它们','时候','东西','事情','很多','非常','特别',
+ '一些','一点','一下','比较','其实','大概','可能','应该','还是','不过','虽然','如果','那么','这样','那样','的书',
+ '的人','的事','问题','内容','部分','方面','地方','这里','那里','今天','现在','以前','之前','之后','以后','最近',
+ '几本','多少','几篇','几条','有没有','很多遍','一遍','几遍'
 ])
 
+const QUERY_SYNONYMS=[
+ ['重读',['再读','重温','每年读','读过几遍','翻出来','十次','红楼梦']],
+ ['何伟',['彼得·海斯勒','海斯勒','hessler','寻路中国','江城','甲骨文','奇石','other rivers']],
+ ['非虚构',['纪实','报道','特稿','新闻','采访']],
+ ['红楼梦',['脂批','石头记','庚辰本','曹雪芹','黛玉','宝玉']],
+ ['南开',['天津','大学','本科','研究生','六年']],
+ ['台湾',['台北','高雄','环岛','宝岛']],
+ ['乡村',['农村','家乡','水岚村','村里','县城']]
+]
+
 function tokenizeQuery(q){
- const cleaned=String(q||'').toLowerCase().replace(/[？?！!。，、；：“”"'（）()《》〈〉]/g,' ').trim()
+ const cleaned=String(q||'').toLowerCase().replace(/[？?！!。，、；：“”"'（）()《》〈〉「」]/g,' ').trim()
  const raw=new Set()
  for(const part of cleaned.split(/\s+/).filter(Boolean)){
   raw.add(part)
@@ -24,7 +37,12 @@ function tokenizeQuery(q){
    }
   }
  }
- const filtered=[...raw].filter(t=>t.length>=2&&!STOP_WORDS.has(t))
+ for(const [kw,syns] of QUERY_SYNONYMS){
+  if(cleaned.includes(kw)){
+   for(const s of syns)raw.add(s)
+  }
+ }
+ const filtered=[...raw].filter(t=>t.length>=2&&!STOP_WORDS.has(t)&&!t.startsWith('的')&&!t.endsWith('的'))
  return filtered.length?filtered:[...raw].filter(t=>t.length>=2)
 }
 
@@ -134,7 +152,8 @@ async function callLLM(question,sources,readingBackground='',history=[],liveStat
   }
   return `[${i+1}] 【Chris 原创日志 · ${s.date}】《${s.title}》\n${s.context||s.snippet}`
  }).join('\n\n')
- const systemPrompt='你是 Chris 个人网站的 AI 作者分身，基于他从 2008 年至今的真实阅读与写作构建。请严格基于下方提供的检索片段、已读高分书单背景与全站统计来回答读者问题：\n1.【文风与表达铁律】请完全采用 Chris 本人的随笔口吻：平实、克制、真诚、有具体细节，带一点田野观察者的冷静与温情（「面对复杂，保持欢喜」）。像给老朋友回信或写阅读随笔一样用流畅的自然段展开，把具体书名、作者、年份和思考脉络自然揉进句子里。严禁使用「第一、第二、第三」「首先、其次、最后」「总结起来」「你可以试着……」这类 AI 说教模板或公众号攻略体，也不要每段开头都加粗一句口号式小标题。不要编造原文之外的事实，引用检索片段时在句末标注 [1] [2] 出处。\n2.【著作权与归属铁律】必须严格区分「Chris 自己写的日志/微博」和「Chris 读过的他人著作」！凡是标注为「Chris 读过的他人著作」的书单条目，原书都是别的作家写的，绝不能说「我在《某本书》里写了/记录了……」或「我写的《某本书》」，只能说「我在读某某写的《某本书》时……」「我给《某本书》打过几星、在短评里提到……」，书中的人物、故事与观点也必须明确归属给原书作者（例如「Robert F. Schmitz 在《Street of Eternal Happiness》里记录的……」）。同时，文章里记录、采访或描写的他人经历，绝不能用第一人称「我」认领，必须明确归属到具体人物身上。\n3.【隐私保护铁律】作者对外统一使用英文名 Chris，绝不要透露作者的真实中文姓名、手机号、邮箱、家庭住址、具体工作单位或证件号等个人隐私，若读者追问请礼貌拒绝。'
+ const todayDate=new Date().toISOString().slice(0,10)
+ const systemPrompt=`你是 Chris 个人网站的 AI 作者分身，基于他从 2008 年至今的真实阅读与写作构建（当前日期：${todayDate}）。请严格基于下方提供的检索片段、已读高分书单背景与全站统计来回答读者问题：\n1.【文风与表达铁律】请完全采用 Chris 本人的随笔口吻：平实、克制、真诚、有具体细节，带一点田野观察者的冷静与温情（「面对复杂，保持欢喜」）。像给老朋友回信或写阅读随笔一样用流畅的自然段展开，紧扣上下文把具体书名、作者、年份和思考脉络自然揉进句子里。严禁使用「第一、第二、第三」「首先、其次、最后」「总结起来」「你可以试着……」这类 AI 说教模板或公众号攻略体，也不要每段开头都加粗口号式小标题。只引用真正紧扣当前问题的片段，与问题关联度低的检索片段直接忽略、不要生硬硬凑；不要编造原文之外的事实，引用具体片段时在句末标注 [1] [2] 出处。\n2.【时间锚点铁律】每条检索片段都带有实际写作日期（如 2018、2024、2025）。旧文章里若出现「今年」「去年」「最近」等相对时间词，回答时必须对照文章实际日期与当前日期（${todayDate}）换算成准确表述（如「2024 年」「前些年」「那阵子」），绝不能把几年前的事原样说成「今年」或「最近」。\n3.【著作权与归属铁律】必须严格区分「Chris 自己写的日志/微博」和「Chris 读过的他人著作」！凡是标注为「Chris 读过的他人著作」的书单条目，原书都是别的作家写的，绝不能说「我在《某本书》里写了/记录了……」或「我写的《某本书》」，只能说「我在读某某写的《某本书》时……」「我给《某本书》打过几星、在短评里提到……」，书中的人物、故事与观点也必须明确归属给原书作者。同时，文章里记录、采访或描写的他人经历，绝不能用第一人称「我」认领，必须明确归属到具体人物身上。\n4.【隐私保护铁律】作者对外统一使用英文名 Chris，绝不要透露作者的真实中文姓名、手机号、邮箱、家庭住址、具体工作单位或证件号等个人隐私，若读者追问请礼貌拒绝。`
  const bgBlock=readingBackground?`\n\n=== Chris 已读书单与核心书评背景 ===\n${readingBackground}`:''
  const histBlock=history.length?`\n\n=== 最近对话上下文 ===\n${history.map(h=>`${h.role==='user'?'读者':'AI Chris'}：${String(h.text||'').slice(0,280)}`).join('\n')}`:''
  const statsBlock=liveStats?`\n\n=== 全站实时统计（数据库最新数据） ===\n${liveStats}\n回答涉及数量的问题（如多少篇日志、多少条微博、读了多少本书）时，一律以这里的实时统计为准，不要引用检索片段或文章里提到的旧数字——文章成文时的数字可能已过时。`:''
@@ -142,29 +161,39 @@ async function callLLM(question,sources,readingBackground='',history=[],liveStat
 
  let lastReason='no_key'
  if(process.env.GEMINI_API_KEY){
-  for(const model of ['gemini-3.1-flash-lite','gemini-flash-lite-latest','gemini-3-flash-preview','gemini-flash-latest']){
-   try{
-    const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,{
-     method:'POST',
-     headers:{'content-type':'application/json'},
-     body:JSON.stringify({
-      systemInstruction:{parts:[{text:systemPrompt}]},
-      contents:[{parts:[{text:userPrompt}]}]
-     }),
-     signal:AbortSignal.timeout(9000)
-    })
-    if(res.ok){
-     const gData=await res.json()
-     const text=gData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
-     if(text)return {answer:text,mode:'ai',reason:'ok'}
-     lastReason=`empty_${model}`
-    }else{
-     lastReason=`http_${res.status}_${model}`
-     console.error('ask gemini error',model,res.status,await res.text().catch(()=>''))
+  const geminiModels=['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-flash-latest','gemini-3-flash-preview']
+  for(const model of geminiModels){
+   for(let attempt=0;attempt<2;attempt++){
+    try{
+     const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,{
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({
+       systemInstruction:{parts:[{text:systemPrompt}]},
+       contents:[{parts:[{text:userPrompt}]}]
+      }),
+      signal:AbortSignal.timeout(12000)
+     })
+     if(res.ok){
+      const gData=await res.json()
+      const text=gData?.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+      if(text)return {answer:text,mode:'ai',reason:'ok'}
+      lastReason=`empty_${model}`
+      break
+     }else{
+      lastReason=`http_${res.status}_${model}`
+      console.error('ask gemini error',model,res.status,await res.text().catch(()=>''))
+      if((res.status===503||res.status===429)&&attempt===0){
+       await new Promise(r=>setTimeout(r,600))
+       continue
+      }
+      break
+     }
+    }catch(err){
+     lastReason=`err_${model}`
+     console.error('ask gemini exception',model,err?.message||err)
+     break
     }
-   }catch(err){
-    lastReason=`err_${model}`
-    console.error('ask gemini exception',model,err?.message||err)
    }
   }
  }else{
@@ -312,7 +341,7 @@ export async function POST(request){
     const statusWeight=b.status==='Read'?1.6:b.status==='Reading'?1.4:0.65
     const ratingWeight=(b.rating||0)>=5?1.3:(b.rating||0)>=4?1.15:1
     const reviewWeight=plainText(b.review||'').length>=15?1.25:1
-    const total=base*2.2*statusWeight*ratingWeight*reviewWeight
+    const total=base*1.5*statusWeight*ratingWeight*reviewWeight
     const rev=plainText(b.review||'')
     const metaTag=[b.status==='Read'?'已读':b.status==='Reading'?'在读':'想读',b.rating?`${b.rating}星`:'',String(b.created_at||'').slice(0,7)].filter(Boolean).join(' · ')
     candidates.push({

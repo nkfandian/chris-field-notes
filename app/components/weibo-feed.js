@@ -66,7 +66,7 @@ export default function WeiboFeed({items=[],compact=false}){
    if(localStorage.getItem(key))return
    localStorage.setItem(key,'1')
   }catch{}
-  fetch('/api/views',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({slug}),keepalive:true}).catch(()=>{
+  fetch('/api/views',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({slug,kind:'weibo'}),keepalive:true}).catch(()=>{
    try{localStorage.removeItem(key)}catch{}
   })
  }

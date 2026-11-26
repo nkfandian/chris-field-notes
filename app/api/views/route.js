@@ -15,9 +15,9 @@ export async function POST(request){
   const parsed=await parseJsonBody(request,1024)
   if(parsed.response)return parsed.response
   const slug=cleanText(parsed.data?.slug,180)
-  if(!/^[a-z0-9]+(?:-[a-z0-9]+)*$/i.test(slug))return Response.json({error:'日志链接无效。'},{status:400})
+  if(!/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/i.test(slug))return Response.json({error:'日志链接无效。'},{status:400})
   const db=createAdminClient()
-  const isWeibo=slug.toLowerCase().startsWith('weibo-')
+  const isWeibo=parsed.data?.kind==='weibo'||slug.toLowerCase().startsWith('weibo-')||slug.toLowerCase().startsWith('sina-')
   if(isWeibo){
    if(!await enforceRateLimit(db,clientKey(request,`weibo-view-once:${slug.toLowerCase()}`),1,315360000))return Response.json({ok:true,counted:false},{headers:{'Cache-Control':'no-store'}})
   }else if(!await enforceRateLimit(db,clientKey(request,`post-view:${slug.toLowerCase()}`),24,3600))return Response.json({ok:true,counted:false},{headers:{'Cache-Control':'no-store'}})

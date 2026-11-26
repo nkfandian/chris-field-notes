@@ -1,6 +1,6 @@
 'use client'
 
-import {useRef,useState} from 'react'
+import {useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
 import MarkdownEditor from '../markdown-editor'
 import WeiboCardExporter from './weibo-card-exporter'
@@ -32,6 +32,14 @@ export default function WeiboEditor({initialWeibos=[]}){
  const [edit,setEdit]=useState(makeBlank)
  const [notice,setNotice]=useState('')
  const [saving,setSaving]=useState(false)
+ const [search,setSearch]=useState('')
+ const [visibleCount,setVisibleCount]=useState(120)
+
+ const filteredWeibos=useMemo(()=>{
+  const q=search.trim().toLowerCase()
+  if(!q)return weibos
+  return weibos.filter(item=>`${item.body||''} ${item.slug||''} ${formatListTime(item.published_at)}`.toLowerCase().includes(q))
+ },[weibos,search])
 
  function choose(item){
   setEdit(item?.id?{...item,published_at:toLocalInput(item.published_at)}:makeBlank())
@@ -90,11 +98,15 @@ export default function WeiboEditor({initialWeibos=[]}){
   <div className="studio-grid">
    <aside aria-label="选择微博">
     <button type="button" onClick={()=>choose(null)}>＋ 新建微博</button>
-    {weibos.map(item=><article key={item.id} role="button" tabIndex={0} aria-pressed={edit.id===item.id} onClick={()=>choose(item)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(item)}}}>
+    <input type="search" value={search} onChange={e=>{setSearch(e.target.value);setVisibleCount(120)}} placeholder="检索正文、日期或链接…" aria-label="检索微博" style={{width:'100%',padding:'.5rem .65rem',margin:'0 0 .5rem',border:'1px solid var(--line)',background:'var(--paper)',font:'13px var(--serif)'}}/>
+    {search.trim()&&<small style={{display:'block',margin:'0 0 .5rem',color:'var(--muted)',font:'12px var(--mono)'}}>匹配 {filteredWeibos.length} / {weibos.length} 条</small>}
+    {filteredWeibos.slice(0,visibleCount).map(item=><article key={item.id} role="button" tabIndex={0} aria-pressed={edit.id===item.id} onClick={()=>choose(item)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose(item)}}}>
      <small>{formatListTime(item.published_at)}</small>
      <h3>{previewText(item.body)}</h3>
      <div className="post-list-meta"><span>{item.status==='draft'?'draft':'published'}</span><b>♥ {Number(item.likes)||0}</b><span>👁 {Number(item.view_count)||0} · 今日 {Number(item.views_today)||0}</span></div>
     </article>)}
+    {!filteredWeibos.length&&<p style={{color:'var(--muted)',fontSize:'13px',padding:'.5rem 0'}}>没有找到匹配的微博。</p>}
+    {filteredWeibos.length>visibleCount&&<button type="button" onClick={()=>setVisibleCount(v=>v+200)} style={{marginTop:'.5rem'}}>加载更多（剩余 {filteredWeibos.length-visibleCount} 条）</button>}
    </aside>
    <form ref={editorRef} className="editor" onSubmit={save}>
     <div className="editor-top">

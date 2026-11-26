@@ -8,6 +8,17 @@ import '../markdown-editor.css'
 
 export const dynamic='force-dynamic'
 
+async function fetchAll(buildQuery){
+ const rows=[]
+ for(let from=0;from<10000;from+=1000){
+  const {data,error}=await buildQuery().range(from,from+999)
+  if(error||!data||!data.length)break
+  rows.push(...data)
+  if(data.length<1000)break
+ }
+ return rows
+}
+
 export default async function WeiboStudioPage(){
  if(!isConfigured())return null
  const db=await createClient()
@@ -16,8 +27,8 @@ export default async function WeiboStudioPage(){
  const todayStr=new Date().toISOString().slice(0,10)
  const [weibos,viewTotals,viewToday]=await Promise.all([
   listAdminWeibos(db).catch(()=>[]),
-  db.from('weibo_views').select('weibo_id,view_count').then(r=>r.error?[]:(r.data||[])).catch(()=>[]),
-  db.from('weibo_view_days').select('weibo_id,view_count').eq('view_date',todayStr).then(r=>r.error?[]:(r.data||[])).catch(()=>[])
+  fetchAll(()=>db.from('weibo_views').select('weibo_id,view_count')).catch(()=>[]),
+  fetchAll(()=>db.from('weibo_view_days').select('weibo_id,view_count').eq('view_date',todayStr)).catch(()=>[])
  ])
  const totals=new Map((viewTotals||[]).map(row=>[row.weibo_id,Number(row.view_count)||0]))
  const today=new Map((viewToday||[]).map(row=>[row.weibo_id,Number(row.view_count)||0]))
