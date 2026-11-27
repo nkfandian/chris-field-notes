@@ -1,6 +1,8 @@
 'use client'
 import {useEffect,useMemo,useRef,useState} from 'react'
 import Link from 'next/link'
+import BlindPage from './blind-page'
+import BookPrescription from './book-prescription'
 
 const PAGE_SIZE=10
 const statusLabel={Reading:'在读',Read:'已读','To Read':'想读'}
@@ -18,20 +20,51 @@ function buildPageList(current,total){
 
 export default function BooksClient({initialBooks}){
   const topRef=useRef(null)
+  const [tab,setTab]=useState('shelf')
   const [language,setLanguage]=useState('All')
   const [status,setStatus]=useState('Read')
   const [list,setList]=useState('All')
   const [page,setPage]=useState(1)
   const [expanded,setExpanded]=useState(()=>new Set())
 
+  const locateBook=bookId=>{
+    const targetId=String(bookId)
+    const target=initialBooks.find(b=>String(b.id)===targetId)
+    if(!target)return
+    setTab('shelf')
+    try{window.history.replaceState(null,'',`/books#book-${encodeURIComponent(target.id)}`)}catch{}
+    const nextStatus=target.status||'All'
+    setLanguage('All')
+    setStatus(nextStatus)
+    setList('All')
+    const filtered=initialBooks.filter(b=>nextStatus==='All'||b.status===nextStatus)
+    const idx=filtered.findIndex(b=>String(b.id)===targetId)
+    if(idx>=0){
+      setPage(Math.floor(idx/PAGE_SIZE)+1)
+      setExpanded(prev=>{const next=new Set(prev);next.add(target.id);return next})
+      setTimeout(()=>document.getElementById(`book-${target.id}`)?.scrollIntoView({behavior:'smooth',block:'center'}),120)
+    }
+  }
+
+  const switchTab=nextTab=>{
+    setTab(nextTab)
+    try{
+      const url=nextTab==='shelf'?'/books':`/books?tab=${nextTab}`
+      window.history.replaceState(null,'',url)
+    }catch{}
+  }
+
   useEffect(()=>{
     const sp=new URLSearchParams(window.location.search)
+    const qTab=sp.get('tab')
+    if(qTab==='blind'||qTab==='rx')setTab(qTab)
     const qList=sp.get('list'),qStatus=sp.get('status'),qLang=sp.get('language')
     if(qList){setList(qList);if(!qStatus)setStatus('All')}
     if(qStatus)setStatus(qStatus)
     if(qLang)setLanguage(qLang)
     const hashMatch=window.location.hash.match(/^#book-(.+)$/)
     if(hashMatch){
+      setTab('shelf')
       const targetId=decodeURIComponent(hashMatch[1])
       const target=initialBooks.find(b=>String(b.id)===targetId)
       if(target){
@@ -68,9 +101,20 @@ export default function BooksClient({initialBooks}){
     topRef.current?.scrollIntoView({behavior:'smooth',block:'start'})
   }
 
+  const readCount=useMemo(()=>initialBooks.filter(b=>b.status==='Read').length,[initialBooks])
   const row=(label,value,setter,options)=><div className="book-filter" role="group" aria-label={label}><span>{label}</span><div>{options.map(([key,text])=><button type="button" className={value===key?'active':''} aria-pressed={value===key} onClick={()=>changeFilter(setter,key)} key={key}>{text}</button>)}</div></div>
 
   return <>
+    <div className="books-modes" role="tablist" aria-label="书单体验切换">
+      <button type="button" role="tab" aria-selected={tab==='shelf'} className={tab==='shelf'?'active':''} onClick={()=>switchTab('shelf')}>书架总览</button>
+      <button type="button" role="tab" aria-selected={tab==='blind'} className={tab==='blind'?'active':''} onClick={()=>switchTab('blind')}>盲品一页</button>
+      <button type="button" role="tab" aria-selected={tab==='rx'} className={tab==='rx'?'active':''} onClick={()=>switchTab('rx')}>✦ 私人书方签</button>
+    </div>
+
+    {tab==='blind'&&<BlindPage books={initialBooks} onLocateBook={locateBook}/>}
+    {tab==='rx'&&<BookPrescription readCount={readCount} onLocateBook={locateBook}/>}
+
+    {tab==='shelf'&&<>
     <section className="book-controls" ref={topRef} aria-label="筛选书单">
       {row('语言',language,setLanguage,[['All','全部'],['Chinese','中文'],['English','英文']])}
       {row('状态',status,setStatus,[['Read','已读'],['Reading','在读'],['To Read','想读'],['All','全部']])}
@@ -94,5 +138,6 @@ export default function BooksClient({initialBooks}){
       <div className="page-numbers">{pageList.map((item,idx)=>item==='...'?<span className="page-ellipsis" key={`e-${idx}`}>…</span>:<button type="button" key={item} className={item===currentPage?'active':''} aria-current={item===currentPage?'page':undefined} onClick={()=>goPage(item)}>{item}</button>)}</div>
       <button type="button" className="page-step" disabled={currentPage>=totalPages} onClick={()=>goPage(currentPage+1)}>下一页 →</button>
     </nav>}
+    </>}
   </>
 }

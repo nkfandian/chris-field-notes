@@ -46,7 +46,7 @@ const securityHeaders=[
 ]
 
 const privateHeaders=[{key:'X-Robots-Tag',value:'noindex, nofollow, noarchive, nosnippet'}]
-const privateApiRoutes=['/api/ask','/api/campaigns','/api/indexnow','/api/interactions','/api/notifications','/api/posts','/api/studio/:path*','/api/subscribe/:path*','/api/unsubscribe','/api/uploads/:path*','/api/views','/api/weibo','/api/weibo/:path*']
+const privateApiRoutes=['/api/ask','/api/book-rx','/api/campaigns','/api/indexnow','/api/interactions','/api/notifications','/api/posts','/api/studio/:path*','/api/subscribe/:path*','/api/unsubscribe','/api/uploads/:path*','/api/views','/api/weibo','/api/weibo/:path*']
 
 export default {
  poweredByHeader:false,

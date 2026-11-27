@@ -78,7 +78,7 @@ export default function HomeClient({posts,weibos=[],weiboCount=0,books=[],bookCo
               <span className="reading-book-copy"><small>{bookStatus[book.status]||book.status}{book.rating?` · ${'★'.repeat(book.rating)}`:''}</small><strong>{book.title}</strong><em>{book.author}</em></span>
             </Link>)}</div>
             {!books.length&&<p className="reading-empty">书架正在整理。</p>}
-            <div className="reading-panel-foot"><span>阅读记录与短评</span><Link href="/books">打开完整书单 <b aria-hidden="true">↗</b></Link></div>
+            <div className="reading-panel-foot"><div className="reading-book-labs"><Link href="/books?tab=blind">盲品一页</Link><span>·</span><Link href="/books?tab=rx">✦ 私人书方</Link></div><Link href="/books">打开完整书单 <b aria-hidden="true">↗</b></Link></div>
           </section>
           <section className="reading-trails" aria-labelledby="home-trails-title">
             <header className="reading-panel-head"><div><small>ROUTES / {trails.length} PATHS</small><h2 id="home-trails-title">轨迹</h2></div></header>

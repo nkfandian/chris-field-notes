@@ -3,6 +3,87 @@
 .books-head{margin:clamp(3rem,8vh,5rem) 0 2rem;max-width:760px}
 .books-head h1{font:700 clamp(2.2rem,4vw,3.2rem)/1.15 var(--serif);letter-spacing:0;margin:0}
 .books-head p{margin:1rem 0 0;color:var(--muted);font:1rem/1.8 var(--serif)}
+.books-modes{display:flex;flex-wrap:wrap;gap:1.5rem;border-bottom:1px solid var(--line);margin-bottom:1.8rem;font:13px var(--mono)}
+.books-modes button{min-height:42px;padding:.55rem 0;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;color:var(--muted);font:inherit;cursor:pointer;white-space:nowrap}
+.books-modes button:hover{color:var(--ink)}
+.books-modes button.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+
+/* 盲品一页书 */
+.blind-shell{max-width:720px;padding:.4rem 0 2rem}
+.blind-intro small,.rx-composer-head small{display:block;font:12px var(--mono);letter-spacing:.1em;color:var(--accent);margin-bottom:.45rem}
+.blind-intro p{margin:0 0 1.6rem;color:var(--muted);font:.98rem/1.8 var(--serif)}
+.blind-card{background:#faf7f0;border:1px solid var(--line);box-shadow:10px 12px 0 rgba(51,46,40,.08);padding:1.8rem 2.2rem 2rem;position:relative}
+.blind-card::before{content:'';position:absolute;inset:6px;border:1px solid rgba(210,200,184,.55);pointer-events:none}
+.blind-card-top{display:flex;justify-content:space-between;gap:1rem;padding-bottom:.9rem;border-bottom:1px solid var(--line);font:12px var(--mono);color:var(--muted);letter-spacing:.06em}
+.blind-front{padding-top:1.3rem}
+.blind-quote-mark{font:700 3.6rem/.7 var(--serif);color:var(--accent);opacity:.38;margin-bottom:.3rem;user-select:none}
+.blind-quote{margin:0;font:400 clamp(1.08rem,1.6vw,1.25rem)/1.95 var(--serif);color:var(--ink);white-space:pre-line}
+.blind-clues{display:flex;flex-wrap:wrap;gap:.6rem 1.4rem;margin:1.6rem 0 0;padding-top:1rem;border-top:1px dashed var(--line);font:12px var(--mono);color:var(--moss)}
+.blind-actions{display:flex;flex-wrap:wrap;align-items:center;gap:.8rem;margin-top:1.5rem;position:relative;z-index:1}
+.blind-reveal-btn{min-height:44px;padding:0 1.35rem;border:1px solid var(--accent);border-radius:999px;background:var(--accent);color:var(--paper);font:500 13px var(--mono);cursor:pointer;transition:opacity .18s,transform .18s}
+.blind-reveal-btn:hover{opacity:.92;transform:translateY(-1px)}
+.blind-next-btn{min-height:44px;padding:0 1.15rem;border:1px solid var(--line);border-radius:999px;background:var(--paper);color:var(--ink);font:12.5px var(--mono);cursor:pointer}
+.blind-next-btn:hover{border-color:var(--accent);color:var(--accent)}
+.blind-post-link{font:12.5px var(--mono);color:var(--accent);text-decoration:underline;text-underline-offset:.28em;padding:.4rem .2rem}
+.blind-back{padding-top:1.4rem;animation:blindFade .25s ease}
+@keyframes blindFade{from{opacity:.35;transform:translateY(4px)}to{opacity:1;transform:none}}
+.blind-book-reveal{display:grid;grid-template-columns:96px minmax(0,1fr);gap:1.3rem;align-items:start}
+.blind-cover{aspect-ratio:2/3;background:var(--paper-deep);border:1px solid var(--line);box-shadow:4px 5px 0 rgba(51,46,40,.08);overflow:hidden;display:grid;place-items:center;font:11px var(--mono);color:var(--muted)}
+.blind-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.blind-book-info small{font:12px var(--mono);color:var(--moss)}
+.blind-book-info h2{margin:.35rem 0 .25rem;font:700 1.35rem/1.35 var(--serif);letter-spacing:0}
+.blind-author{margin:0;font:12.5px var(--mono);color:var(--muted)}
+.blind-tags{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.7rem}
+.blind-tags span{padding:.18rem .55rem;border:1px solid var(--line);background:var(--paper);font:11px var(--mono);color:var(--muted)}
+.blind-full-review{margin-top:1.4rem;padding:1rem 1.2rem;background:var(--paper);border-left:3px solid var(--accent)}
+.blind-full-review small{display:block;font:11px var(--mono);color:var(--accent);margin-bottom:.4rem}
+.blind-full-review p{margin:0;font:.98rem/1.85 var(--serif);white-space:pre-line}
+
+/* 私人书方签 / 品味对撞机 */
+.rx-shell{max-width:840px;padding:.4rem 0 2rem}
+.rx-composer{border:1px solid var(--line);background:rgba(255,255,255,.35);padding:1.5rem 1.7rem}
+.rx-composer-head h2{margin:0 0 .45rem;font:700 1.45rem/1.35 var(--serif);letter-spacing:0}
+.rx-composer-head p{margin:0 0 1.2rem;color:var(--muted);font:.96rem/1.75 var(--serif)}
+.rx-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.75rem;align-items:center;border:1px solid var(--line);background:var(--paper);padding:.45rem .55rem .45rem 1rem;border-radius:10px}
+.rx-form:focus-within{border-color:var(--accent)}
+.rx-form input{border:0;background:transparent;outline:0;min-width:0;font:1rem/1.5 var(--serif);color:var(--ink)}
+.rx-form button{min-height:42px;padding:0 1.25rem;border:0;border-radius:7px;background:var(--accent);color:var(--paper);font:500 13px var(--mono);white-space:nowrap;cursor:pointer}
+.rx-form button:disabled{opacity:.65;cursor:default}
+.rx-samples{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem}
+.rx-samples button{border:1px solid var(--line);border-radius:999px;background:var(--paper);color:var(--ink);padding:.4rem .8rem;font:12px var(--mono);cursor:pointer;transition:border-color .18s,color .18s}
+.rx-samples button:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.rx-samples .rx-refresh{border-style:dashed;color:var(--accent)}
+.rx-error{margin:.9rem 0 0;font:12px var(--mono);color:#8b453d}
+
+.rx-slip{margin-top:1.8rem;background:#faf7f0;border:1px solid var(--line);box-shadow:10px 12px 0 rgba(51,46,40,.08);padding:1.8rem 2rem;position:relative;animation:blindFade .28s ease}
+.rx-slip::before{content:'';position:absolute;inset:6px;border:1px solid rgba(210,200,184,.55);pointer-events:none}
+.rx-slip-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1.2rem;padding-bottom:1.1rem;border-bottom:1px solid var(--line)}
+.rx-slip-head small{font:12px var(--mono);color:var(--accent);letter-spacing:.06em}
+.rx-slip-head h3{margin:.35rem 0 .35rem;font:700 1.6rem/1.25 var(--serif);letter-spacing:0}
+.rx-trigger{margin:0;font:.94rem/1.6 var(--serif);color:var(--muted)}
+.rx-stamp{flex-shrink:0;border:1.5px solid var(--accent);background:rgba(63,113,140,.08);padding:.5rem .9rem;text-align:center;color:var(--accent)}
+.rx-stamp span{display:block;font:600 11px var(--mono);letter-spacing:.06em}
+.rx-stamp strong{display:block;margin-top:.15rem;font:700 1.55rem/1.1 var(--mono)}
+.rx-taste-note{margin:1.2rem 0 1.5rem;padding:.9rem 1.15rem;background:var(--paper-deep);border-left:3px solid var(--accent)}
+.rx-taste-note small{display:block;font:600 11px var(--mono);color:var(--accent);margin-bottom:.3rem}
+.rx-taste-note p{margin:0;font:.98rem/1.8 var(--serif);color:var(--ink)}
+.rx-book-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:1.25rem}
+.rx-book-item{display:grid;grid-template-columns:86px minmax(0,1fr);gap:1.2rem;padding:1.15rem;background:var(--paper);border:1px solid var(--line);position:relative;z-index:1}
+.rx-book-cover{aspect-ratio:2/3;background:var(--paper-deep);border:1px solid var(--line);overflow:hidden;display:grid;place-items:center;font:11px var(--mono);color:var(--muted)}
+.rx-book-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.rx-book-meta{display:flex;justify-content:space-between;gap:.5rem;font:12px var(--mono);color:var(--accent)}
+.rx-book-body h4{margin:.3rem 0 .2rem;font:700 1.15rem/1.4 var(--serif)}
+.rx-book-author{margin:0 0 .55rem;font:12px var(--mono);color:var(--muted)}
+.rx-book-reason{margin:0 0 .7rem;font:.95rem/1.75 var(--serif);color:var(--ink)}
+.rx-book-quote{padding:.65rem .85rem;background:#faf7f0;border-left:2px solid var(--line)}
+.rx-book-quote small{display:block;font:11px var(--mono);color:var(--muted);margin-bottom:.25rem}
+.rx-book-quote p{margin:0;font:.9rem/1.7 var(--serif);color:var(--muted)}
+.rx-book-links{display:flex;flex-wrap:wrap;gap:1rem;margin-top:.75rem}
+.rx-book-links button,.rx-book-links a{padding:0;border:0;background:none;font:12px var(--mono);color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:.28em}
+.rx-slip-foot{margin-top:1.4rem;padding-top:1.1rem;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:1rem;position:relative;z-index:1}
+.rx-slip-foot p{margin:0;font:.92rem/1.6 var(--serif);color:var(--muted)}
+.rx-export-btn{min-height:42px;padding:0 1.25rem;border:1px solid var(--ink);border-radius:999px;background:var(--ink);color:var(--paper);font:500 12.5px var(--mono);cursor:pointer}
+.rx-export-btn:hover:not(:disabled){background:var(--accent);border-color:var(--accent)}
 .book-controls{padding:.6rem 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .book-filter{display:grid;grid-template-columns:56px minmax(0,1fr);align-items:center;gap:1rem}
 .book-filter>span{font:12px var(--mono);color:var(--muted)}
@@ -56,4 +137,16 @@
   .books-pagination .page-numbers{flex-wrap:nowrap;gap:.15rem}
   .books-pagination .page-numbers button,.books-pagination .page-ellipsis,.books-pagination .page-step{min-width:28px;min-height:34px;padding:0 .3rem}
   .books-pagination .page-step{white-space:nowrap}
+  .books-modes{gap:1.1rem;margin-bottom:1.3rem}
+  .blind-card,.rx-slip{padding:1.25rem 1.15rem 1.4rem}
+  .blind-book-reveal{grid-template-columns:74px minmax(0,1fr);gap:.9rem}
+  .rx-composer{padding:1.1rem 1rem}
+  .rx-form{padding:.4rem .45rem .4rem .8rem;gap:.5rem}
+  .rx-form input{font-size:16px}
+  .rx-form input::placeholder{font-size:13px}
+  .rx-form button{padding:0 .9rem;font-size:12px}
+  .rx-slip-head{flex-direction:row;align-items:flex-start}
+  .rx-stamp{padding:.4rem .65rem}
+  .rx-stamp strong{font-size:1.25rem}
+  .rx-book-item{grid-template-columns:68px minmax(0,1fr);gap:.85rem;padding:.95rem}
 }

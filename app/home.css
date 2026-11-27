@@ -124,6 +124,8 @@
 .home-page .reading-trail-dots i.is-note { border: 1px solid #a7be93; background: transparent; }
 .home-page .reading-trail-open { padding-top: 2px; color: #7e8578; font: 16px/1 var(--mono); transition: transform .2s ease, color .2s ease; }
 .home-page .reading-panel-foot { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-top: auto; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font: 12px/1.5 var(--mono); }
+.home-page .reading-book-labs { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.home-page .reading-book-labs a { color: var(--accent); font-weight: 500; }
 .home-page .reading-panel-foot a { color: var(--ink); text-decoration: none; }
 .home-page .reading-panel-foot a:hover { color: var(--moss); }
 .home-page .reading-panel-foot b { margin-left: 8px; font-weight: 400; }
