@@ -264,7 +264,7 @@ export default function BookPrescription({readCount=0,onLocateBook}){
    <div className="rx-composer-head">
     <small>READING PRESCRIPTION / 品味对撞机</small>
     <h2>告诉我你爱读的书，或当下的困惑</h2>
-    <p>拿你的阅读偏好与我书架上的 {readCount||'600+'} 本已读书目及书评做一次对撞，为你开出 3 本高分私藏书方。</p>
+    <p>拿你的阅读偏好与我书架上的 {readCount||'约 600'} 本已读书目及书评做一次对撞，为你开出 3 本高分私藏书方。</p>
    </div>
    <form className="rx-form" onSubmit={e=>{e.preventDefault();generate(input)}}>
     <input

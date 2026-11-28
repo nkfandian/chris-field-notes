@@ -7,7 +7,7 @@ import {resolveAboutConfig} from '@/lib/about'
 import {AUTHOR_ID,AUTHOR_URL,SITE_LANGUAGE,SITE_URL,WEBSITE_ID,pageMetadata} from '@/lib/seo'
 import './about.css'
 
-export const revalidate=60
+export const dynamic='force-dynamic'
 export const metadata=pageMetadata({
  title:'关于与漫游指南',
  description:'关于作者 Chris 与这个独立小站的体验指南：和 AI 作者对话、私人书方签、盲品一页书、十八年日志归档与日常微博。',
